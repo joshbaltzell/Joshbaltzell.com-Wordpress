@@ -175,6 +175,10 @@
 
 /* --- Watercolor Frame Effect for Images --- */
 
+.jb-watercolor-frame {
+	position: relative;
+}
+
 .jb-watercolor-frame img {
 	transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), filter 0.5s ease;
 }
@@ -211,6 +215,8 @@
 
 .jb-interview-content .interview-question {
 	position: relative;
+	/* Override inline block border with gradient via pseudo-element */
+	border-left-color: transparent !important;
 }
 
 .jb-interview-content .interview-question::before {
@@ -382,7 +388,6 @@ html {
 
 @media (max-width: 781px) {
 	.jb-slide-up,
-	.jb-fade-in,
 	.jb-stagger-in {
 		/* Reduce animation distance on mobile */
 		transform: translateY(15px);

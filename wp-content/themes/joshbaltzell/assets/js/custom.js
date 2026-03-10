@@ -63,7 +63,6 @@
 		const header = document.querySelector('header.wp-block-group');
 		if (!header) return;
 
-		var lastScrollY = 0;
 		var ticking = false;
 
 		function updateHeader() {
@@ -76,7 +75,6 @@
 		}
 
 		window.addEventListener('scroll', function () {
-			lastScrollY = window.scrollY;
 			if (!ticking) {
 				window.requestAnimationFrame(updateHeader);
 				ticking = true;
@@ -106,7 +104,6 @@
 				var visible = rect.bottom > 0 && rect.top < window.innerHeight;
 				if (visible) {
 					var offset = scrollY * 0.15;
-					var pseudo = hero.querySelector(':scope > *:first-child');
 					if (hero.style) {
 						hero.style.setProperty('--jb-parallax-y', offset + 'px');
 					}

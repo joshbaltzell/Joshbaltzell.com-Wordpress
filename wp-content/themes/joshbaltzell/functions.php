@@ -68,6 +68,60 @@ function joshbaltzell_enqueue_scripts() {
 add_action( 'wp_enqueue_scripts', 'joshbaltzell_enqueue_scripts' );
 
 /**
+ * Register AI Interview custom post type.
+ */
+function joshbaltzell_register_post_types() {
+	register_post_type( 'ai_interview', array(
+		'labels'              => array(
+			'name'               => __( 'AI Interviews', 'joshbaltzell' ),
+			'singular_name'      => __( 'AI Interview', 'joshbaltzell' ),
+			'add_new'            => __( 'Add New', 'joshbaltzell' ),
+			'add_new_item'       => __( 'Add New Interview', 'joshbaltzell' ),
+			'edit_item'          => __( 'Edit Interview', 'joshbaltzell' ),
+			'new_item'           => __( 'New Interview', 'joshbaltzell' ),
+			'view_item'          => __( 'View Interview', 'joshbaltzell' ),
+			'search_items'       => __( 'Search Interviews', 'joshbaltzell' ),
+			'not_found'          => __( 'No interviews found', 'joshbaltzell' ),
+			'not_found_in_trash' => __( 'No interviews found in Trash', 'joshbaltzell' ),
+		),
+		'public'              => true,
+		'has_archive'         => true,
+		'rewrite'             => array( 'slug' => 'interviews', 'with_front' => false ),
+		'menu_icon'           => 'dashicons-format-chat',
+		'menu_position'       => 5,
+		'supports'            => array( 'title', 'editor', 'thumbnail', 'excerpt', 'custom-fields' ),
+		'show_in_rest'        => true,
+		'template'            => array(),
+	) );
+}
+add_action( 'init', 'joshbaltzell_register_post_types' );
+
+/**
+ * Register Interview Topic taxonomy.
+ */
+function joshbaltzell_register_taxonomies() {
+	register_taxonomy( 'interview_topic', 'ai_interview', array(
+		'labels'            => array(
+			'name'          => __( 'Interview Topics', 'joshbaltzell' ),
+			'singular_name' => __( 'Interview Topic', 'joshbaltzell' ),
+			'search_items'  => __( 'Search Topics', 'joshbaltzell' ),
+			'all_items'     => __( 'All Topics', 'joshbaltzell' ),
+			'edit_item'     => __( 'Edit Topic', 'joshbaltzell' ),
+			'update_item'   => __( 'Update Topic', 'joshbaltzell' ),
+			'add_new_item'  => __( 'Add New Topic', 'joshbaltzell' ),
+			'new_item_name' => __( 'New Topic Name', 'joshbaltzell' ),
+			'menu_name'     => __( 'Topics', 'joshbaltzell' ),
+		),
+		'hierarchical'      => true,
+		'public'            => true,
+		'show_in_rest'      => true,
+		'rewrite'           => array( 'slug' => 'topic', 'with_front' => false ),
+		'show_admin_column' => true,
+	) );
+}
+add_action( 'init', 'joshbaltzell_register_taxonomies' );
+
+/**
  * Register block pattern categories.
  */
 function joshbaltzell_register_pattern_categories() {
@@ -115,7 +169,7 @@ add_action( 'init', 'joshbaltzell_register_post_meta' );
  */
 function joshbaltzell_mime_types( $mimes ) {
 	$mimes['webp'] = 'image/webp';
-	$mimes['svg']  = 'image/svg+xml';
+	// SVG intentionally excluded — requires sanitization library to prevent XSS.
 	return $mimes;
 }
 add_filter( 'upload_mimes', 'joshbaltzell_mime_types' );
