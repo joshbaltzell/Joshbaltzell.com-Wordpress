@@ -235,6 +235,82 @@
 	}
 
 	/**
+	 * Magnetic hover effect on interview cards.
+	 * Cards subtly tilt toward the cursor position.
+	 */
+	function initCardTilt() {
+		if (reducedMotion || window.innerWidth < 768) return;
+
+		var cards = document.querySelectorAll('.jb-interview-card');
+		cards.forEach(function (card) {
+			card.addEventListener('mousemove', function (e) {
+				var rect = card.getBoundingClientRect();
+				var x = e.clientX - rect.left;
+				var y = e.clientY - rect.top;
+				var centerX = rect.width / 2;
+				var centerY = rect.height / 2;
+				var rotateX = ((y - centerY) / centerY) * -2;
+				var rotateY = ((x - centerX) / centerX) * 2;
+
+				card.style.transform = 'translateY(-6px) perspective(800px) rotateX(' + rotateX + 'deg) rotateY(' + rotateY + 'deg)';
+			});
+
+			card.addEventListener('mouseleave', function () {
+				card.style.transform = '';
+			});
+		});
+	}
+
+	/**
+	 * Smooth image reveal on lazy-load.
+	 */
+	function initImageReveal() {
+		if (reducedMotion) return;
+
+		var images = document.querySelectorAll('img[loading="lazy"]');
+		images.forEach(function (img) {
+			if (!img.complete) {
+				img.style.opacity = '0';
+				img.addEventListener('load', function () {
+					img.style.opacity = '1';
+				});
+			}
+		});
+	}
+
+	/**
+	 * Copy-to-clipboard for prompt guide code blocks.
+	 */
+	function initPromptCopy() {
+		var guide = document.querySelector('.jb-prompt-guide');
+		if (!guide) return;
+
+		var codeBlocks = guide.querySelectorAll('.wp-block-code');
+		codeBlocks.forEach(function (block) {
+			block.style.cursor = 'pointer';
+			block.setAttribute('title', 'Click to copy');
+
+			block.addEventListener('click', function () {
+				var code = block.querySelector('code');
+				if (!code) return;
+
+				var text = code.innerText;
+				navigator.clipboard.writeText(text).then(function () {
+					var label = block.querySelector('::before') || block;
+					var original = block.getAttribute('data-label') || '';
+					block.setAttribute('data-copied', 'true');
+					block.style.borderColor = 'var(--wp--preset--color--accent)';
+
+					setTimeout(function () {
+						block.removeAttribute('data-copied');
+						block.style.borderColor = '';
+					}, 2000);
+				});
+			});
+		});
+	}
+
+	/**
 	 * Initialize all effects when DOM is ready.
 	 */
 	function init() {
@@ -245,6 +321,9 @@
 		initParallax();
 		initSmoothAnchors();
 		initCursorBlink();
+		initCardTilt();
+		initImageReveal();
+		initPromptCopy();
 	}
 
 	if (document.readyState === 'loading') {

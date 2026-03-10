@@ -91,7 +91,9 @@ function joshbaltzell_register_post_types() {
 		'menu_position'       => 5,
 		'supports'            => array( 'title', 'editor', 'thumbnail', 'excerpt', 'custom-fields' ),
 		'show_in_rest'        => true,
-		'template'            => array(),
+		'template'            => array(
+			array( 'core/pattern', array( 'slug' => 'joshbaltzell/interview-prompt-guide' ) ),
+		),
 	) );
 }
 add_action( 'init', 'joshbaltzell_register_post_types' );
