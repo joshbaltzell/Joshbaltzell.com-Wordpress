@@ -1,0 +1,446 @@
+/* ============================================
+   Josh Baltzell Theme - Custom Styles
+   Watercolor-inspired design with subtle animations
+   ============================================ */
+
+/* --- Animations: Keyframes --- */
+
+@keyframes slideUp {
+	from {
+		opacity: 0;
+		transform: translateY(30px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes fadeIn {
+	from {
+		opacity: 0;
+	}
+	to {
+		opacity: 1;
+	}
+}
+
+@keyframes paintStroke {
+	from {
+		width: 0;
+	}
+	to {
+		width: 80px;
+	}
+}
+
+@keyframes subtlePulse {
+	0%, 100% {
+		opacity: 0.6;
+	}
+	50% {
+		opacity: 1;
+	}
+}
+
+@keyframes watercolorBleed {
+	0% {
+		filter: blur(0px);
+		opacity: 0.8;
+	}
+	50% {
+		filter: blur(2px);
+		opacity: 0.6;
+	}
+	100% {
+		filter: blur(0px);
+		opacity: 0.8;
+	}
+}
+
+/* --- Scroll-triggered Animation Classes --- */
+
+.jb-slide-up {
+	opacity: 0;
+	transform: translateY(30px);
+}
+
+.jb-slide-up.jb-visible {
+	animation: slideUp 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.jb-slide-up.jb-delay-1.jb-visible {
+	animation-delay: 0.15s;
+}
+
+.jb-slide-up.jb-delay-2.jb-visible {
+	animation-delay: 0.3s;
+}
+
+.jb-slide-up.jb-delay-3.jb-visible {
+	animation-delay: 0.45s;
+}
+
+.jb-slide-up.jb-delay-4.jb-visible {
+	animation-delay: 0.6s;
+}
+
+.jb-fade-in {
+	opacity: 0;
+}
+
+.jb-fade-in.jb-visible {
+	animation: fadeIn 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.jb-stagger-in {
+	opacity: 0;
+	transform: translateY(20px);
+}
+
+.jb-stagger-in.jb-visible {
+	animation: slideUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* --- Watercolor Background Effect --- */
+
+.jb-watercolor-bg {
+	position: relative;
+	overflow: hidden;
+}
+
+.jb-watercolor-bg::before {
+	content: "";
+	position: absolute;
+	top: -20%;
+	left: -10%;
+	width: 120%;
+	height: 140%;
+	background:
+		radial-gradient(ellipse at 20% 50%, rgba(44, 62, 107, 0.06) 0%, transparent 60%),
+		radial-gradient(ellipse at 80% 20%, rgba(196, 120, 91, 0.05) 0%, transparent 50%),
+		radial-gradient(ellipse at 50% 80%, rgba(122, 158, 126, 0.05) 0%, transparent 55%),
+		radial-gradient(ellipse at 70% 60%, rgba(139, 107, 163, 0.04) 0%, transparent 45%);
+	pointer-events: none;
+	z-index: 0;
+}
+
+.jb-watercolor-bg > * {
+	position: relative;
+	z-index: 1;
+}
+
+/* --- Paint Divider --- */
+
+.jb-paint-divider.wp-block-separator {
+	border: none !important;
+	height: 3px;
+	max-width: 120px;
+	margin-left: auto;
+	margin-right: auto;
+	position: relative;
+	overflow: visible;
+	background: transparent !important;
+}
+
+.jb-paint-divider.wp-block-separator::before {
+	content: "";
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: 3px;
+	background: linear-gradient(
+		90deg,
+		transparent 0%,
+		var(--wp--preset--color--secondary) 15%,
+		var(--wp--preset--color--secondary) 50%,
+		var(--wp--preset--color--primary) 85%,
+		transparent 100%
+	);
+	border-radius: 2px;
+}
+
+.jb-paint-divider.wp-block-separator::after {
+	content: "";
+	position: absolute;
+	top: -2px;
+	left: 30%;
+	width: 8px;
+	height: 7px;
+	background: var(--wp--preset--color--secondary);
+	border-radius: 50%;
+	opacity: 0.5;
+}
+
+/* --- Watercolor Frame Effect for Images --- */
+
+.jb-watercolor-frame img {
+	transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), filter 0.5s ease;
+}
+
+.jb-watercolor-frame:hover img {
+	transform: scale(1.02);
+}
+
+.jb-watercolor-frame::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	border-radius: inherit;
+	box-shadow:
+		inset 0 0 30px rgba(242, 237, 228, 0.5),
+		inset 0 0 60px rgba(250, 248, 245, 0.3);
+}
+
+/* --- Interview Card Hover --- */
+
+.jb-interview-card {
+	transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+	            box-shadow 0.4s ease;
+	box-shadow: 0 2px 12px rgba(45, 45, 45, 0.04);
+}
+
+.jb-interview-card:hover {
+	transform: translateY(-4px);
+	box-shadow: 0 8px 32px rgba(44, 62, 107, 0.1);
+}
+
+/* --- Interview Content Styling --- */
+
+.jb-interview-content .interview-question {
+	position: relative;
+}
+
+.jb-interview-content .interview-question::before {
+	content: "";
+	position: absolute;
+	left: 0;
+	top: 0;
+	bottom: 0;
+	width: 3px;
+	background: linear-gradient(
+		180deg,
+		var(--wp--preset--color--secondary),
+		var(--wp--preset--color--accent)
+	);
+	border-radius: 2px;
+}
+
+.jb-interview-content .interviewer {
+	font-family: var(--wp--preset--font-family--heading);
+	font-style: italic;
+	color: var(--wp--preset--color--primary);
+}
+
+.jb-interview-content .interviewee {
+	font-size: var(--wp--preset--font-size--medium);
+	line-height: 1.8;
+}
+
+/* --- Interview Exchange Separator --- */
+
+.interview-exchange + .interview-exchange::before {
+	content: "";
+	display: block;
+	width: 40px;
+	height: 2px;
+	background: var(--wp--preset--color--border);
+	margin: 0 auto var(--wp--preset--spacing--40);
+	border-radius: 1px;
+}
+
+/* --- Resume Timeline --- */
+
+.jb-timeline .jb-timeline-entry {
+	position: relative;
+}
+
+.jb-timeline .jb-timeline-entry::before {
+	content: "";
+	position: absolute;
+	left: -1px;
+	top: 12px;
+	width: 9px;
+	height: 9px;
+	background: var(--wp--preset--color--secondary);
+	border: 2px solid var(--wp--preset--color--background);
+	border-radius: 50%;
+	transform: translateX(-50%);
+	z-index: 1;
+}
+
+/* --- Header Scroll Effect --- */
+
+header.wp-block-group {
+	transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+header.wp-block-group.jb-scrolled {
+	box-shadow: 0 2px 16px rgba(45, 45, 45, 0.06);
+}
+
+/* --- Button Hover Animations --- */
+
+.wp-block-button__link {
+	transition: background-color 0.3s ease,
+	            color 0.3s ease,
+	            transform 0.2s ease,
+	            box-shadow 0.3s ease;
+}
+
+.wp-block-button__link:hover {
+	transform: translateY(-1px);
+	box-shadow: 0 4px 12px rgba(44, 62, 107, 0.15);
+}
+
+.wp-block-button__link:active {
+	transform: translateY(0);
+}
+
+/* --- Link Hover Effect --- */
+
+.wp-block-post-title a {
+	text-decoration: none;
+	background-image: linear-gradient(var(--wp--preset--color--secondary), var(--wp--preset--color--secondary));
+	background-size: 0% 2px;
+	background-position: 0 100%;
+	background-repeat: no-repeat;
+	transition: background-size 0.4s cubic-bezier(0.22, 1, 0.36, 1), color 0.3s ease;
+}
+
+.wp-block-post-title a:hover {
+	background-size: 100% 2px;
+	color: var(--wp--preset--color--secondary);
+}
+
+/* --- Navigation Hover --- */
+
+.wp-block-navigation-item a {
+	position: relative;
+}
+
+.wp-block-navigation-item a::after {
+	content: "";
+	position: absolute;
+	bottom: -2px;
+	left: 50%;
+	width: 0;
+	height: 2px;
+	background: var(--wp--preset--color--secondary);
+	transition: width 0.3s ease, left 0.3s ease;
+	border-radius: 1px;
+}
+
+.wp-block-navigation-item a:hover::after {
+	width: 100%;
+	left: 0;
+}
+
+/* --- Paper Grain Texture (subtle) --- */
+
+body {
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.02'/%3E%3C/svg%3E");
+}
+
+/* --- Smooth Scrolling --- */
+
+html {
+	scroll-behavior: smooth;
+}
+
+/* --- Selection Color --- */
+
+::selection {
+	background: rgba(196, 120, 91, 0.25);
+	color: var(--wp--preset--color--foreground);
+}
+
+/* --- Hero Section Floating Elements --- */
+
+.jb-hero {
+	position: relative;
+}
+
+.jb-hero::after {
+	content: "";
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	height: 1px;
+	background: linear-gradient(
+		90deg,
+		transparent,
+		var(--wp--preset--color--border),
+		transparent
+	);
+}
+
+/* --- Responsive Adjustments --- */
+
+@media (max-width: 781px) {
+	.jb-slide-up,
+	.jb-fade-in,
+	.jb-stagger-in {
+		/* Reduce animation distance on mobile */
+		transform: translateY(15px);
+	}
+
+	.jb-watercolor-frame:hover img {
+		transform: none;
+	}
+
+	.jb-interview-card:hover {
+		transform: none;
+	}
+}
+
+/* --- Reduced Motion --- */
+
+@media (prefers-reduced-motion: reduce) {
+	.jb-slide-up,
+	.jb-fade-in,
+	.jb-stagger-in {
+		opacity: 1;
+		transform: none;
+		animation: none !important;
+	}
+
+	.jb-watercolor-frame img,
+	.jb-interview-card,
+	.wp-block-button__link,
+	.wp-block-post-title a {
+		transition: none !important;
+	}
+
+	html {
+		scroll-behavior: auto;
+	}
+}
+
+/* --- Focus Styles (Accessibility) --- */
+
+a:focus-visible,
+button:focus-visible,
+.wp-block-button__link:focus-visible {
+	outline: 2px solid var(--wp--preset--color--secondary);
+	outline-offset: 2px;
+}
+
+/* --- Print Styles --- */
+
+@media print {
+	header.wp-block-group,
+	footer.wp-block-group,
+	.jb-watercolor-bg::before,
+	.wp-block-buttons {
+		display: none !important;
+	}
+
+	body {
+		background: white;
+		color: black;
+	}
+}

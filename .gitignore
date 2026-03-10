@@ -1,0 +1,47 @@
+# WordPress core files (managed by WPEngine)
+wp-admin/
+wp-includes/
+wp-*.php
+index.php
+license.txt
+readme.html
+xmlrpc.php
+
+# WP config (managed per environment)
+wp-config.php
+wp-config-local.php
+
+# Uploads (managed separately, not in git)
+wp-content/uploads/
+
+# Plugins (managed via WPEngine dashboard or composer)
+wp-content/plugins/
+
+# Other wp-content items we don't track
+wp-content/upgrade/
+wp-content/backup*/
+wp-content/cache/
+wp-content/blogs.dir/
+
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# IDE files
+.idea/
+.vscode/
+*.sublime-*
+
+# Node modules (if using build tools)
+node_modules/
+
+# Environment files
+.env
+.env.*
+
+# Log files
+*.log
+debug.log
