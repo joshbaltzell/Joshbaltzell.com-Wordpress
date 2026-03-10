@@ -461,6 +461,11 @@
 	],
 	"customTemplates": [
 		{
+			"name": "page-about",
+			"title": "About",
+			"postTypes": ["page"]
+		},
+		{
 			"name": "page-resume",
 			"title": "Resume / CV",
 			"postTypes": ["page"]

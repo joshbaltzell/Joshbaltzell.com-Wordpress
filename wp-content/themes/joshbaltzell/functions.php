@@ -165,6 +165,61 @@ function joshbaltzell_register_post_meta() {
 add_action( 'init', 'joshbaltzell_register_post_meta' );
 
 /**
+ * Add meta box for interview details in the classic editor sidebar.
+ */
+function joshbaltzell_add_interview_meta_box() {
+	add_meta_box(
+		'jb_interview_details',
+		__( 'Interview Details', 'joshbaltzell' ),
+		'joshbaltzell_interview_meta_box_html',
+		'ai_interview',
+		'side',
+		'high'
+	);
+}
+add_action( 'add_meta_boxes', 'joshbaltzell_add_interview_meta_box' );
+
+function joshbaltzell_interview_meta_box_html( $post ) {
+	$subtitle  = get_post_meta( $post->ID, '_interview_topic_subtitle', true );
+	$read_time = get_post_meta( $post->ID, '_interview_read_time', true );
+	wp_nonce_field( 'jb_interview_meta', 'jb_interview_meta_nonce' );
+	?>
+	<p>
+		<label for="jb_subtitle"><strong><?php esc_html_e( 'Subtitle', 'joshbaltzell' ); ?></strong></label><br>
+		<input type="text" id="jb_subtitle" name="jb_subtitle" value="<?php echo esc_attr( $subtitle ); ?>" class="widefat" placeholder="e.g. A deeper look at leadership">
+	</p>
+	<p>
+		<label for="jb_read_time"><strong><?php esc_html_e( 'Read Time', 'joshbaltzell' ); ?></strong></label><br>
+		<input type="text" id="jb_read_time" name="jb_read_time" value="<?php echo esc_attr( $read_time ); ?>" class="widefat" placeholder="e.g. 8 min read (auto-calculated if empty)">
+	</p>
+	<?php
+}
+
+function joshbaltzell_save_interview_meta( $post_id ) {
+	if ( ! isset( $_POST['jb_interview_meta_nonce'] ) || ! wp_verify_nonce( $_POST['jb_interview_meta_nonce'], 'jb_interview_meta' ) ) {
+		return;
+	}
+	if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+		return;
+	}
+	if ( ! current_user_can( 'edit_post', $post_id ) ) {
+		return;
+	}
+
+	if ( isset( $_POST['jb_subtitle'] ) ) {
+		update_post_meta( $post_id, '_interview_topic_subtitle', sanitize_text_field( $_POST['jb_subtitle'] ) );
+	}
+	if ( isset( $_POST['jb_read_time'] ) ) {
+		$read_time = sanitize_text_field( $_POST['jb_read_time'] );
+		if ( empty( $read_time ) ) {
+			$read_time = joshbaltzell_reading_time( get_post_field( 'post_content', $post_id ) );
+		}
+		update_post_meta( $post_id, '_interview_read_time', $read_time );
+	}
+}
+add_action( 'save_post_ai_interview', 'joshbaltzell_save_interview_meta' );
+
+/**
  * Add WebP upload support.
  */
 function joshbaltzell_mime_types( $mimes ) {

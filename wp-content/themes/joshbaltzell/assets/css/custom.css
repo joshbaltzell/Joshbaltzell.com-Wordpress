@@ -1,7 +1,17 @@
 /* ============================================
    Josh Baltzell Theme - Custom Styles
-   Watercolor-inspired design with subtle animations
+   Watercolor-inspired minimalist design
    ============================================ */
+
+/* --- CSS Custom Properties --- */
+
+:root {
+	--jb-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+	--jb-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+	--jb-transition-fast: 0.2s;
+	--jb-transition-base: 0.4s;
+	--jb-transition-slow: 0.8s;
+}
 
 /* --- Animations: Keyframes --- */
 
@@ -17,44 +27,29 @@
 }
 
 @keyframes fadeIn {
-	from {
-		opacity: 0;
-	}
-	to {
-		opacity: 1;
-	}
+	from { opacity: 0; }
+	to { opacity: 1; }
 }
 
 @keyframes paintStroke {
-	from {
-		width: 0;
-	}
-	to {
-		width: 80px;
-	}
+	from { width: 0; }
+	to { width: 80px; }
 }
 
 @keyframes subtlePulse {
-	0%, 100% {
-		opacity: 0.6;
-	}
-	50% {
-		opacity: 1;
-	}
+	0%, 100% { opacity: 0.6; }
+	50% { opacity: 1; }
 }
 
-@keyframes watercolorBleed {
-	0% {
-		filter: blur(0px);
-		opacity: 0.8;
+@keyframes watercolorDrift {
+	0%, 100% {
+		transform: translate(0, 0) scale(1);
 	}
-	50% {
-		filter: blur(2px);
-		opacity: 0.6;
+	33% {
+		transform: translate(10px, -5px) scale(1.02);
 	}
-	100% {
-		filter: blur(0px);
-		opacity: 0.8;
+	66% {
+		transform: translate(-5px, 8px) scale(0.98);
 	}
 }
 
@@ -66,31 +61,20 @@
 }
 
 .jb-slide-up.jb-visible {
-	animation: slideUp 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+	animation: slideUp var(--jb-transition-slow) var(--jb-ease-out) forwards;
 }
 
-.jb-slide-up.jb-delay-1.jb-visible {
-	animation-delay: 0.15s;
-}
-
-.jb-slide-up.jb-delay-2.jb-visible {
-	animation-delay: 0.3s;
-}
-
-.jb-slide-up.jb-delay-3.jb-visible {
-	animation-delay: 0.45s;
-}
-
-.jb-slide-up.jb-delay-4.jb-visible {
-	animation-delay: 0.6s;
-}
+.jb-slide-up.jb-delay-1.jb-visible { animation-delay: 0.15s; }
+.jb-slide-up.jb-delay-2.jb-visible { animation-delay: 0.3s; }
+.jb-slide-up.jb-delay-3.jb-visible { animation-delay: 0.45s; }
+.jb-slide-up.jb-delay-4.jb-visible { animation-delay: 0.6s; }
 
 .jb-fade-in {
 	opacity: 0;
 }
 
 .jb-fade-in.jb-visible {
-	animation: fadeIn 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+	animation: fadeIn 1s var(--jb-ease-out) forwards;
 }
 
 .jb-stagger-in {
@@ -99,7 +83,7 @@
 }
 
 .jb-stagger-in.jb-visible {
-	animation: slideUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+	animation: slideUp 0.7s var(--jb-ease-out) forwards;
 }
 
 /* --- Skip Link --- */
@@ -130,17 +114,19 @@
 .jb-watercolor-bg::before {
 	content: "";
 	position: absolute;
-	top: -20%;
-	left: -10%;
-	width: 120%;
-	height: 140%;
+	top: -30%;
+	left: -15%;
+	width: 130%;
+	height: 160%;
 	background:
-		radial-gradient(ellipse at 20% 50%, rgba(44, 62, 107, 0.06) 0%, transparent 60%),
-		radial-gradient(ellipse at 80% 20%, rgba(196, 120, 91, 0.05) 0%, transparent 50%),
-		radial-gradient(ellipse at 50% 80%, rgba(122, 158, 126, 0.05) 0%, transparent 55%),
-		radial-gradient(ellipse at 70% 60%, rgba(139, 107, 163, 0.04) 0%, transparent 45%);
+		radial-gradient(ellipse at 15% 50%, rgba(44, 62, 107, 0.07) 0%, transparent 55%),
+		radial-gradient(ellipse at 85% 20%, rgba(196, 120, 91, 0.06) 0%, transparent 50%),
+		radial-gradient(ellipse at 50% 85%, rgba(122, 158, 126, 0.06) 0%, transparent 50%),
+		radial-gradient(ellipse at 75% 55%, rgba(139, 107, 163, 0.04) 0%, transparent 40%),
+		radial-gradient(ellipse at 30% 20%, rgba(196, 120, 91, 0.03) 0%, transparent 45%);
 	pointer-events: none;
 	z-index: 0;
+	animation: watercolorDrift 20s ease-in-out infinite;
 }
 
 .jb-watercolor-bg > * {
@@ -195,14 +181,15 @@
 
 .jb-watercolor-frame {
 	position: relative;
+	overflow: hidden;
 }
 
 .jb-watercolor-frame img {
-	transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1), filter 0.5s ease;
+	transition: transform 0.6s var(--jb-ease-out), filter 0.6s ease;
 }
 
 .jb-watercolor-frame:hover img {
-	transform: scale(1.02);
+	transform: scale(1.03);
 }
 
 .jb-watercolor-frame::after {
@@ -212,29 +199,43 @@
 	pointer-events: none;
 	border-radius: inherit;
 	box-shadow:
-		inset 0 0 30px rgba(242, 237, 228, 0.5),
-		inset 0 0 60px rgba(250, 248, 245, 0.3);
+		inset 0 0 40px rgba(242, 237, 228, 0.6),
+		inset 0 0 80px rgba(250, 248, 245, 0.35);
+	transition: box-shadow 0.6s ease;
+}
+
+.jb-watercolor-frame:hover::after {
+	box-shadow:
+		inset 0 0 20px rgba(242, 237, 228, 0.3),
+		inset 0 0 40px rgba(250, 248, 245, 0.15);
 }
 
 /* --- Interview Card Hover --- */
 
 .jb-interview-card {
-	transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
-	            box-shadow 0.4s ease;
+	transition: transform var(--jb-transition-base) var(--jb-ease-out),
+	            box-shadow var(--jb-transition-base) ease;
 	box-shadow: 0 2px 12px rgba(45, 45, 45, 0.04);
+	overflow: hidden;
 }
 
 .jb-interview-card:hover {
-	transform: translateY(-4px);
-	box-shadow: 0 8px 32px rgba(44, 62, 107, 0.1);
+	transform: translateY(-6px);
+	box-shadow:
+		0 12px 40px rgba(44, 62, 107, 0.1),
+		0 4px 12px rgba(196, 120, 91, 0.06);
 }
 
 /* --- Interview Content Styling --- */
 
+.jb-interview-content .interview-exchange {
+	position: relative;
+}
+
 .jb-interview-content .interview-question {
 	position: relative;
-	/* Override inline block border with gradient via pseudo-element */
 	border-left-color: transparent !important;
+	transition: background-color 0.3s ease;
 }
 
 .jb-interview-content .interview-question::before {
@@ -258,21 +259,89 @@
 	color: var(--wp--preset--color--primary);
 }
 
+/* Speaker label pills */
+.jb-interview-content .interviewer strong {
+	display: inline-block;
+	background: linear-gradient(135deg, var(--wp--preset--color--secondary), var(--wp--preset--color--accent));
+	color: var(--wp--preset--color--background);
+	font-size: 0.7em;
+	padding: 0.15em 0.6em;
+	border-radius: 3px;
+	letter-spacing: 0.05em;
+	text-transform: uppercase;
+	font-style: normal;
+	font-weight: 700;
+	vertical-align: middle;
+	margin-right: 0.4em;
+}
+
 .jb-interview-content .interviewee {
 	font-size: var(--wp--preset--font-size--medium);
 	line-height: 1.8;
 }
 
+.jb-interview-content .interviewee strong {
+	display: inline-block;
+	background: var(--wp--preset--color--primary);
+	color: var(--wp--preset--color--background);
+	font-size: 0.7em;
+	padding: 0.15em 0.6em;
+	border-radius: 3px;
+	letter-spacing: 0.05em;
+	text-transform: uppercase;
+	font-style: normal;
+	font-weight: 700;
+	vertical-align: middle;
+	margin-right: 0.4em;
+}
+
 /* --- Interview Exchange Separator --- */
+
+.interview-exchange + .interview-exchange {
+	padding-top: var(--wp--preset--spacing--40);
+	position: relative;
+}
 
 .interview-exchange + .interview-exchange::before {
 	content: "";
 	display: block;
-	width: 40px;
-	height: 2px;
+	position: absolute;
+	top: 0;
+	left: 50%;
+	transform: translateX(-50%);
+	width: 3px;
+	height: 3px;
 	background: var(--wp--preset--color--border);
-	margin: 0 auto var(--wp--preset--spacing--40);
-	border-radius: 1px;
+	border-radius: 50%;
+	box-shadow:
+		-12px 0 0 var(--wp--preset--color--border),
+		12px 0 0 var(--wp--preset--color--border);
+}
+
+/* --- Interview Intro Box --- */
+
+.jb-interview-intro {
+	border-left: 3px solid var(--wp--preset--color--accent);
+}
+
+/* --- Interview Meta Styling --- */
+
+.interview-meta {
+	gap: 0.5rem !important;
+}
+
+.interview-format-label {
+	position: relative;
+	padding-left: 1.2em;
+}
+
+.interview-format-label::before {
+	content: "\25C6";
+	position: absolute;
+	left: 0;
+	font-size: 0.5em;
+	line-height: 2.6;
+	color: var(--wp--preset--color--accent);
 }
 
 /* --- Resume Timeline --- */
@@ -298,11 +367,15 @@
 /* --- Header Scroll Effect --- */
 
 header.wp-block-group {
-	transition: background-color 0.3s ease, box-shadow 0.3s ease;
+	transition: background-color 0.4s ease,
+	            box-shadow 0.4s ease,
+	            backdrop-filter 0.4s ease;
 }
 
 header.wp-block-group.jb-scrolled {
-	box-shadow: 0 2px 16px rgba(45, 45, 45, 0.06);
+	box-shadow: 0 2px 20px rgba(45, 45, 45, 0.06);
+	backdrop-filter: blur(8px);
+	background-color: rgba(250, 248, 245, 0.92) !important;
 }
 
 /* --- Button Hover Animations --- */
@@ -310,17 +383,44 @@ header.wp-block-group.jb-scrolled {
 .wp-block-button__link {
 	transition: background-color 0.3s ease,
 	            color 0.3s ease,
-	            transform 0.2s ease,
+	            transform var(--jb-transition-fast) ease,
 	            box-shadow 0.3s ease;
 }
 
 .wp-block-button__link:hover {
-	transform: translateY(-1px);
-	box-shadow: 0 4px 12px rgba(44, 62, 107, 0.15);
+	transform: translateY(-2px);
+	box-shadow: 0 6px 20px rgba(44, 62, 107, 0.18);
 }
 
 .wp-block-button__link:active {
 	transform: translateY(0);
+	box-shadow: 0 2px 8px rgba(44, 62, 107, 0.12);
+}
+
+/* Outline button watercolor fill on hover */
+.is-style-outline .wp-block-button__link {
+	position: relative;
+	overflow: hidden;
+	z-index: 0;
+}
+
+.is-style-outline .wp-block-button__link::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(135deg, var(--wp--preset--color--primary), var(--wp--preset--color--secondary));
+	opacity: 0;
+	transition: opacity 0.3s ease;
+	z-index: -1;
+}
+
+.is-style-outline .wp-block-button__link:hover::before {
+	opacity: 1;
+}
+
+.is-style-outline .wp-block-button__link:hover {
+	color: var(--wp--preset--color--background) !important;
+	border-color: transparent !important;
 }
 
 /* --- Link Hover Effect --- */
@@ -331,7 +431,7 @@ header.wp-block-group.jb-scrolled {
 	background-size: 0% 2px;
 	background-position: 0 100%;
 	background-repeat: no-repeat;
-	transition: background-size 0.4s cubic-bezier(0.22, 1, 0.36, 1), color 0.3s ease;
+	transition: background-size var(--jb-transition-base) var(--jb-ease-out), color 0.3s ease;
 }
 
 .wp-block-post-title a:hover {
@@ -352,8 +452,8 @@ header.wp-block-group.jb-scrolled {
 	left: 50%;
 	width: 0;
 	height: 2px;
-	background: var(--wp--preset--color--secondary);
-	transition: width 0.3s ease, left 0.3s ease;
+	background: linear-gradient(90deg, var(--wp--preset--color--secondary), var(--wp--preset--color--accent));
+	transition: width 0.3s var(--jb-ease-out), left 0.3s var(--jb-ease-out);
 	border-radius: 1px;
 }
 
@@ -381,7 +481,7 @@ html {
 	color: var(--wp--preset--color--foreground);
 }
 
-/* --- Hero Section Floating Elements --- */
+/* --- Hero Section --- */
 
 .jb-hero {
 	position: relative;
@@ -402,12 +502,53 @@ html {
 	);
 }
 
+/* --- Surface Cards (subtle border) --- */
+
+.has-surface-background-color {
+	border: 1px solid rgba(212, 203, 192, 0.4);
+}
+
+/* --- Blockquote Enhancement --- */
+
+.wp-block-quote {
+	position: relative;
+}
+
+.wp-block-quote::before {
+	content: "\201C";
+	position: absolute;
+	top: -0.3em;
+	left: -0.15em;
+	font-size: 4em;
+	font-family: var(--wp--preset--font-family--heading);
+	color: var(--wp--preset--color--secondary);
+	opacity: 0.15;
+	line-height: 1;
+	pointer-events: none;
+}
+
+/* --- Post Terms (topic links) --- */
+
+.wp-block-post-terms a {
+	text-decoration: none;
+	transition: color 0.2s ease;
+}
+
+.wp-block-post-terms a:hover {
+	color: var(--wp--preset--color--primary) !important;
+}
+
+/* --- Image transitions --- */
+
+.wp-block-post-featured-image img {
+	transition: transform 0.6s var(--jb-ease-out);
+}
+
 /* --- Responsive Adjustments --- */
 
 @media (max-width: 781px) {
 	.jb-slide-up,
 	.jb-stagger-in {
-		/* Reduce animation distance on mobile */
 		transform: translateY(15px);
 	}
 
@@ -417,6 +558,11 @@ html {
 
 	.jb-interview-card:hover {
 		transform: none;
+		box-shadow: 0 2px 12px rgba(45, 45, 45, 0.04);
+	}
+
+	.jb-watercolor-bg::before {
+		animation: none;
 	}
 }
 
@@ -431,10 +577,16 @@ html {
 		animation: none !important;
 	}
 
+	.jb-watercolor-bg::before {
+		animation: none !important;
+	}
+
 	.jb-watercolor-frame img,
 	.jb-interview-card,
 	.wp-block-button__link,
-	.wp-block-post-title a {
+	.wp-block-post-title a,
+	.wp-block-post-featured-image img,
+	header.wp-block-group {
 		transition: none !important;
 	}
 
@@ -465,5 +617,12 @@ button:focus-visible,
 	body {
 		background: white;
 		color: black;
+	}
+
+	.jb-interview-content .interviewer strong,
+	.jb-interview-content .interviewee strong {
+		background: none;
+		color: inherit;
+		padding: 0;
 	}
 }

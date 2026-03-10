@@ -1,39 +1,38 @@
 /**
  * Josh Baltzell Theme - Custom JavaScript
- * Handles scroll-triggered animations and subtle interactive effects.
+ * Handles scroll-triggered animations, reading progress, and interactive effects.
  */
 
 (function () {
 	'use strict';
 
+	var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 	/**
 	 * Scroll Reveal - Animate elements when they enter the viewport.
-	 * Uses IntersectionObserver for performance.
 	 */
 	function initScrollReveal() {
-		const animatedElements = document.querySelectorAll(
+		var animatedElements = document.querySelectorAll(
 			'.jb-slide-up, .jb-fade-in, .jb-stagger-in'
 		);
 
 		if (!animatedElements.length) return;
 
-		// Respect reduced motion preferences
-		if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+		if (reducedMotion) {
 			animatedElements.forEach(function (el) {
 				el.classList.add('jb-visible');
 			});
 			return;
 		}
 
-		const observer = new IntersectionObserver(
+		var observer = new IntersectionObserver(
 			function (entries) {
 				entries.forEach(function (entry) {
 					if (entry.isIntersecting) {
-						// For stagger-in elements, add sequential delays
 						if (entry.target.classList.contains('jb-stagger-in')) {
-							const parent = entry.target.parentElement;
+							var parent = entry.target.parentElement;
 							if (parent) {
-								const siblings = parent.querySelectorAll('.jb-stagger-in');
+								var siblings = parent.querySelectorAll('.jb-stagger-in');
 								siblings.forEach(function (sibling, index) {
 									sibling.style.animationDelay = (index * 0.1) + 's';
 								});
@@ -57,10 +56,88 @@
 	}
 
 	/**
-	 * Header scroll effect - Adds shadow when scrolled past threshold.
+	 * Interview Q&A progressive reveal.
+	 * Each interview exchange fades in as the reader scrolls to it.
+	 */
+	function initInterviewReveal() {
+		var exchanges = document.querySelectorAll('.jb-interview-content .interview-exchange');
+		if (!exchanges.length || reducedMotion) return;
+
+		exchanges.forEach(function (exchange) {
+			exchange.style.opacity = '0';
+			exchange.style.transform = 'translateY(16px)';
+			exchange.style.transition = 'opacity 0.6s cubic-bezier(0.22, 1, 0.36, 1), transform 0.6s cubic-bezier(0.22, 1, 0.36, 1)';
+		});
+
+		var observer = new IntersectionObserver(
+			function (entries) {
+				entries.forEach(function (entry) {
+					if (entry.isIntersecting) {
+						entry.target.style.opacity = '1';
+						entry.target.style.transform = 'translateY(0)';
+						observer.unobserve(entry.target);
+					}
+				});
+			},
+			{
+				threshold: 0.05,
+				rootMargin: '0px 0px -60px 0px',
+			}
+		);
+
+		exchanges.forEach(function (el) {
+			observer.observe(el);
+		});
+	}
+
+	/**
+	 * Reading progress bar for interview posts.
+	 */
+	function initReadingProgress() {
+		var content = document.querySelector('.jb-interview-content');
+		if (!content) return;
+
+		var bar = document.createElement('div');
+		bar.setAttribute('aria-hidden', 'true');
+		bar.style.cssText =
+			'position:fixed;top:0;left:0;height:3px;width:0;' +
+			'background:linear-gradient(90deg, var(--wp--preset--color--secondary), var(--wp--preset--color--accent));' +
+			'z-index:9999;transition:width 0.15s linear;pointer-events:none;';
+		document.body.appendChild(bar);
+
+		var ticking = false;
+
+		function updateProgress() {
+			var rect = content.getBoundingClientRect();
+			var contentTop = rect.top + window.scrollY;
+			var contentHeight = rect.height;
+			var scrolled = window.scrollY - contentTop;
+			var viewHeight = window.innerHeight;
+			var progress = Math.min(1, Math.max(0, scrolled / (contentHeight - viewHeight)));
+
+			bar.style.width = (progress * 100) + '%';
+
+			if (progress >= 1) {
+				bar.style.opacity = '0.5';
+			} else {
+				bar.style.opacity = '1';
+			}
+			ticking = false;
+		}
+
+		window.addEventListener('scroll', function () {
+			if (!ticking) {
+				window.requestAnimationFrame(updateProgress);
+				ticking = true;
+			}
+		}, { passive: true });
+	}
+
+	/**
+	 * Header scroll effect - Adds shadow and blur when scrolled.
 	 */
 	function initHeaderScroll() {
-		const header = document.querySelector('header.wp-block-group');
+		var header = document.querySelector('header.wp-block-group');
 		if (!header) return;
 
 		var ticking = false;
@@ -84,16 +161,10 @@
 
 	/**
 	 * Subtle parallax effect for hero sections.
-	 * Moves the watercolor background at a slower rate than scroll.
 	 */
 	function initParallax() {
 		var heroes = document.querySelectorAll('.jb-hero');
-		if (!heroes.length) return;
-
-		if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-
-		// Skip on mobile for performance
-		if (window.innerWidth < 768) return;
+		if (!heroes.length || reducedMotion || window.innerWidth < 768) return;
 
 		var ticking = false;
 
@@ -101,12 +172,8 @@
 			var scrollY = window.scrollY;
 			heroes.forEach(function (hero) {
 				var rect = hero.getBoundingClientRect();
-				var visible = rect.bottom > 0 && rect.top < window.innerHeight;
-				if (visible) {
-					var offset = scrollY * 0.15;
-					if (hero.style) {
-						hero.style.setProperty('--jb-parallax-y', offset + 'px');
-					}
+				if (rect.bottom > 0 && rect.top < window.innerHeight) {
+					hero.style.setProperty('--jb-parallax-y', (scrollY * 0.15) + 'px');
 				}
 			});
 			ticking = false;
@@ -132,9 +199,8 @@
 				var target = document.querySelector(targetId);
 				if (target) {
 					e.preventDefault();
-					var headerHeight = document.querySelector('header.wp-block-group')
-						? document.querySelector('header.wp-block-group').offsetHeight
-						: 0;
+					var headerEl = document.querySelector('header.wp-block-group');
+					var headerHeight = headerEl ? headerEl.offsetHeight : 0;
 					var targetPosition = target.getBoundingClientRect().top + window.scrollY - headerHeight - 20;
 					window.scrollTo({
 						top: targetPosition,
@@ -147,20 +213,18 @@
 
 	/**
 	 * Typewriter-style cursor blink on the hero tagline.
-	 * A subtle touch of interactivity.
 	 */
 	function initCursorBlink() {
 		var tagline = document.querySelector('.jb-hero .has-heading-font-family[style*="italic"]');
-		if (!tagline || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+		if (!tagline || reducedMotion) return;
 
-		// Add a blinking cursor that fades after a moment
 		var cursor = document.createElement('span');
+		cursor.setAttribute('aria-hidden', 'true');
 		cursor.style.cssText =
 			'display:inline-block;width:2px;height:1em;background:var(--wp--preset--color--secondary);' +
 			'margin-left:4px;vertical-align:text-bottom;animation:subtlePulse 1s ease-in-out 3;';
 		tagline.appendChild(cursor);
 
-		// Remove cursor after animation completes
 		setTimeout(function () {
 			cursor.style.transition = 'opacity 0.5s ease';
 			cursor.style.opacity = '0';
@@ -173,17 +237,19 @@
 	/**
 	 * Initialize all effects when DOM is ready.
 	 */
-	if (document.readyState === 'loading') {
-		document.addEventListener('DOMContentLoaded', init);
-	} else {
-		init();
-	}
-
 	function init() {
 		initScrollReveal();
+		initInterviewReveal();
+		initReadingProgress();
 		initHeaderScroll();
 		initParallax();
 		initSmoothAnchors();
 		initCursorBlink();
+	}
+
+	if (document.readyState === 'loading') {
+		document.addEventListener('DOMContentLoaded', init);
+	} else {
+		init();
 	}
 })();
