@@ -102,6 +102,24 @@
 	animation: slideUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
+/* --- Skip Link --- */
+
+.skip-link {
+	position: absolute;
+	top: -100%;
+	left: 0;
+	z-index: 999;
+	padding: 0.5rem 1rem;
+	background: var(--wp--preset--color--primary);
+	color: var(--wp--preset--color--background);
+	font-size: var(--wp--preset--font-size--small);
+	text-decoration: none;
+}
+
+.skip-link:focus {
+	top: 0;
+}
+
 /* --- Watercolor Background Effect --- */
 
 .jb-watercolor-bg {
