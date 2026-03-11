@@ -41,6 +41,15 @@ class JBAI_REST_API {
 			),
 		) );
 
+		register_rest_route( self::NAMESPACE, '/complete', array(
+			'methods'             => 'POST',
+			'callback'            => array( $this, 'handle_complete' ),
+			'permission_callback' => array( $this, 'check_permission' ),
+			'args'                => array(
+				'post_id' => array( 'required' => true, 'type' => 'integer', 'sanitize_callback' => 'absint' ),
+			),
+		) );
+
 		register_rest_route( self::NAMESPACE, '/reset', array(
 			'methods'             => 'POST',
 			'callback'            => array( $this, 'handle_reset' ),
@@ -143,8 +152,11 @@ class JBAI_REST_API {
 		// Add AI response to conversation.
 		$conversation[] = array( 'role' => 'assistant', 'content' => $ai_message );
 
-		// Save conversation.
+		// Save conversation and completion status.
 		$this->save_conversation( $post_id, $conversation );
+		if ( $is_complete ) {
+			update_post_meta( $post_id, '_jbai_interview_complete', '1' );
+		}
 
 		// The round for display: after a start it's round 1 question, after user answers it's the next question.
 		$display_round = $round + 1;
@@ -204,6 +216,15 @@ class JBAI_REST_API {
 	}
 
 	/**
+	 * Handle complete endpoint — mark interview as done.
+	 */
+	public function handle_complete( $request ) {
+		$post_id = $request->get_param( 'post_id' );
+		update_post_meta( $post_id, '_jbai_interview_complete', '1' );
+		return rest_ensure_response( array( 'success' => true ) );
+	}
+
+	/**
 	 * Handle reset endpoint — clear conversation.
 	 */
 	public function handle_reset( $request ) {
@@ -212,6 +233,7 @@ class JBAI_REST_API {
 		delete_post_meta( $post_id, '_jbai_interview_subject' );
 		delete_post_meta( $post_id, '_jbai_interview_angle' );
 		delete_post_meta( $post_id, '_jbai_interview_audience' );
+		delete_post_meta( $post_id, '_jbai_interview_complete' );
 
 		return rest_ensure_response( array( 'success' => true ) );
 	}

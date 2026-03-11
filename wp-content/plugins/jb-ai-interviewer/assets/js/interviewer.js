@@ -102,8 +102,7 @@
 		}
 
 		// Determine phase.
-		var lastMsg = conv[conv.length - 1];
-		if (lastMsg && lastMsg.role === 'assistant' && state.round >= 8) {
+		if (config.isComplete) {
 			state.phase = 'complete';
 		} else if (state.messages.length > 0) {
 			state.phase = 'active';
@@ -168,6 +167,13 @@
 		addMessage('user', text);
 		els.input.value = '';
 		autoResizeInput();
+		sendMessage(text);
+	}
+
+	/**
+	 * Send a message to the API (also used for retry without re-adding to UI).
+	 */
+	function sendMessage(text) {
 		showTyping();
 		setLoading(true);
 
@@ -189,9 +195,8 @@
 			hideTyping();
 			setLoading(false);
 			showError(err, function () {
-				// Re-send the same message.
-				els.input.value = text;
-				handleSend();
+				// Retry sends the same message without re-adding to the UI.
+				sendMessage(text);
 			});
 		});
 	}
@@ -200,8 +205,16 @@
 	 * End the interview early.
 	 */
 	function handleEnd() {
+		if (!confirm('End this interview early? You can still format and insert what you have.')) {
+			return;
+		}
 		state.phase = 'complete';
 		updateControls();
+
+		// Persist completion status server-side.
+		apiCall('complete', {
+			post_id: config.postId,
+		}, function () {}, function () {});
 	}
 
 	/**
@@ -393,17 +406,26 @@
 	 */
 	function insertIntoEditor(content) {
 		// Try Gutenberg (block editor) first.
-		if (window.wp && window.wp.data && window.wp.data.dispatch('core/block-editor')) {
-			var blocks = window.wp.blocks.parse(content);
-			var editor = window.wp.data.dispatch('core/block-editor');
-			editor.resetBlocks(blocks);
-			return;
+		if (window.wp && window.wp.blocks && window.wp.data) {
+			try {
+				var blocks = window.wp.blocks.parse(content);
+				if (blocks && blocks.length) {
+					window.wp.data.dispatch('core/block-editor').resetBlocks(blocks);
+					return;
+				}
+			} catch (e) {
+				// Fall through to next method.
+			}
 		}
 
-		// Fallback: classic editor / code editor.
-		if (window.wp && window.wp.data && window.wp.data.dispatch('core/editor')) {
-			window.wp.data.dispatch('core/editor').editPost({ content: content });
-			return;
+		// Fallback: edit post content directly.
+		if (window.wp && window.wp.data) {
+			try {
+				window.wp.data.dispatch('core/editor').editPost({ content: content });
+				return;
+			} catch (e) {
+				// Fall through to clipboard.
+			}
 		}
 
 		// Last resort: copy to clipboard.

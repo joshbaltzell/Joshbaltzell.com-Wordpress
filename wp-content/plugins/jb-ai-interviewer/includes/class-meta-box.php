@@ -51,16 +51,21 @@ class JBAI_Meta_Box {
 		wp_enqueue_script(
 			'jbai-interviewer',
 			JBAI_PLUGIN_URL . 'assets/js/interviewer.js',
-			array( 'wp-api-fetch' ),
+			array( 'wp-blocks', 'wp-data' ),
 			JBAI_VERSION,
 			true
 		);
 
 		global $post;
+		if ( ! $post || ! $post->ID ) {
+			return;
+		}
+
 		$conversation = get_post_meta( $post->ID, '_jbai_conversation', true );
 		$subject      = get_post_meta( $post->ID, '_jbai_interview_subject', true );
 		$angle        = get_post_meta( $post->ID, '_jbai_interview_angle', true );
 		$audience     = get_post_meta( $post->ID, '_jbai_interview_audience', true );
+		$is_complete  = get_post_meta( $post->ID, '_jbai_interview_complete', true );
 
 		wp_localize_script( 'jbai-interviewer', 'jbaiConfig', array(
 			'restUrl'      => rest_url( 'jb-interviewer/v1/' ),
@@ -70,6 +75,7 @@ class JBAI_Meta_Box {
 			'subject'      => $subject ? $subject : '',
 			'angle'        => $angle ? $angle : '',
 			'audience'     => $audience ? $audience : '',
+			'isComplete'   => ! empty( $is_complete ),
 			'hasApiKey'    => ! empty( get_option( 'jbai_api_key', '' ) ),
 		) );
 	}

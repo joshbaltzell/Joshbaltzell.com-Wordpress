@@ -43,7 +43,7 @@ class JBAI_Settings {
 		) );
 		register_setting( 'jbai_settings', 'jbai_system_prompt', array(
 			'type'              => 'string',
-			'sanitize_callback' => 'wp_kses_post',
+			'sanitize_callback' => 'sanitize_textarea_field',
 		) );
 
 		add_settings_section( 'jbai_main', '', '__return_false', 'jb-ai-interviewer' );
