@@ -186,6 +186,24 @@
 						"min": "2.25rem",
 						"max": "3.5rem"
 					}
+				},
+				{
+					"slug": "display",
+					"size": "6rem",
+					"name": "Display",
+					"fluid": {
+						"min": "3.5rem",
+						"max": "6rem"
+					}
+				},
+				{
+					"slug": "display-large",
+					"size": "8rem",
+					"name": "Display Large",
+					"fluid": {
+						"min": "4.5rem",
+						"max": "8rem"
+					}
 				}
 			]
 		},
@@ -200,13 +218,15 @@
 				{ "slug": "40", "size": "2.5rem", "name": "4" },
 				{ "slug": "50", "size": "4rem", "name": "5" },
 				{ "slug": "60", "size": "6rem", "name": "6" },
-				{ "slug": "70", "size": "8rem", "name": "7" }
+				{ "slug": "70", "size": "8rem", "name": "7" },
+				{ "slug": "80", "size": "12rem", "name": "8" },
+				{ "slug": "90", "size": "16rem", "name": "9" }
 			],
 			"units": ["%", "px", "em", "rem", "vh", "vw"]
 		},
 		"layout": {
 			"contentSize": "720px",
-			"wideSize": "1200px"
+			"wideSize": "1400px"
 		},
 		"shadow": {
 			"presets": [
@@ -224,6 +244,11 @@
 					"slug": "elevated",
 					"shadow": "0 8px 32px rgba(45, 45, 45, 0.1)",
 					"name": "Elevated"
+				},
+				{
+					"slug": "dramatic",
+					"shadow": "0 20px 60px rgba(44, 62, 107, 0.15), 0 8px 20px rgba(196, 120, 91, 0.08)",
+					"name": "Dramatic"
 				}
 			]
 		},

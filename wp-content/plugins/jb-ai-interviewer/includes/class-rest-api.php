@@ -58,6 +58,26 @@ class JBAI_REST_API {
 				'post_id' => array( 'required' => true, 'type' => 'integer', 'sanitize_callback' => 'absint' ),
 			),
 		) );
+
+		register_rest_route( self::NAMESPACE, '/generate-artwork', array(
+			'methods'             => 'POST',
+			'callback'            => array( $this, 'handle_generate_artwork' ),
+			'permission_callback' => array( $this, 'check_permission' ),
+			'args'                => array(
+				'post_id'       => array( 'required' => true, 'type' => 'integer', 'sanitize_callback' => 'absint' ),
+				'custom_prompt' => array( 'type' => 'string', 'default' => '', 'sanitize_callback' => 'sanitize_textarea_field' ),
+			),
+		) );
+
+		register_rest_route( self::NAMESPACE, '/set-artwork', array(
+			'methods'             => 'POST',
+			'callback'            => array( $this, 'handle_set_artwork' ),
+			'permission_callback' => array( $this, 'check_permission' ),
+			'args'                => array(
+				'post_id'       => array( 'required' => true, 'type' => 'integer', 'sanitize_callback' => 'absint' ),
+				'attachment_id' => array( 'required' => true, 'type' => 'integer', 'sanitize_callback' => 'absint' ),
+			),
+		) );
 	}
 
 	/**
@@ -236,6 +256,156 @@ class JBAI_REST_API {
 		delete_post_meta( $post_id, '_jbai_interview_complete' );
 
 		return rest_ensure_response( array( 'success' => true ) );
+	}
+
+	/**
+	 * Handle generate-artwork endpoint — generate watercolor images via Gemini Imagen.
+	 */
+	public function handle_generate_artwork( $request ) {
+		$post_id       = $request->get_param( 'post_id' );
+		$custom_prompt = $request->get_param( 'custom_prompt' );
+
+		$api_key = get_option( 'jbai_gemini_api_key', '' );
+		if ( empty( $api_key ) ) {
+			return new WP_Error( 'no_gemini_key', 'Gemini API key not configured. Go to Settings > JB AI Interviewer.', array( 'status' => 400 ) );
+		}
+
+		// Build prompt from interview subject or use custom prompt.
+		if ( ! empty( $custom_prompt ) ) {
+			$prompt = $custom_prompt;
+		} else {
+			$subject = get_post_meta( $post_id, '_jbai_interview_subject', true );
+			$title   = get_the_title( $post_id );
+			$topic   = $subject ? $subject : $title;
+
+			if ( empty( $topic ) ) {
+				return new WP_Error( 'no_subject', 'Interview needs a subject or title before generating artwork.', array( 'status' => 400 ) );
+			}
+
+			$prompt = sprintf(
+				'A visual metaphor for "%s", painted in loose expressive watercolor style, deep indigo and warm terracotta washes bleeding into warm paper-white background, visible brushstrokes and paint splatters, editorial illustration style, sophisticated and artistic, high contrast focal point with soft diffused edges, no text, no people, no letters, no words',
+				$topic
+			);
+		}
+
+		// Call Gemini Imagen API.
+		$response = wp_remote_post(
+			'https://generativelanguage.googleapis.com/v1beta/models/imagen-4.0-generate-001:predict',
+			array(
+				'headers' => array(
+					'Content-Type'   => 'application/json',
+					'x-goog-api-key' => $api_key,
+				),
+				'body'    => wp_json_encode( array(
+					'instances'  => array(
+						array( 'prompt' => $prompt ),
+					),
+					'parameters' => array(
+						'sampleCount' => 4,
+						'aspectRatio' => '16:9',
+					),
+				) ),
+				'timeout' => 120,
+			)
+		);
+
+		if ( is_wp_error( $response ) ) {
+			return new WP_Error( 'imagen_error', 'Imagen request failed: ' . $response->get_error_message(), array( 'status' => 502 ) );
+		}
+
+		$code = wp_remote_retrieve_response_code( $response );
+		$body = json_decode( wp_remote_retrieve_body( $response ), true );
+
+		if ( $code !== 200 ) {
+			$msg = isset( $body['error']['message'] ) ? $body['error']['message'] : 'HTTP ' . $code;
+			return new WP_Error( 'imagen_error', 'Imagen API error: ' . $msg, array( 'status' => $code ) );
+		}
+
+		if ( empty( $body['predictions'] ) ) {
+			return new WP_Error( 'imagen_error', 'No images returned from Imagen.', array( 'status' => 502 ) );
+		}
+
+		// Save images as WordPress media attachments.
+		require_once ABSPATH . 'wp-admin/includes/image.php';
+		require_once ABSPATH . 'wp-admin/includes/file.php';
+		require_once ABSPATH . 'wp-admin/includes/media.php';
+
+		$images = array();
+		$title  = get_the_title( $post_id );
+		$slug   = sanitize_title( $title );
+
+		foreach ( $body['predictions'] as $i => $prediction ) {
+			if ( empty( $prediction['bytesBase64Encoded'] ) ) {
+				continue;
+			}
+
+			$image_data = base64_decode( $prediction['bytesBase64Encoded'] );
+			if ( false === $image_data ) {
+				continue;
+			}
+
+			// Determine MIME type from data.
+			$finfo    = new finfo( FILEINFO_MIME_TYPE );
+			$mime     = $finfo->buffer( $image_data );
+			$ext      = 'png';
+			if ( 'image/jpeg' === $mime ) {
+				$ext = 'jpg';
+			} elseif ( 'image/webp' === $mime ) {
+				$ext = 'webp';
+			}
+
+			$filename = sprintf( '%s-artwork-%d.%s', $slug, $i + 1, $ext );
+			$upload   = wp_upload_bits( $filename, null, $image_data );
+
+			if ( ! empty( $upload['error'] ) ) {
+				continue;
+			}
+
+			$attachment_id = wp_insert_attachment( array(
+				'post_title'     => sprintf( '%s — Artwork %d', $title, $i + 1 ),
+				'post_mime_type' => $upload['type'],
+				'post_status'    => 'inherit',
+			), $upload['file'], $post_id );
+
+			if ( is_wp_error( $attachment_id ) ) {
+				continue;
+			}
+
+			$metadata = wp_generate_attachment_metadata( $attachment_id, $upload['file'] );
+			wp_update_attachment_metadata( $attachment_id, $metadata );
+
+			$images[] = array(
+				'id'  => $attachment_id,
+				'url' => wp_get_attachment_url( $attachment_id ),
+			);
+		}
+
+		if ( empty( $images ) ) {
+			return new WP_Error( 'imagen_error', 'Failed to save generated images.', array( 'status' => 500 ) );
+		}
+
+		return rest_ensure_response( array(
+			'images' => $images,
+			'prompt' => $prompt,
+		) );
+	}
+
+	/**
+	 * Handle set-artwork endpoint — set a generated image as the featured image.
+	 */
+	public function handle_set_artwork( $request ) {
+		$post_id       = $request->get_param( 'post_id' );
+		$attachment_id = $request->get_param( 'attachment_id' );
+
+		$result = set_post_thumbnail( $post_id, $attachment_id );
+		if ( false === $result ) {
+			return new WP_Error( 'set_failed', 'Failed to set featured image.', array( 'status' => 500 ) );
+		}
+
+		return rest_ensure_response( array(
+			'success' => true,
+			'url'     => wp_get_attachment_url( $attachment_id ),
+		) );
 	}
 
 	/**

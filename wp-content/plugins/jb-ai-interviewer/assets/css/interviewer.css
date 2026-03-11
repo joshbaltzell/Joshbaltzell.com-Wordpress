@@ -440,6 +440,74 @@
 	background: var(--jbai-muted);
 }
 
+/* --- Artwork Generation Panel --- */
+
+.jbai-artwork-panel {
+	margin-top: 16px;
+	padding-top: 16px;
+	border-top: 1px solid var(--jbai-border);
+}
+
+.jbai-artwork-header h3 {
+	margin: 0 0 4px;
+	font-size: 14px;
+	color: var(--jbai-primary);
+}
+
+.jbai-artwork-loading {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-top: 12px;
+	color: var(--jbai-muted);
+	font-size: 13px;
+}
+
+.jbai-artwork-loading .spinner {
+	float: none;
+	margin: 0;
+}
+
+.jbai-artwork-grid {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 12px;
+	margin-top: 16px;
+}
+
+.jbai-artwork-card {
+	border: 2px solid var(--jbai-border);
+	border-radius: var(--jbai-radius);
+	overflow: hidden;
+	transition: border-color 0.2s ease, box-shadow 0.2s ease;
+	background: var(--jbai-bg);
+}
+
+.jbai-artwork-card:hover {
+	border-color: var(--jbai-secondary);
+	box-shadow: 0 2px 12px rgba(44, 62, 107, 0.08);
+}
+
+.jbai-artwork-card.jbai-artwork-selected {
+	border-color: var(--jbai-accent);
+	box-shadow: 0 0 0 2px rgba(122, 158, 126, 0.3);
+}
+
+.jbai-artwork-card img {
+	width: 100%;
+	height: auto;
+	display: block;
+	aspect-ratio: 16 / 9;
+	object-fit: cover;
+}
+
+.jbai-artwork-card .button {
+	display: block;
+	width: calc(100% - 16px);
+	margin: 8px;
+	text-align: center;
+}
+
 /* --- Reduced Motion --- */
 
 @media (prefers-reduced-motion: reduce) {

@@ -45,12 +45,19 @@ class JBAI_Settings {
 			'type'              => 'string',
 			'sanitize_callback' => 'sanitize_textarea_field',
 		) );
+		register_setting( 'jbai_settings', 'jbai_gemini_api_key', array(
+			'type'              => 'string',
+			'sanitize_callback' => 'sanitize_text_field',
+		) );
 
 		add_settings_section( 'jbai_main', '', '__return_false', 'jb-ai-interviewer' );
 
 		add_settings_field( 'jbai_api_key', __( 'OpenAI API Key', 'jb-ai-interviewer' ), array( $this, 'render_api_key_field' ), 'jb-ai-interviewer', 'jbai_main' );
 		add_settings_field( 'jbai_model', __( 'Model', 'jb-ai-interviewer' ), array( $this, 'render_model_field' ), 'jb-ai-interviewer', 'jbai_main' );
 		add_settings_field( 'jbai_system_prompt', __( 'System Prompt', 'jb-ai-interviewer' ), array( $this, 'render_prompt_field' ), 'jb-ai-interviewer', 'jbai_main' );
+
+		add_settings_section( 'jbai_imagen', __( 'Image Generation (Gemini Imagen)', 'jb-ai-interviewer' ), '__return_false', 'jb-ai-interviewer' );
+		add_settings_field( 'jbai_gemini_api_key', __( 'Gemini API Key', 'jb-ai-interviewer' ), array( $this, 'render_gemini_key_field' ), 'jb-ai-interviewer', 'jbai_imagen' );
 	}
 
 	/**
@@ -108,6 +115,18 @@ class JBAI_Settings {
 		echo '<button type="button" id="jbai-reset-prompt" class="button button-link-delete" style="margin-top:4px;">';
 		esc_html_e( 'Reset to Default', 'jb-ai-interviewer' );
 		echo '</button>';
+	}
+
+	/**
+	 * Render Gemini API key field.
+	 */
+	public function render_gemini_key_field() {
+		$value = get_option( 'jbai_gemini_api_key', '' );
+		printf(
+			'<input type="password" id="jbai_gemini_api_key" name="jbai_gemini_api_key" value="%s" class="regular-text" autocomplete="off" />',
+			esc_attr( $value )
+		);
+		echo '<p class="description">' . esc_html__( 'Get your API key from Google AI Studio (ai.google.dev). Used for generating watercolor artwork via Imagen.', 'jb-ai-interviewer' ) . '</p>';
 	}
 
 	/**

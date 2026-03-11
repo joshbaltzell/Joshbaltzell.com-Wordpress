@@ -29,6 +29,7 @@ function joshbaltzell_setup() {
 	add_image_size( 'featured-medium', 1200, 675, true );
 	add_image_size( 'social-share', 1200, 630, true );
 	add_image_size( 'interview-thumb', 600, 338, true );
+	add_image_size( 'carousel-featured', 1600, 1000, true );
 }
 add_action( 'after_setup_theme', 'joshbaltzell_setup' );
 

@@ -7,11 +7,11 @@
  */
 ?>
 
-<!-- wp:group {"className":"jb-fade-in jb-watercolor-bg","style":{"spacing":{"padding":{"top":"var:preset|spacing|50","bottom":"var:preset|spacing|50","left":"var:preset|spacing|30","right":"var:preset|spacing|30"}}},"layout":{"type":"constrained","contentSize":"600px"}} -->
-<div class="wp-block-group jb-fade-in jb-watercolor-bg" style="padding-top:var(--wp--preset--spacing--50);padding-right:var(--wp--preset--spacing--30);padding-bottom:var(--wp--preset--spacing--50);padding-left:var(--wp--preset--spacing--30)">
+<!-- wp:group {"className":"jb-scale-in jb-watercolor-bg","style":{"spacing":{"padding":{"top":"var:preset|spacing|70","bottom":"var:preset|spacing|70","left":"var:preset|spacing|30","right":"var:preset|spacing|30"}}},"layout":{"type":"constrained","contentSize":"600px"}} -->
+<div class="wp-block-group jb-scale-in jb-watercolor-bg" style="padding-top:var(--wp--preset--spacing--70);padding-right:var(--wp--preset--spacing--30);padding-bottom:var(--wp--preset--spacing--70);padding-left:var(--wp--preset--spacing--30)">
 
-<!-- wp:heading {"textAlign":"center","style":{"typography":{"fontSize":"var:preset|font-size|x-large"},"spacing":{"margin":{"bottom":"var:preset|spacing|10"}}},"textColor":"primary"} -->
-<h2 class="wp-block-heading has-text-align-center has-primary-color has-text-color" style="font-size:var(--wp--preset--font-size--x-large);margin-bottom:var(--wp--preset--spacing--10)">Stay in the Loop</h2>
+<!-- wp:heading {"textAlign":"center","style":{"typography":{"fontSize":"var:preset|font-size|xx-large"},"spacing":{"margin":{"bottom":"var:preset|spacing|10"}}},"textColor":"primary"} -->
+<h2 class="wp-block-heading has-text-align-center has-primary-color has-text-color" style="font-size:var(--wp--preset--font-size--xx-large);margin-bottom:var(--wp--preset--spacing--10)">Stay in the Loop</h2>
 <!-- /wp:heading -->
 
 <!-- wp:paragraph {"align":"center","style":{"typography":{"fontSize":"var:preset|font-size|medium","fontStyle":"italic"}},"textColor":"muted","fontFamily":"heading"} -->

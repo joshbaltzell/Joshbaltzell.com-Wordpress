@@ -469,11 +469,108 @@
 		});
 	}
 
+	// --- Artwork Generation ---
+
+	function initArtwork() {
+		var generateBtn  = document.getElementById('jbai-generate-artwork');
+		var promptInput  = document.getElementById('jbai-artwork-prompt');
+		var loadingEl    = document.getElementById('jbai-artwork-loading');
+		var gridEl       = document.getElementById('jbai-artwork-grid');
+		var errorEl      = document.getElementById('jbai-artwork-error');
+		var errorMsgEl   = document.getElementById('jbai-artwork-error-msg');
+
+		if (!generateBtn) return;
+
+		generateBtn.addEventListener('click', function () {
+			var customPrompt = promptInput ? promptInput.value.trim() : '';
+
+			generateBtn.disabled = true;
+			loadingEl.style.display = '';
+			gridEl.style.display = 'none';
+			errorEl.style.display = 'none';
+
+			apiCall('generate-artwork', {
+				post_id: config.postId,
+				custom_prompt: customPrompt,
+			}, function (data) {
+				loadingEl.style.display = 'none';
+				generateBtn.disabled = false;
+
+				if (data.images && data.images.length) {
+					renderArtworkGrid(gridEl, data.images);
+					gridEl.style.display = '';
+				}
+			}, function (err) {
+				loadingEl.style.display = 'none';
+				generateBtn.disabled = false;
+				errorEl.style.display = '';
+				errorMsgEl.textContent = err;
+			});
+		});
+	}
+
+	function renderArtworkGrid(gridEl, images) {
+		gridEl.innerHTML = '';
+
+		images.forEach(function (img) {
+			var card = document.createElement('div');
+			card.className = 'jbai-artwork-card';
+
+			var imgEl = document.createElement('img');
+			imgEl.src = img.url;
+			imgEl.alt = 'Generated artwork variation';
+
+			var useBtn = document.createElement('button');
+			useBtn.className = 'button button-primary button-small';
+			useBtn.textContent = 'Use as Featured Image';
+			useBtn.addEventListener('click', function () {
+				useBtn.disabled = true;
+				useBtn.textContent = 'Setting...';
+
+				apiCall('set-artwork', {
+					post_id: config.postId,
+					attachment_id: img.id,
+				}, function () {
+					// Mark this card as selected.
+					var cards = gridEl.querySelectorAll('.jbai-artwork-card');
+					for (var i = 0; i < cards.length; i++) {
+						cards[i].classList.remove('jbai-artwork-selected');
+					}
+					card.classList.add('jbai-artwork-selected');
+					useBtn.textContent = 'Selected!';
+
+					// Update the featured image in the editor sidebar.
+					if (window.wp && window.wp.data) {
+						try {
+							window.wp.data.dispatch('core/editor').editPost({
+								featured_media: img.id,
+							});
+						} catch (e) {
+							// Ignore if editor not available.
+						}
+					}
+				}, function (err) {
+					useBtn.disabled = false;
+					useBtn.textContent = 'Use as Featured Image';
+					alert('Failed to set featured image: ' + err);
+				});
+			});
+
+			card.appendChild(imgEl);
+			card.appendChild(useBtn);
+			gridEl.appendChild(card);
+		});
+	}
+
 	// --- Boot ---
 
 	if (document.readyState === 'loading') {
-		document.addEventListener('DOMContentLoaded', init);
+		document.addEventListener('DOMContentLoaded', function () {
+			init();
+			initArtwork();
+		});
 	} else {
 		init();
+		initArtwork();
 	}
 })();

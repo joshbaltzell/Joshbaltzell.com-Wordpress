@@ -8,9 +8,13 @@
 :root {
 	--jb-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 	--jb-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+	--jb-ease-dramatic: cubic-bezier(0.16, 1, 0.3, 1);
 	--jb-transition-fast: 0.2s;
 	--jb-transition-base: 0.4s;
 	--jb-transition-slow: 0.8s;
+	--jb-transition-dramatic: 1.2s;
+	--jb-carousel-card-width: 65vw;
+	--jb-carousel-gap: 2rem;
 }
 
 /* --- Animations: Keyframes --- */
@@ -53,6 +57,46 @@
 	}
 }
 
+@keyframes textRevealUp {
+	from {
+		clip-path: inset(100% 0 0 0);
+		opacity: 0;
+		transform: translateY(40px);
+	}
+	to {
+		clip-path: inset(0);
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@keyframes scaleIn {
+	from {
+		transform: scale(0.95);
+		opacity: 0;
+	}
+	to {
+		transform: scale(1);
+		opacity: 1;
+	}
+}
+
+@keyframes lineGrow {
+	from { width: 0; }
+	to { width: 100%; }
+}
+
+@keyframes clipRevealLeft {
+	from { clip-path: inset(0 100% 0 0); }
+	to { clip-path: inset(0); }
+}
+
+@keyframes scrollHint {
+	0% { transform: translateX(0); }
+	30% { transform: translateX(-40px); }
+	100% { transform: translateX(0); }
+}
+
 /* --- Scroll-triggered Animation Classes --- */
 
 .jb-slide-up {
@@ -84,6 +128,73 @@
 
 .jb-stagger-in.jb-visible {
 	animation: slideUp 0.7s var(--jb-ease-out) forwards;
+}
+
+/* --- Dramatic Text Reveal --- */
+
+.jb-text-reveal {
+	clip-path: inset(100% 0 0 0);
+	opacity: 0;
+	transform: translateY(40px);
+}
+
+.jb-text-reveal.jb-visible {
+	animation: textRevealUp var(--jb-transition-dramatic) var(--jb-ease-dramatic) forwards;
+}
+
+.jb-text-reveal.jb-delay-1.jb-visible { animation-delay: 0.2s; }
+.jb-text-reveal.jb-delay-2.jb-visible { animation-delay: 0.4s; }
+.jb-text-reveal.jb-delay-3.jb-visible { animation-delay: 0.6s; }
+.jb-text-reveal.jb-delay-4.jb-visible { animation-delay: 0.8s; }
+
+/* --- Scale-In Animation --- */
+
+.jb-scale-in {
+	transform: scale(0.95);
+	opacity: 0;
+}
+
+.jb-scale-in.jb-visible {
+	animation: scaleIn 1s var(--jb-ease-dramatic) forwards;
+}
+
+/* --- Clip Reveal (Image Wipe) --- */
+
+.jb-clip-reveal {
+	clip-path: inset(0 100% 0 0);
+}
+
+.jb-clip-reveal.jb-visible {
+	animation: clipRevealLeft 1.2s var(--jb-ease-dramatic) forwards;
+}
+
+/* --- Word Split Stagger --- */
+
+.jb-text-reveal-word {
+	display: inline-block;
+	clip-path: inset(100% 0 0 0);
+	opacity: 0;
+	transform: translateY(20px);
+	animation: textRevealUp 0.8s var(--jb-ease-dramatic) forwards;
+	animation-delay: calc(var(--word-index, 0) * 0.08s);
+	animation-play-state: paused;
+}
+
+.jb-word-split.jb-visible .jb-text-reveal-word {
+	animation-play-state: running;
+}
+
+/* --- Line Grow Decoration --- */
+
+.jb-line-grow {
+	width: 0;
+	height: 2px;
+	background: linear-gradient(90deg, var(--wp--preset--color--secondary), var(--wp--preset--color--accent));
+	margin: 1.5rem auto 0;
+}
+
+.jb-line-grow.jb-visible {
+	animation: lineGrow 1s var(--jb-ease-dramatic) 0.3s forwards;
 }
 
 /* --- Skip Link --- */
@@ -701,9 +812,190 @@ footer.wp-block-group::before {
 	opacity: 0.3;
 }
 
+/* --- Dramatic Hero --- */
+
+.jb-hero-dramatic {
+	min-height: 85vh;
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	align-items: center;
+}
+
+.jb-hero-dramatic > .wp-block-group {
+	width: 100%;
+}
+
+/* --- Header Overlay Mode --- */
+
+.jb-header-overlay {
+	position: fixed !important;
+	top: 0;
+	left: 0;
+	right: 0;
+	z-index: 100;
+	background-color: transparent !important;
+	border-bottom: none !important;
+	transition: background-color 0.5s ease,
+	            backdrop-filter 0.5s ease,
+	            box-shadow 0.5s ease;
+}
+
+.jb-header-overlay.jb-scrolled {
+	background-color: rgba(250, 248, 245, 0.95) !important;
+	backdrop-filter: blur(12px);
+	box-shadow: 0 2px 30px rgba(45, 45, 45, 0.08);
+}
+
+/* Offset body content for fixed header */
+body:has(.jb-header-overlay) main {
+	padding-top: 0;
+}
+
+/* --- Featured Interview Carousel --- */
+
+.jb-carousel-section {
+	overflow: hidden;
+	position: relative;
+}
+
+.jb-carousel {
+	display: flex;
+	gap: var(--jb-carousel-gap);
+	overflow-x: auto;
+	scroll-snap-type: x mandatory;
+	-webkit-overflow-scrolling: touch;
+	scrollbar-width: none;
+	cursor: grab;
+	padding-left: calc((100vw - var(--jb-carousel-card-width)) / 2);
+	padding-right: calc((100vw - var(--jb-carousel-card-width)) / 2);
+}
+
+.jb-carousel::-webkit-scrollbar {
+	display: none;
+}
+
+.jb-carousel.is-dragging {
+	cursor: grabbing;
+	user-select: none;
+	scroll-snap-type: none;
+}
+
+/* Override WordPress post-template flex-wrap */
+.jb-carousel.wp-block-post-template {
+	flex-wrap: nowrap !important;
+}
+
+.jb-carousel-card {
+	flex: 0 0 var(--jb-carousel-card-width);
+	scroll-snap-align: center;
+	border-radius: 8px;
+	overflow: hidden;
+	position: relative;
+	transition: transform 0.6s var(--jb-ease-dramatic),
+	            box-shadow 0.6s ease;
+	box-shadow: 0 4px 24px rgba(44, 62, 107, 0.08);
+}
+
+.jb-carousel-card:hover {
+	transform: scale(1.02) translateY(-8px);
+	box-shadow: 0 20px 60px rgba(44, 62, 107, 0.15),
+	            0 8px 20px rgba(196, 120, 91, 0.08);
+}
+
+.jb-carousel-card .jb-carousel-image {
+	aspect-ratio: 16 / 10;
+	overflow: hidden;
+	position: relative;
+}
+
+.jb-carousel-card .jb-carousel-image img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	transition: transform 0.8s var(--jb-ease-dramatic);
+}
+
+.jb-carousel-card:hover .jb-carousel-image img {
+	transform: scale(1.06);
+}
+
+.jb-carousel-card .jb-carousel-overlay {
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	padding: 2.5rem;
+	background: linear-gradient(transparent, rgba(44, 62, 107, 0.85));
+	color: #fff;
+	z-index: 2;
+}
+
+.jb-carousel-card .jb-carousel-topic {
+	font-size: 0.75rem;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	color: var(--wp--preset--color--secondary);
+	font-weight: 600;
+}
+
+.jb-carousel-card .jb-carousel-title {
+	font-family: var(--wp--preset--font-family--heading);
+	font-size: var(--wp--preset--font-size--xx-large);
+	line-height: 1.15;
+	margin-top: 0.5rem;
+	color: #fff;
+}
+
+.jb-carousel-card .jb-carousel-title a {
+	color: inherit;
+	text-decoration: none;
+}
+
+.jb-carousel-card .jb-carousel-title a:hover {
+	color: inherit;
+}
+
+/* Carousel Indicators */
+.jb-carousel-indicators {
+	display: flex;
+	justify-content: center;
+	gap: 0.5rem;
+	margin-top: 2rem;
+}
+
+.jb-carousel-indicator {
+	width: 2rem;
+	height: 3px;
+	background: var(--wp--preset--color--border);
+	border-radius: 2px;
+	transition: width 0.4s var(--jb-ease-out),
+	            background-color 0.4s ease;
+	cursor: pointer;
+}
+
+.jb-carousel-indicator.is-active {
+	width: 3rem;
+	background: var(--wp--preset--color--secondary);
+}
+
 /* --- Responsive Adjustments --- */
 
+@media (max-width: 1024px) {
+	:root {
+		--jb-carousel-card-width: 85vw;
+	}
+}
+
 @media (max-width: 781px) {
+	:root {
+		--jb-carousel-card-width: 92vw;
+	}
+
+	.jb-hero-dramatic {
+		min-height: 70vh;
+	}
+
 	.jb-slide-up,
 	.jb-stagger-in {
 		transform: translateY(15px);
@@ -718,8 +1010,22 @@ footer.wp-block-group::before {
 		box-shadow: 0 2px 12px rgba(45, 45, 45, 0.04);
 	}
 
+	.jb-carousel-card:hover {
+		transform: none;
+		box-shadow: 0 4px 24px rgba(44, 62, 107, 0.08);
+	}
+
+	.jb-carousel-card .jb-carousel-overlay {
+		padding: 1.5rem;
+	}
+
 	.jb-watercolor-bg::before {
 		animation: none;
+	}
+
+	.jb-header-overlay {
+		position: relative !important;
+		background-color: var(--wp--preset--color--background) !important;
 	}
 }
 
@@ -728,9 +1034,16 @@ footer.wp-block-group::before {
 @media (prefers-reduced-motion: reduce) {
 	.jb-slide-up,
 	.jb-fade-in,
-	.jb-stagger-in {
+	.jb-stagger-in,
+	.jb-text-reveal,
+	.jb-scale-in,
+	.jb-clip-reveal,
+	.jb-text-reveal-word,
+	.jb-line-grow {
 		opacity: 1;
 		transform: none;
+		clip-path: none;
+		width: auto;
 		animation: none !important;
 	}
 
@@ -740,15 +1053,23 @@ footer.wp-block-group::before {
 
 	.jb-watercolor-frame img,
 	.jb-interview-card,
+	.jb-carousel-card,
+	.jb-carousel-card .jb-carousel-image img,
 	.wp-block-button__link,
 	.wp-block-post-title a,
 	.wp-block-post-featured-image img,
 	header.wp-block-group,
+	.jb-header-overlay,
 	.jb-timeline-entry,
 	.jb-resume-section .wp-block-column,
 	.jb-interview-content .interview-question,
 	footer.wp-block-group a {
 		transition: none !important;
+	}
+
+	.jb-carousel {
+		scroll-snap-type: none;
+		scroll-behavior: auto;
 	}
 
 	html {
@@ -771,8 +1092,20 @@ button:focus-visible,
 	header.wp-block-group,
 	footer.wp-block-group,
 	.jb-watercolor-bg::before,
-	.wp-block-buttons {
+	.wp-block-buttons,
+	.jb-carousel-indicators {
 		display: none !important;
+	}
+
+	.jb-carousel {
+		flex-wrap: wrap !important;
+		overflow: visible;
+		padding: 0;
+	}
+
+	.jb-carousel-card {
+		flex: 0 0 100%;
+		page-break-inside: avoid;
 	}
 
 	body {

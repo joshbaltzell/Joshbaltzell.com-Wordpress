@@ -68,15 +68,17 @@ class JBAI_Meta_Box {
 		$is_complete  = get_post_meta( $post->ID, '_jbai_interview_complete', true );
 
 		wp_localize_script( 'jbai-interviewer', 'jbaiConfig', array(
-			'restUrl'      => rest_url( 'jb-interviewer/v1/' ),
-			'nonce'        => wp_create_nonce( 'wp_rest' ),
-			'postId'       => $post->ID,
-			'conversation' => $conversation ? json_decode( $conversation, true ) : array(),
-			'subject'      => $subject ? $subject : '',
-			'angle'        => $angle ? $angle : '',
-			'audience'     => $audience ? $audience : '',
-			'isComplete'   => ! empty( $is_complete ),
-			'hasApiKey'    => ! empty( get_option( 'jbai_api_key', '' ) ),
+			'restUrl'        => rest_url( 'jb-interviewer/v1/' ),
+			'nonce'          => wp_create_nonce( 'wp_rest' ),
+			'postId'         => $post->ID,
+			'conversation'   => $conversation ? json_decode( $conversation, true ) : array(),
+			'subject'        => $subject ? $subject : '',
+			'angle'          => $angle ? $angle : '',
+			'audience'       => $audience ? $audience : '',
+			'isComplete'     => ! empty( $is_complete ),
+			'hasApiKey'      => ! empty( get_option( 'jbai_api_key', '' ) ),
+			'hasGeminiKey'   => ! empty( get_option( 'jbai_gemini_api_key', '' ) ),
+			'featuredImage'  => get_post_thumbnail_id( $post->ID ),
 		) );
 	}
 
@@ -156,6 +158,45 @@ class JBAI_Meta_Box {
 			<div id="jbai-error" class="jbai-notice jbai-notice-error" style="display:none;">
 				<p id="jbai-error-msg"></p>
 				<button type="button" id="jbai-retry" class="button button-small"><?php esc_html_e( 'Retry', 'jb-ai-interviewer' ); ?></button>
+			</div>
+
+			<!-- Artwork Generation Panel -->
+			<div id="jbai-artwork" class="jbai-panel jbai-artwork-panel">
+				<div class="jbai-artwork-header">
+					<h3><?php esc_html_e( 'Generate Featured Artwork', 'jb-ai-interviewer' ); ?></h3>
+					<p class="jbai-setup-desc"><?php esc_html_e( 'Generate AI watercolor artwork for this interview using Google Imagen.', 'jb-ai-interviewer' ); ?></p>
+				</div>
+				<?php if ( empty( get_option( 'jbai_gemini_api_key', '' ) ) ) : ?>
+					<div class="jbai-notice jbai-notice-warning">
+						<p>
+							<?php
+							printf(
+								wp_kses(
+									__( 'Gemini API key not configured. <a href="%s">Set it up in Settings</a>.', 'jb-ai-interviewer' ),
+									array( 'a' => array( 'href' => array() ) )
+								),
+								esc_url( admin_url( 'options-general.php?page=jb-ai-interviewer' ) )
+							);
+							?>
+						</p>
+					</div>
+				<?php else : ?>
+					<div class="jbai-field">
+						<label for="jbai-artwork-prompt"><?php esc_html_e( 'Custom Prompt (optional)', 'jb-ai-interviewer' ); ?></label>
+						<textarea id="jbai-artwork-prompt" class="jbai-input" rows="2" placeholder="<?php esc_attr_e( 'Leave empty to auto-generate from interview subject...', 'jb-ai-interviewer' ); ?>"></textarea>
+					</div>
+					<button type="button" id="jbai-generate-artwork" class="button button-primary">
+						<?php esc_html_e( 'Generate 4 Variations', 'jb-ai-interviewer' ); ?>
+					</button>
+					<div id="jbai-artwork-loading" class="jbai-artwork-loading" style="display:none;">
+						<span class="spinner is-active"></span>
+						<span><?php esc_html_e( 'Generating watercolor artwork...', 'jb-ai-interviewer' ); ?></span>
+					</div>
+					<div id="jbai-artwork-grid" class="jbai-artwork-grid" style="display:none;"></div>
+					<div id="jbai-artwork-error" class="jbai-notice jbai-notice-error" style="display:none;">
+						<p id="jbai-artwork-error-msg"></p>
+					</div>
+				<?php endif; ?>
 			</div>
 		</div>
 		<?php

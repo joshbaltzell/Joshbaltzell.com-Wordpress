@@ -279,6 +279,213 @@
 	}
 
 	/**
+	 * Horizontal scrolling carousel for Featured Interviews.
+	 * Supports mouse drag, touch, keyboard, scroll-snap, and indicators.
+	 */
+	function initCarousel() {
+		var carousel = document.querySelector('.jb-carousel');
+		if (!carousel) return;
+
+		var cards = carousel.querySelectorAll('.jb-carousel-card');
+		var indicatorContainer = document.querySelector('.jb-carousel-indicators');
+
+		// Build indicators
+		if (indicatorContainer && cards.length) {
+			indicatorContainer.innerHTML = '';
+			cards.forEach(function (_, i) {
+				var dot = document.createElement('button');
+				dot.className = 'jb-carousel-indicator' + (i === 0 ? ' is-active' : '');
+				dot.setAttribute('aria-label', 'Go to slide ' + (i + 1));
+				dot.addEventListener('click', function () {
+					cards[i].scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+				});
+				indicatorContainer.appendChild(dot);
+			});
+		}
+
+		// Update active indicator on scroll
+		var indicators = indicatorContainer ? indicatorContainer.querySelectorAll('.jb-carousel-indicator') : [];
+		var scrollTicking = false;
+
+		function updateIndicators() {
+			var containerCenter = carousel.scrollLeft + carousel.offsetWidth / 2;
+			var closestIndex = 0;
+			var closestDistance = Infinity;
+
+			cards.forEach(function (card, i) {
+				var cardCenter = card.offsetLeft + card.offsetWidth / 2;
+				var distance = Math.abs(containerCenter - cardCenter);
+				if (distance < closestDistance) {
+					closestDistance = distance;
+					closestIndex = i;
+				}
+			});
+
+			indicators.forEach(function (ind, i) {
+				ind.classList.toggle('is-active', i === closestIndex);
+			});
+			scrollTicking = false;
+		}
+
+		carousel.addEventListener('scroll', function () {
+			if (!scrollTicking) {
+				window.requestAnimationFrame(updateIndicators);
+				scrollTicking = true;
+			}
+		}, { passive: true });
+
+		// Mouse drag scrolling
+		var isDragging = false;
+		var startX = 0;
+		var scrollStart = 0;
+
+		carousel.addEventListener('mousedown', function (e) {
+			isDragging = true;
+			startX = e.pageX;
+			scrollStart = carousel.scrollLeft;
+			carousel.classList.add('is-dragging');
+		});
+
+		document.addEventListener('mousemove', function (e) {
+			if (!isDragging) return;
+			e.preventDefault();
+			var walk = (e.pageX - startX) * 1.5;
+			carousel.scrollLeft = scrollStart - walk;
+		});
+
+		document.addEventListener('mouseup', function () {
+			if (!isDragging) return;
+			isDragging = false;
+			// Re-enable snap after drag with brief delay
+			setTimeout(function () {
+				carousel.classList.remove('is-dragging');
+			}, 50);
+		});
+
+		// Prevent link clicks after drag
+		carousel.addEventListener('click', function (e) {
+			if (Math.abs(carousel.scrollLeft - scrollStart) > 5) {
+				e.preventDefault();
+			}
+		}, true);
+
+		// Keyboard navigation
+		carousel.setAttribute('tabindex', '0');
+		carousel.setAttribute('role', 'region');
+		carousel.setAttribute('aria-label', 'Featured interviews carousel');
+
+		carousel.addEventListener('keydown', function (e) {
+			if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+				e.preventDefault();
+				var scrollAmount = carousel.offsetWidth * 0.7;
+				carousel.scrollBy({
+					left: e.key === 'ArrowRight' ? scrollAmount : -scrollAmount,
+					behavior: 'smooth'
+				});
+			}
+		});
+
+		// Scroll hint animation on first load
+		if (!reducedMotion && cards.length > 1) {
+			setTimeout(function () {
+				carousel.style.transition = 'none';
+				var originalScroll = carousel.scrollLeft;
+				carousel.scrollTo({ left: originalScroll + 60, behavior: 'smooth' });
+				setTimeout(function () {
+					carousel.scrollTo({ left: originalScroll, behavior: 'smooth' });
+				}, 400);
+			}, 1500);
+		}
+	}
+
+	/**
+	 * Text reveal animation using IntersectionObserver.
+	 * Works with .jb-text-reveal, .jb-scale-in, .jb-clip-reveal, .jb-line-grow elements.
+	 */
+	function initTextReveal() {
+		var elements = document.querySelectorAll(
+			'.jb-text-reveal, .jb-scale-in, .jb-clip-reveal, .jb-line-grow'
+		);
+
+		if (!elements.length) return;
+
+		if (reducedMotion) {
+			elements.forEach(function (el) {
+				el.classList.add('jb-visible');
+			});
+			return;
+		}
+
+		var observer = new IntersectionObserver(
+			function (entries) {
+				entries.forEach(function (entry) {
+					if (entry.isIntersecting) {
+						entry.target.classList.add('jb-visible');
+						observer.unobserve(entry.target);
+					}
+				});
+			},
+			{
+				threshold: 0.1,
+				rootMargin: '0px 0px -60px 0px',
+			}
+		);
+
+		elements.forEach(function (el) {
+			observer.observe(el);
+		});
+	}
+
+	/**
+	 * Split text into individual word spans for staggered animation.
+	 * Elements with .jb-word-split get their text split into .jb-text-reveal-word spans.
+	 */
+	function initWordSplit() {
+		var elements = document.querySelectorAll('.jb-word-split');
+		if (!elements.length) return;
+
+		elements.forEach(function (el) {
+			var text = el.textContent.trim();
+			if (!text) return;
+
+			// Preserve original text for accessibility
+			el.setAttribute('aria-label', text);
+
+			var words = text.split(/\s+/);
+			el.innerHTML = '';
+
+			words.forEach(function (word, i) {
+				var span = document.createElement('span');
+				span.className = 'jb-text-reveal-word';
+				span.style.setProperty('--word-index', i);
+				span.textContent = word;
+				span.setAttribute('aria-hidden', 'true');
+				el.appendChild(span);
+
+				// Add space between words
+				if (i < words.length - 1) {
+					el.appendChild(document.createTextNode(' '));
+				}
+			});
+		});
+	}
+
+	/**
+	 * Enhanced header overlay — transparent on hero, solid on scroll.
+	 * Extends initHeaderScroll when .jb-hero-dramatic is present.
+	 */
+	function initHeaderOverlay() {
+		var header = document.querySelector('header.wp-block-group');
+		var hero = document.querySelector('.jb-hero-dramatic');
+		if (!header) return;
+
+		// If we have a dramatic hero, enable overlay mode
+		if (hero && window.innerWidth > 781) {
+			header.classList.add('jb-header-overlay');
+		}
+	}
+
+	/**
 	 * Copy-to-clipboard for prompt guide code blocks.
 	 */
 	function initPromptCopy() {
@@ -314,14 +521,18 @@
 	 * Initialize all effects when DOM is ready.
 	 */
 	function init() {
+		initWordSplit();
 		initScrollReveal();
+		initTextReveal();
 		initInterviewReveal();
 		initReadingProgress();
 		initHeaderScroll();
+		initHeaderOverlay();
 		initParallax();
 		initSmoothAnchors();
 		initCursorBlink();
 		initCardTilt();
+		initCarousel();
 		initImageReveal();
 		initPromptCopy();
 	}
