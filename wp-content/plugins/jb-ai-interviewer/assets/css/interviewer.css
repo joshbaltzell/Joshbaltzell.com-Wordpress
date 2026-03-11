@@ -1,0 +1,458 @@
+/* ============================================
+   JB AI Interviewer — Admin Chat UI
+   Watercolor-inspired design tokens matched
+   from the theme: theme.json
+   ============================================ */
+
+/* --- Variables --- */
+
+.jbai-app {
+	--jbai-primary: #2C3E6B;
+	--jbai-secondary: #C4785B;
+	--jbai-accent: #7A9E7E;
+	--jbai-bg: #FAF8F5;
+	--jbai-surface: #F2EDE4;
+	--jbai-fg: #2D2D2D;
+	--jbai-muted: #6B6B6B;
+	--jbai-border: #D4CBC0;
+	--jbai-radius: 6px;
+	--jbai-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, sans-serif;
+	color: var(--jbai-fg);
+}
+
+/* --- Setup Panel --- */
+
+.jbai-panel {
+	padding: 0;
+}
+
+.jbai-setup-header h3 {
+	margin: 0 0 4px;
+	font-size: 15px;
+	font-weight: 600;
+	color: var(--jbai-primary);
+}
+
+.jbai-setup-desc {
+	margin: 0 0 16px;
+	font-size: 13px;
+	color: var(--jbai-muted);
+}
+
+.jbai-setup-fields {
+	display: grid;
+	gap: 12px;
+	margin-bottom: 16px;
+}
+
+.jbai-field label {
+	display: block;
+	margin-bottom: 4px;
+	font-size: 12px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: var(--jbai-muted);
+}
+
+.jbai-field input {
+	width: 100%;
+	padding: 8px 12px;
+	border: 1px solid var(--jbai-border);
+	border-radius: var(--jbai-radius);
+	background: var(--jbai-bg);
+	font-size: 14px;
+	color: var(--jbai-fg);
+	transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.jbai-field input:focus {
+	outline: none;
+	border-color: var(--jbai-secondary);
+	box-shadow: 0 0 0 2px rgba(196, 120, 91, 0.15);
+}
+
+.jbai-field input::placeholder {
+	color: var(--jbai-border);
+}
+
+#jbai-start {
+	background: var(--jbai-primary);
+	border-color: var(--jbai-primary);
+	color: #fff;
+	padding: 8px 24px;
+	font-size: 14px;
+	border-radius: var(--jbai-radius);
+	cursor: pointer;
+	transition: background 0.2s ease, transform 0.15s ease;
+}
+
+#jbai-start:hover:not(:disabled) {
+	background: #1e2d4f;
+	transform: translateY(-1px);
+}
+
+#jbai-start:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+/* --- Chat Panel --- */
+
+.jbai-chat-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 12px;
+	padding-bottom: 8px;
+	border-bottom: 1px solid var(--jbai-border);
+}
+
+.jbai-round-badge {
+	display: inline-block;
+	padding: 3px 10px;
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	color: var(--jbai-bg);
+	background: var(--jbai-accent);
+	border-radius: 12px;
+}
+
+.jbai-status {
+	font-size: 12px;
+	color: var(--jbai-muted);
+}
+
+.jbai-status::before {
+	content: '';
+	display: inline-block;
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	margin-right: 6px;
+	vertical-align: middle;
+}
+
+.jbai-status-active::before {
+	background: var(--jbai-accent);
+}
+
+.jbai-status-complete::before {
+	background: var(--jbai-secondary);
+}
+
+/* --- Messages Area --- */
+
+.jbai-messages {
+	max-height: 450px;
+	overflow-y: auto;
+	padding: 8px 0;
+	scroll-behavior: smooth;
+}
+
+.jbai-message {
+	display: flex;
+	flex-direction: column;
+	margin-bottom: 16px;
+	max-width: 88%;
+}
+
+.jbai-message-assistant {
+	align-self: flex-start;
+	align-items: flex-start;
+}
+
+.jbai-message-user {
+	align-self: flex-end;
+	align-items: flex-end;
+	margin-left: auto;
+}
+
+.jbai-message-label {
+	display: inline-block;
+	font-size: 10px;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.1em;
+	padding: 1px 6px;
+	border-radius: 3px;
+	margin-bottom: 4px;
+}
+
+.jbai-message-assistant .jbai-message-label {
+	background: linear-gradient(135deg, var(--jbai-secondary), var(--jbai-accent));
+	color: #fff;
+}
+
+.jbai-message-user .jbai-message-label {
+	background: var(--jbai-primary);
+	color: #fff;
+}
+
+.jbai-message-text {
+	padding: 10px 14px;
+	border-radius: var(--jbai-radius);
+	font-size: 13.5px;
+	line-height: 1.6;
+	white-space: pre-wrap;
+	word-wrap: break-word;
+}
+
+.jbai-message-assistant .jbai-message-text {
+	background: var(--jbai-surface);
+	border: 1px solid var(--jbai-border);
+	border-left: 3px solid var(--jbai-secondary);
+	color: var(--jbai-fg);
+	font-style: italic;
+}
+
+.jbai-message-user .jbai-message-text {
+	background: var(--jbai-primary);
+	color: #fff;
+	border: 1px solid var(--jbai-primary);
+}
+
+/* Message enter animation */
+.jbai-message-enter {
+	animation: jbaiSlideIn 0.35s var(--jbai-ease) forwards;
+}
+
+@keyframes jbaiSlideIn {
+	from {
+		opacity: 0;
+		transform: translateY(12px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+/* --- Typing Indicator --- */
+
+.jbai-typing {
+	display: flex;
+	gap: 5px;
+	padding: 10px 14px;
+	background: var(--jbai-surface);
+	border: 1px solid var(--jbai-border);
+	border-left: 3px solid var(--jbai-secondary);
+	border-radius: var(--jbai-radius);
+	width: fit-content;
+	margin-bottom: 12px;
+}
+
+.jbai-dot {
+	width: 7px;
+	height: 7px;
+	background: var(--jbai-muted);
+	border-radius: 50%;
+	animation: jbaiPulse 1.4s ease-in-out infinite;
+}
+
+.jbai-dot:nth-child(2) {
+	animation-delay: 0.2s;
+}
+
+.jbai-dot:nth-child(3) {
+	animation-delay: 0.4s;
+}
+
+@keyframes jbaiPulse {
+	0%, 60%, 100% {
+		opacity: 0.3;
+		transform: scale(0.8);
+	}
+	30% {
+		opacity: 1;
+		transform: scale(1);
+	}
+}
+
+/* --- Input Area --- */
+
+.jbai-input-area {
+	display: flex;
+	gap: 8px;
+	align-items: flex-end;
+	margin-top: 12px;
+	padding-top: 12px;
+	border-top: 1px solid var(--jbai-border);
+}
+
+.jbai-input {
+	flex: 1;
+	padding: 8px 12px;
+	border: 1px solid var(--jbai-border);
+	border-radius: var(--jbai-radius);
+	background: var(--jbai-bg);
+	font-size: 13.5px;
+	font-family: inherit;
+	line-height: 1.5;
+	color: var(--jbai-fg);
+	resize: vertical;
+	min-height: 42px;
+	max-height: 200px;
+	transition: border-color 0.2s ease;
+}
+
+.jbai-input:focus {
+	outline: none;
+	border-color: var(--jbai-primary);
+	box-shadow: 0 0 0 2px rgba(44, 62, 107, 0.1);
+}
+
+.jbai-input::placeholder {
+	color: var(--jbai-border);
+	font-size: 12px;
+}
+
+.jbai-input:disabled {
+	opacity: 0.6;
+}
+
+#jbai-send {
+	padding: 8px 20px;
+	background: var(--jbai-primary);
+	border-color: var(--jbai-primary);
+	color: #fff;
+	border-radius: var(--jbai-radius);
+	font-size: 13px;
+	cursor: pointer;
+	transition: background 0.2s ease;
+	flex-shrink: 0;
+	align-self: flex-end;
+}
+
+#jbai-send:hover:not(:disabled) {
+	background: #1e2d4f;
+}
+
+#jbai-send:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+/* --- Action Buttons --- */
+
+.jbai-actions {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+	margin-top: 12px;
+	padding-top: 12px;
+	border-top: 1px solid var(--jbai-border);
+}
+
+#jbai-format {
+	background: var(--jbai-accent);
+	border-color: var(--jbai-accent);
+	color: #fff;
+	padding: 6px 16px;
+	border-radius: var(--jbai-radius);
+	font-size: 13px;
+	cursor: pointer;
+	transition: background 0.2s ease;
+}
+
+#jbai-format:hover:not(:disabled) {
+	background: #5f8563;
+}
+
+#jbai-format:disabled {
+	opacity: 0.6;
+	cursor: not-allowed;
+}
+
+#jbai-end {
+	border-color: var(--jbai-secondary);
+	color: var(--jbai-secondary);
+}
+
+#jbai-end:hover {
+	background: var(--jbai-secondary);
+	color: #fff;
+}
+
+#jbai-reset {
+	margin-left: auto;
+	font-size: 12px;
+}
+
+/* --- Notices --- */
+
+.jbai-notice {
+	padding: 10px 14px;
+	border-radius: var(--jbai-radius);
+	margin-top: 12px;
+	font-size: 13px;
+}
+
+.jbai-notice p {
+	margin: 0 0 6px;
+}
+
+.jbai-notice-warning {
+	background: #fff3cd;
+	border: 1px solid #ffc107;
+	color: #856404;
+}
+
+.jbai-notice-warning a {
+	color: #856404;
+	font-weight: 600;
+}
+
+.jbai-notice-error {
+	background: rgba(196, 120, 91, 0.1);
+	border: 1px solid var(--jbai-secondary);
+	color: var(--jbai-secondary);
+	display: flex;
+	align-items: center;
+	gap: 10px;
+}
+
+.jbai-notice-error p {
+	flex: 1;
+	margin: 0;
+}
+
+/* --- Scrollbar Styling --- */
+
+.jbai-messages::-webkit-scrollbar {
+	width: 6px;
+}
+
+.jbai-messages::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+.jbai-messages::-webkit-scrollbar-thumb {
+	background: var(--jbai-border);
+	border-radius: 3px;
+}
+
+.jbai-messages::-webkit-scrollbar-thumb:hover {
+	background: var(--jbai-muted);
+}
+
+/* --- Reduced Motion --- */
+
+@media (prefers-reduced-motion: reduce) {
+	.jbai-message-enter {
+		animation: none;
+	}
+
+	.jbai-dot {
+		animation: none;
+		opacity: 0.5;
+	}
+
+	.jbai-messages {
+		scroll-behavior: auto;
+	}
+}

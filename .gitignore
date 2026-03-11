@@ -16,6 +16,7 @@ wp-content/uploads/
 
 # Plugins (managed via WPEngine dashboard or composer)
 wp-content/plugins/
+!wp-content/plugins/jb-ai-interviewer/
 
 # Other wp-content items we don't track
 wp-content/upgrade/
