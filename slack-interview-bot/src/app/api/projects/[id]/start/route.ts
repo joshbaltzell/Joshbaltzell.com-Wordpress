@@ -102,6 +102,17 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
   const app = getSlackApp();
   const results: Array<{ participantId: string; success: boolean; error?: string }> = [];
 
+  // Fetch editor's real name from Slack
+  let editorName = "the editor";
+  try {
+    const editorInfo = await app.client.users.info({
+      user: project.editorSlackUserId,
+    });
+    editorName = editorInfo.user?.real_name || editorInfo.user?.name || "the editor";
+  } catch {
+    // Fall back to generic name
+  }
+
   // Send outreach to each participant
   for (const participant of pendingParticipants) {
     try {
@@ -132,7 +143,7 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
         text: `Hi ${participant.name}! I'm helping put together an article about "${project.title}".`,
         blocks: buildOutreachMessage({
           participantName: participant.name.split(" ")[0], // First name
-          editorName: "the editor", // TODO: get from auth
+          editorName,
           projectTitle: project.title,
           participantContext: participant.context || "your expertise in this area",
           estimatedQuestions: project.maxRounds || 10,

@@ -253,5 +253,6 @@ def _config_signature(config: FrameConfig) -> str:
     return (
         f"{config.moulding_material}|{config.moulding_style}|{config.moulding_color}|"
         f"{config.moulding_finish}|{config.glass_type}|{config.mat_included}|"
-        f"{config.mat_color_top}|{round(config.opening_width)}x{round(config.opening_height)}"
+        f"{config.mat_color_top}|{config.backing_type}|{config.mounting_type}|"
+        f"{config.category}|{round(config.opening_width)}x{round(config.opening_height)}"
     )

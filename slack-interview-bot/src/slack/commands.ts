@@ -160,21 +160,100 @@ export function registerCommands(app: App): void {
         break;
       }
 
-      case "pause":
-        // TODO: Pause a project (stop sending questions)
-        await respond({
-          response_type: "ephemeral",
-          text: ":pause_button: Project paused. No new questions will be sent until you `/quotable resume`.",
-        });
+      case "pause": {
+        const pauseRef = command.text.trim().split(/\s+/).slice(1).join(" ");
+        if (!pauseRef) {
+          await respond({
+            response_type: "ephemeral",
+            text: "Usage: `/quotable pause <project-name>`",
+          });
+          break;
+        }
+        try {
+          const pauseProject = await db.query.projects.findFirst({
+            where: and(
+              eq(projects.editorSlackUserId, command.user_id),
+              ilike(projects.title, `%${pauseRef}%`)
+            ),
+          });
+          if (!pauseProject) {
+            await respond({
+              response_type: "ephemeral",
+              text: `Couldn't find a project matching "${pauseRef}". Try \`/quotable list\`.`,
+            });
+          } else if (pauseProject.status !== "interviewing") {
+            await respond({
+              response_type: "ephemeral",
+              text: `:warning: "${pauseProject.title}" is in *${pauseProject.status}* — only interviewing projects can be paused.`,
+            });
+          } else {
+            await db
+              .update(projects)
+              .set({
+                settings: {
+                  ...((pauseProject.settings as Record<string, unknown>) || {}),
+                  paused: true,
+                  pausedAt: new Date().toISOString(),
+                },
+                updatedAt: new Date(),
+              })
+              .where(eq(projects.id, pauseProject.id));
+            await respond({
+              response_type: "ephemeral",
+              text: `:pause_button: *"${pauseProject.title}"* paused. No new questions until \`/quotable resume ${pauseRef}\`.`,
+            });
+          }
+        } catch (err) {
+          console.error("Failed to pause project:", err);
+          await respond({ response_type: "ephemeral", text: ":warning: Something went wrong." });
+        }
         break;
+      }
 
-      case "resume":
-        // TODO: Resume a paused project
-        await respond({
-          response_type: "ephemeral",
-          text: ":arrow_forward: Project resumed. Questions will continue being sent.",
-        });
+      case "resume": {
+        const resumeRef = command.text.trim().split(/\s+/).slice(1).join(" ");
+        if (!resumeRef) {
+          await respond({
+            response_type: "ephemeral",
+            text: "Usage: `/quotable resume <project-name>`",
+          });
+          break;
+        }
+        try {
+          const resumeProject = await db.query.projects.findFirst({
+            where: and(
+              eq(projects.editorSlackUserId, command.user_id),
+              ilike(projects.title, `%${resumeRef}%`)
+            ),
+          });
+          if (!resumeProject) {
+            await respond({
+              response_type: "ephemeral",
+              text: `Couldn't find a project matching "${resumeRef}".`,
+            });
+          } else if (!(resumeProject.settings as any)?.paused) {
+            await respond({
+              response_type: "ephemeral",
+              text: `*"${resumeProject.title}"* isn't paused.`,
+            });
+          } else {
+            const { paused, pausedAt, ...restSettings } =
+              (resumeProject.settings as Record<string, unknown>) || {};
+            await db
+              .update(projects)
+              .set({ settings: restSettings, updatedAt: new Date() })
+              .where(eq(projects.id, resumeProject.id));
+            await respond({
+              response_type: "ephemeral",
+              text: `:arrow_forward: *"${resumeProject.title}"* resumed! Questions will continue.`,
+            });
+          }
+        } catch (err) {
+          console.error("Failed to resume project:", err);
+          await respond({ response_type: "ephemeral", text: ":warning: Something went wrong." });
+        }
         break;
+      }
 
       default:
         await respond({

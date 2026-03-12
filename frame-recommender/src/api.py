@@ -133,9 +133,11 @@ async def recommend(request: RecommendRequest):
     if request.mat_included is not None:
         query.mat_included = request.mat_included
 
-    # Derive orientation
+    # Derive orientation (use relative tolerance for large dimensions)
     if query.opening_width > 0 and query.opening_height > 0:
-        if abs(query.opening_width - query.opening_height) < 0.5:
+        max_dim = max(query.opening_width, query.opening_height)
+        threshold = max(0.5, max_dim * 0.05)  # 5% of largest dimension, min 0.5"
+        if abs(query.opening_width - query.opening_height) < threshold:
             query.orientation = "square"
         elif query.opening_width > query.opening_height:
             query.orientation = "landscape"
@@ -144,10 +146,14 @@ async def recommend(request: RecommendRequest):
 
     budget_range = None
     if request.budget_min is not None or request.budget_max is not None:
-        budget_range = (
-            request.budget_min or 0.0,
-            request.budget_max or 999999.0,
-        )
+        b_min = request.budget_min or 0.0
+        b_max = request.budget_max or 999999.0
+        if b_min > b_max:
+            raise HTTPException(
+                status_code=400,
+                detail=f"budget_min ({b_min}) cannot exceed budget_max ({b_max})",
+            )
+        budget_range = (b_min, b_max)
 
     results = rec.recommend(
         query=query,
@@ -178,7 +184,20 @@ async def ingest():
     import json
     from pathlib import Path
 
-    configs = fetch_all_frame_configs()
+    if not settings.validate_commerce_token():
+        raise HTTPException(
+            status_code=400,
+            detail="Adobe Commerce token not configured. Set ADOBE_COMMERCE_TOKEN in .env.",
+        )
+
+    try:
+        configs = fetch_all_frame_configs()
+    except Exception as e:
+        logger.error(f"Failed to fetch from Adobe Commerce: {e}")
+        raise HTTPException(
+            status_code=502,
+            detail=f"Failed to fetch from Adobe Commerce API: {str(e)}",
+        )
 
     # Save to data directory
     data_dir = Path("data")

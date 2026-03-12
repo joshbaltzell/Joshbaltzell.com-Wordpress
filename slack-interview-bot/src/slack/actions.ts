@@ -575,7 +575,7 @@ async function checkAndNotifyQuoteReviewComplete(
       (q) => q.status === "edit_suggested"
     ).length;
 
-    const dashboardUrl = `${process.env.NEXT_PUBLIC_BASE_URL || ""}/projects/${project.id}/draft`;
+    const dashboardUrl = `${process.env.APP_URL || ""}/projects/${project.id}/draft`;
 
     const editorDm = await client.conversations.open({
       users: project.editorSlackUserId,

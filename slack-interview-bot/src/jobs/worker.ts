@@ -54,13 +54,27 @@ export function startWorkers(): void {
     { connection, concurrency: 2 }
   );
 
-  // Draft compilation worker (placeholder — compile endpoint handles this synchronously for now)
+  // Draft compilation worker — handles async compilation (e.g. deadline auto-compile)
   new Worker<CompilationJob>(
     "compilation",
     async (job) => {
-      console.log(`Compiling draft for project: ${job.data.projectId}`);
-      // The /api/projects/[id]/compile route handles compilation synchronously.
-      // This worker is here for future async compilation of very large projects.
+      console.log(`Compiling draft for project: ${job.data.projectId} (triggered by: ${job.data.triggeredBy})`);
+      try {
+        const baseUrl = process.env.APP_URL || "http://localhost:3000";
+        const res = await fetch(`${baseUrl}/api/projects/${job.data.projectId}/compile`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+        });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(`Compilation failed: ${res.status} — ${body.error || "Unknown error"}`);
+        }
+        const result = await res.json();
+        console.log(`Compilation complete for ${job.data.projectId}: v${result.draft?.version}, ${result.quoteCount} quotes`);
+      } catch (err) {
+        console.error(`Compilation worker failed for ${job.data.projectId}:`, err);
+        throw err; // Let BullMQ retry
+      }
     },
     { connection, concurrency: 1 }
   );

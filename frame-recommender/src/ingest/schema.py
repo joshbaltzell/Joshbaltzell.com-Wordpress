@@ -56,6 +56,7 @@ class FrameConfig:
 ORIENTATIONS = ["portrait", "landscape", "square"]
 MOULDING_MATERIALS = ["wood", "metal", "composite", "poly"]
 MOULDING_STYLES = ["modern", "ornate", "rustic", "minimal", "traditional"]
+MOULDING_COLORS = ["black", "white", "gold", "silver", "cherry", "walnut", "natural", "espresso"]
 MOULDING_FINISHES = ["matte", "glossy", "satin", "distressed"]
 GLASS_TYPES = ["regular", "non_glare", "uv_protection", "museum"]
 BACKING_TYPES = ["standard", "acid_free", "foam_core"]

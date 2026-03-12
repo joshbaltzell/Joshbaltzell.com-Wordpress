@@ -1,6 +1,6 @@
 import { db } from "@/db";
 import { projects, exchanges, participants, drafts } from "@/db/schema";
-import { eq, and, lt, count } from "drizzle-orm";
+import { eq, and, lte, count } from "drizzle-orm";
 import { compilationQueue } from "./queue";
 
 /**
@@ -29,7 +29,7 @@ export async function checkAutoCompile(): Promise<{
     where: and(
       eq(projects.status, "interviewing"),
       eq(projects.autoCompileOnDeadline, true),
-      lt(projects.deadline, threshold)
+      lte(projects.deadline, threshold)
     ),
   });
 

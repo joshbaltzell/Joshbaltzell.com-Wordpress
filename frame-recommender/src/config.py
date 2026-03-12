@@ -1,4 +1,8 @@
+import logging
+
 from pydantic_settings import BaseSettings
+
+logger = logging.getLogger(__name__)
 
 
 class Settings(BaseSettings):
@@ -10,6 +14,13 @@ class Settings(BaseSettings):
     api_port: int = 8000
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
+
+    def validate_commerce_token(self) -> bool:
+        """Check that commerce token is configured before making API calls."""
+        if not self.adobe_commerce_token:
+            logger.warning("Adobe Commerce token is not set. API calls will fail.")
+            return False
+        return True
 
 
 settings = Settings()

@@ -21,6 +21,8 @@ class AdobeCommerceClient:
     ):
         self.base_url = (base_url or settings.adobe_commerce_base_url).rstrip("/")
         self.token = token or settings.adobe_commerce_token
+        if not self.token:
+            logger.warning("Adobe Commerce token is empty — API calls will fail")
         self.session = requests.Session()
         self.session.headers.update({
             "Authorization": f"Bearer {self.token}",
@@ -67,8 +69,8 @@ class AdobeCommerceClient:
                 yield order
 
             total_count = data.get("total_count", 0)
-            fetched = current_page * page_size
-            if fetched >= total_count:
+            # Use actual count of items received rather than page math
+            if len(items) < page_size or current_page * page_size >= total_count:
                 break
 
             current_page += 1
@@ -105,9 +107,11 @@ class AdobeCommerceClient:
             # Map options to FrameConfig fields
             config = self._map_options_to_config(config, options)
 
-            # Derive orientation from dimensions
+            # Derive orientation from dimensions (relative tolerance for large frames)
             if config.opening_width > 0 and config.opening_height > 0:
-                if abs(config.opening_width - config.opening_height) < 0.5:
+                max_dim = max(config.opening_width, config.opening_height)
+                threshold = max(0.5, max_dim * 0.05)
+                if abs(config.opening_width - config.opening_height) < threshold:
                     config.orientation = "square"
                 elif config.opening_width > config.opening_height:
                     config.orientation = "landscape"
@@ -129,21 +133,24 @@ class AdobeCommerceClient:
         product_option = item.get("product_option", {})
         ext_attrs = product_option.get("extension_attributes", {})
         for opt in ext_attrs.get("custom_options", []):
-            label = opt.get("option_id", "")
-            value = opt.get("option_value", "")
-            options[str(label)] = str(value)
+            label = opt.get("option_id")
+            value = opt.get("option_value")
+            if label is not None and value is not None:
+                options[str(label)] = str(value)
 
         # Method 2: Top-level extension_attributes.custom_options
         for opt in item.get("extension_attributes", {}).get("custom_options", []):
-            label = opt.get("option_id", "")
-            value = opt.get("option_value", "")
-            options[str(label)] = str(value)
+            label = opt.get("option_id")
+            value = opt.get("option_value")
+            if label is not None and value is not None:
+                options[str(label)] = str(value)
 
         # Method 3: Configurable product options (super_attribute)
         for attr in ext_attrs.get("configurable_item_options", []):
-            option_id = attr.get("option_id", "")
-            option_value = attr.get("option_value", "")
-            options[str(option_id)] = str(option_value)
+            option_id = attr.get("option_id")
+            option_value = attr.get("option_value")
+            if option_id is not None and option_value is not None:
+                options[str(option_id)] = str(option_value)
 
         return options
 

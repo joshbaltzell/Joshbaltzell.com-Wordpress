@@ -58,6 +58,8 @@ class FrameClusterer:
             self.cluster_sizes[int(label)] = self.cluster_sizes.get(int(label), 0) + 1
 
         # Find the representative config for each cluster (closest to centroid)
+        # Store as list of (cluster_id, config) to preserve the mapping
+        self._cluster_center_ids: list[int] = []
         self.cluster_centers = []
         for cluster_id in range(actual_clusters):
             mask = self.labels == cluster_id
@@ -69,6 +71,7 @@ class FrameClusterer:
             centroid = self.kmeans.cluster_centers_[cluster_id]
             distances = np.linalg.norm(cluster_vectors - centroid, axis=1)
             closest_idx = cluster_indices[np.argmin(distances)]
+            self._cluster_center_ids.append(cluster_id)
             self.cluster_centers.append(configs[closest_idx])
 
         logger.info(
@@ -93,12 +96,13 @@ class FrameClusterer:
 
         archetype_data = []
         for i, center_config in enumerate(self.cluster_centers):
-            size = self.cluster_sizes.get(i, 0)
+            cluster_id = self._cluster_center_ids[i] if hasattr(self, '_cluster_center_ids') else i
+            size = self.cluster_sizes.get(cluster_id, 0)
             archetype_data.append({
-                "cluster_id": i,
+                "cluster_id": cluster_id,
                 "config": center_config.to_dict(),
                 "order_count": size,
-                "percentage": round(size / len(self.configs) * 100, 1),
+                "percentage": round(size / len(self.configs) * 100, 1) if self.configs else 0,
             })
 
         archetype_data.sort(key=lambda x: x["order_count"], reverse=True)

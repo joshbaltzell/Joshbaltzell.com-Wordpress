@@ -14,6 +14,7 @@ from src.ingest.schema import (
     MOULDING_MATERIALS,
     MOULDING_STYLES,
     MOULDING_FINISHES,
+    MOULDING_COLORS,
     GLASS_TYPES,
     BACKING_TYPES,
     MOUNTING_TYPES,
@@ -54,6 +55,7 @@ CATEGORY_VALUES = {
     "moulding_material": MOULDING_MATERIALS,
     "moulding_style": MOULDING_STYLES,
     "moulding_finish": MOULDING_FINISHES,
+    "moulding_color": MOULDING_COLORS,
     "glass_type": GLASS_TYPES,
     "backing_type": BACKING_TYPES,
     "mounting_type": MOUNTING_TYPES,
@@ -146,14 +148,20 @@ class FrameEncoder:
 
     def fit_transform(self, configs: list[FrameConfig]) -> np.ndarray:
         """Fit and transform in one step."""
-        self.fit(configs)
         df = configs_to_dataframe(configs)
-        return self.pipeline.transform(df)
+        result = self.pipeline.fit_transform(df)
+        self._is_fitted = True
+        logger.info(
+            f"Encoder fitted on {len(configs)} configs, "
+            f"output dimension: {result.shape[1]}"
+        )
+        return result
 
     @property
     def feature_dimension(self) -> int:
         """Number of features in the output vector."""
         if not self._is_fitted:
-            return 0
-        # Get from a dummy transform
-        return self.pipeline.n_features_out_ if hasattr(self.pipeline, "n_features_out_") else 0
+            raise RuntimeError("Encoder not fitted — call fit() first")
+        if hasattr(self.pipeline, "n_features_out_"):
+            return self.pipeline.n_features_out_
+        raise RuntimeError("Pipeline fitted but n_features_out_ not available")

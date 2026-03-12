@@ -13,6 +13,8 @@ const createProjectSchema = z.object({
     .default("auto"),
   maxRounds: z.number().int().positive().default(10),
   nudgeAfterHours: z.number().int().positive().default(48),
+  deadline: z.string().optional(),
+  autoCompileOnDeadline: z.boolean().default(true),
   // These would normally come from auth — hardcoded for now
   editorSlackUserId: z.string().optional(),
   workspaceId: z.string().optional(),
@@ -40,6 +42,8 @@ export async function POST(request: NextRequest) {
         approvalMode: data.approvalMode,
         maxRounds: data.maxRounds,
         nudgeAfterHours: data.nudgeAfterHours,
+        deadline: data.deadline ? new Date(data.deadline) : undefined,
+        autoCompileOnDeadline: data.autoCompileOnDeadline,
         // TODO: Get from auth session
         editorSlackUserId: data.editorSlackUserId || "PLACEHOLDER",
         workspaceId: data.workspaceId || "PLACEHOLDER",

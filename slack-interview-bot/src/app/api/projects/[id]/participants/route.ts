@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { participants, projects } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { z } from "zod";
 
 const addParticipantSchema = z.object({
@@ -39,6 +39,20 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
   try {
     const body = await request.json();
     const data = addParticipantSchema.parse(body);
+
+    // Check for duplicate participant in this project
+    const existing = await db.query.participants.findFirst({
+      where: and(
+        eq(participants.projectId, id),
+        eq(participants.slackUserId, data.slackUserId)
+      ),
+    });
+    if (existing) {
+      return NextResponse.json(
+        { error: "This person is already a participant in this project" },
+        { status: 409 }
+      );
+    }
 
     const [participant] = await db
       .insert(participants)

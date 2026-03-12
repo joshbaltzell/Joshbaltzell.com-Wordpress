@@ -38,6 +38,12 @@ export async function sendNextQuestion(
   });
   if (!project || project.status !== "interviewing") return;
 
+  // Respect paused state
+  if ((project.settings as any)?.paused) {
+    console.log(`Project "${project.title}" is paused, skipping question send`);
+    return;
+  }
+
   // Ensure we have a DM channel before doing anything else
   let dmChannelId = participant.dmChannelId;
   if (!dmChannelId) {

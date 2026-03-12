@@ -91,6 +91,7 @@ export async function sendNudge(job: Job<NudgeJob>): Promise<void> {
           question.text.length > 150
             ? question.text.substring(0, 150) + "..."
             : question.text,
+        nudgeNumber: (participant.nudgeCount || 0) + 1,
       }),
     });
   } catch (err) {

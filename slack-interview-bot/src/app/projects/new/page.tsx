@@ -14,7 +14,8 @@ export default function NewProjectPage() {
     setError("");
 
     const form = new FormData(e.currentTarget);
-    const data = {
+    const deadlineStr = form.get("deadline") as string;
+    const data: Record<string, unknown> = {
       title: form.get("title") as string,
       thesis: form.get("thesis") as string,
       targetAudience: form.get("targetAudience") as string,
@@ -22,7 +23,11 @@ export default function NewProjectPage() {
       approvalMode: form.get("approvalMode") as string,
       maxRounds: parseInt(form.get("maxRounds") as string) || 10,
       nudgeAfterHours: parseInt(form.get("nudgeAfterHours") as string) || 48,
+      autoCompileOnDeadline: form.get("autoCompileOnDeadline") === "on",
     };
+    if (deadlineStr) {
+      data.deadline = deadlineStr;
+    }
 
     try {
       const res = await fetch("/api/projects", {
@@ -136,6 +141,34 @@ export default function NewProjectPage() {
               defaultValue={48}
               className="input"
             />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label htmlFor="deadline" className="label">
+              Deadline (optional)
+            </label>
+            <input
+              id="deadline"
+              name="deadline"
+              type="date"
+              className="input"
+            />
+            <p className="text-xs text-gray-500 mt-1">
+              If set, the article will auto-compile with whatever material is available.
+            </p>
+          </div>
+          <div className="flex items-end pb-1">
+            <label className="flex items-center gap-2 text-sm text-gray-700">
+              <input
+                type="checkbox"
+                name="autoCompileOnDeadline"
+                defaultChecked
+                className="rounded border-gray-300"
+              />
+              Auto-compile on deadline
+            </label>
           </div>
         </div>
 
