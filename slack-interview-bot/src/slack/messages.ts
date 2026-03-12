@@ -410,6 +410,16 @@ export function buildQuoteApprovalMessage(params: {
             style: "danger",
             action_id: "reject_quote",
             value: quote.quoteApprovalId,
+            confirm: {
+              title: { type: "plain_text", text: "Reject this quote?" },
+              text: {
+                type: "mrkdwn",
+                text: "This quote won't be used in the article. This can't be undone.",
+              },
+              confirm: { type: "plain_text", text: "Reject" },
+              deny: { type: "plain_text", text: "Keep it" },
+              style: "danger",
+            },
           },
           {
             type: "button",

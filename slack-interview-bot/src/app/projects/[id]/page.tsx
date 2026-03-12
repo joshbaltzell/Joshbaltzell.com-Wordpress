@@ -4,6 +4,7 @@ import { db } from "@/db";
 import { projects, participants, exchanges, questions, drafts } from "@/db/schema";
 import { eq, and, count } from "drizzle-orm";
 import { ProjectActions } from "./project-actions";
+import { AutoRefresh } from "@/app/components/auto-refresh";
 
 type PageParams = { params: Promise<{ id: string }> };
 
@@ -182,8 +183,13 @@ export default async function ProjectDetailPage({ params }: PageParams) {
 
   return (
     <div>
+      {/* Auto-refresh during active phases */}
+      {(project.status === "interviewing" || project.status === "review") && (
+        <AutoRefresh intervalMs={30000} />
+      )}
+
       {/* Header */}
-      <div className="flex items-start justify-between mb-8">
+      <div className="flex flex-col sm:flex-row items-start justify-between gap-4 mb-8">
         <div>
           <div className="flex items-center gap-3 mb-1">
             <h1 className="text-2xl font-bold text-gray-900">
@@ -222,7 +228,7 @@ export default async function ProjectDetailPage({ params }: PageParams) {
       )}
 
       {/* Stats row */}
-      <div className="grid grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
         <div className="card p-4">
           <div className="text-2xl font-bold text-gray-900">
             {participantList.length}
@@ -262,7 +268,7 @@ export default async function ProjectDetailPage({ params }: PageParams) {
           <h2 className="text-sm font-semibold text-gray-900 mb-3">
             Saturation Assessment
           </h2>
-          <div className="grid grid-cols-5 gap-4">
+          <div className="grid grid-cols-3 sm:grid-cols-5 gap-4">
             {Object.entries(data.saturation.scores).map(([key, value]) => (
               <div key={key} className="text-center">
                 <div
@@ -364,7 +370,7 @@ export default async function ProjectDetailPage({ params }: PageParams) {
       </div>
 
       {/* Quick links */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <Link
           href={`/projects/${id}/exchanges`}
           className="card p-4 hover:border-brand-300 transition-colors text-center"

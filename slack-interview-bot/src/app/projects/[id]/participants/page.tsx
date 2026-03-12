@@ -2,6 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useToast } from "@/app/components/toast";
 
 interface Participant {
   id: string;
@@ -16,6 +17,7 @@ interface Participant {
 export default function ParticipantsPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const { toast } = useToast();
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -50,24 +52,44 @@ export default function ParticipantsPage() {
       });
       if (!res.ok) {
         const body = await res.json();
-        alert(body.error || "Failed to add participant");
+        toast(body.error || "Failed to add participant", "error");
         return;
       }
       const participant = await res.json();
       setParticipants([...participants, participant]);
+      toast(`${participant.name} added`);
       setName("");
       setSlackUserId("");
       setTitle("");
       setContext("");
     } catch (err: any) {
-      alert(err.message);
+      toast(err.message, "error");
     } finally {
       setSaving(false);
     }
   }
 
   if (loading) {
-    return <div className="text-gray-500">Loading...</div>;
+    return (
+      <div className="max-w-3xl space-y-4">
+        <div className="skeleton h-8 w-48" />
+        <div className="card p-5 space-y-4">
+          <div className="skeleton h-5 w-32" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="skeleton h-10 w-full" />
+            <div className="skeleton h-10 w-full" />
+          </div>
+          <div className="skeleton h-10 w-full" />
+          <div className="skeleton h-16 w-full" />
+        </div>
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="card p-4 space-y-2">
+            <div className="skeleton h-5 w-40" />
+            <div className="skeleton h-3 w-24" />
+          </div>
+        ))}
+      </div>
+    );
   }
 
   return (
@@ -85,7 +107,7 @@ export default function ParticipantsPage() {
           Add Participant
         </h2>
         <form onSubmit={handleAdd} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label htmlFor="name" className="label">
                 Name *

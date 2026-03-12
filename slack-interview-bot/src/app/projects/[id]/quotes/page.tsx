@@ -2,6 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState, useMemo } from "react";
+import { useToast } from "@/app/components/toast";
 
 interface Exchange {
   id: string;
@@ -23,6 +24,7 @@ type FilterOrigin = "all" | "manual" | "ai_followup" | "ai_crosspoll";
 export default function QuotesPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const { toast } = useToast();
   const [exchanges, setExchanges] = useState<Exchange[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterParticipant, setFilterParticipant] = useState<FilterParticipant>("all");
@@ -101,9 +103,33 @@ export default function QuotesPage() {
   function copyQuote(text: string, attribution: string) {
     const quote = `"${text}" — ${attribution}`;
     navigator.clipboard.writeText(quote);
+    toast("Copied to clipboard");
   }
 
-  if (loading) return <div className="text-gray-500">Loading quotes...</div>;
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="skeleton h-8 w-48" />
+        <div className="card p-4">
+          <div className="flex gap-4">
+            <div className="skeleton h-10 w-64" />
+            <div className="skeleton h-10 w-40" />
+            <div className="skeleton h-10 w-40" />
+          </div>
+        </div>
+        <div className="grid gap-4 md:grid-cols-2">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="card p-5 space-y-3">
+              <div className="skeleton h-4 w-32" />
+              <div className="skeleton h-3 w-full" />
+              <div className="skeleton h-16 w-full" />
+              <div className="skeleton h-3 w-20" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import "./globals.css";
+import { ToastProvider } from "./components/toast";
 
 export const metadata: Metadata = {
   title: "Quotable — Dashboard",
@@ -45,10 +46,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <Nav />
-        <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-          {children}
-        </main>
+        <ToastProvider>
+          <Nav />
+          <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+            {children}
+          </main>
+        </ToastProvider>
       </body>
     </html>
   );

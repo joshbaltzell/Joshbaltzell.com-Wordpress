@@ -75,7 +75,23 @@ export default function QuestionsPage() {
   const pendingQuestions = questions.filter((q) => !q.approved);
   const approvedQuestions = questions.filter((q) => q.approved);
 
-  if (loading) return <div className="text-gray-500">Loading...</div>;
+  if (loading) {
+    return (
+      <div className="max-w-3xl space-y-4">
+        <div className="skeleton h-8 w-36" />
+        <div className="card p-4 space-y-3">
+          <div className="skeleton h-4 w-28" />
+          <div className="skeleton h-16 w-full" />
+        </div>
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="card p-4 space-y-2">
+            <div className="skeleton h-4 w-24" />
+            <div className="skeleton h-4 w-full" />
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-3xl">
