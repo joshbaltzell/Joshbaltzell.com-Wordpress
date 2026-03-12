@@ -1,0 +1,16 @@
+# Data & models (too large for git)
+data/*.json
+models/*.joblib
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Env
+.env
+.venv/
+venv/
