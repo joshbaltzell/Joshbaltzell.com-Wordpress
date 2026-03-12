@@ -1,7 +1,9 @@
 import type { App } from "@slack/bolt";
 import { db } from "@/db";
-import { exchanges, participants } from "@/db/schema";
+import { exchanges, participants, projects } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
+import { answerProcessingQueue, questionSendingQueue } from "@/jobs/queue";
+import { buildEditorNotification } from "./messages";
 
 /**
  * Register Slack event handlers.
@@ -33,7 +35,6 @@ export function registerEvents(app: App): void {
     });
 
     if (!participant) {
-      // Not a known participant — ignore or send a polite response
       await client.chat.postMessage({
         channel: event.channel,
         text: "Hi! I'm an interview bot. If you've been invited to participate in an interview, I'll reach out to you directly.",
@@ -75,12 +76,60 @@ export function registerEvents(app: App): void {
       timestamp: event.ts,
     });
 
-    // TODO: Enqueue background jobs:
-    // 1. Follow-up question generation
-    // 2. Cross-pollination check
-    // 3. Saturation check (if every 5th exchange)
-    // 4. Send next question (after delay)
-    // 5. Notify editor
+    // Enqueue answer processing (follow-ups, cross-poll, saturation)
+    await answerProcessingQueue.add(
+      `process-${pendingExchange.id}`,
+      {
+        exchangeId: pendingExchange.id,
+        projectId: pendingExchange.projectId,
+        participantId: participant.id,
+      },
+      { delay: 1000 } // Small delay to let DB writes settle
+    );
+
+    // Enqueue next question sending (with a human-like delay)
+    await questionSendingQueue.add(
+      `next-question-${participant.id}`,
+      {
+        exchangeId: pendingExchange.id,
+        participantId: participant.id,
+      },
+      { delay: 30_000 } // 30 second delay before next question
+    );
+
+    // Notify editor
+    const project = await db.query.projects.findFirst({
+      where: eq(projects.id, pendingExchange.projectId),
+    });
+    if (project) {
+      try {
+        const editorDm = await client.conversations.open({
+          users: project.editorSlackUserId,
+        });
+        if (editorDm.channel?.id) {
+          const answerPreview =
+            messageText.length > 200
+              ? messageText.substring(0, 200) + "..."
+              : messageText;
+
+          await client.chat.postMessage({
+            channel: editorDm.channel.id,
+            text: `${participant.name} answered a question on "${project.title}"`,
+            blocks: buildEditorNotification({
+              projectTitle: project.title,
+              participantName: participant.name,
+              questionNumber: pendingExchange.sequence,
+              answerPreview,
+              followUpCount: 0, // Will be updated after processing
+              crossPollCount: 0,
+              dashboardUrl: `${process.env.APP_URL || "http://localhost:3000"}/projects/${project.id}`,
+            }),
+          });
+        }
+      } catch (err) {
+        console.error("Failed to notify editor:", err);
+      }
+    }
 
     await client.chat.postMessage({
       channel: event.channel,

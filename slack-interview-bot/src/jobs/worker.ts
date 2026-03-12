@@ -1,6 +1,8 @@
 import { Worker } from "bullmq";
 import IORedis from "ioredis";
 import { processAnswer } from "./process-answer";
+import { sendNextQuestion } from "./send-question";
+import { sendNudge } from "./nudge";
 import type {
   AnswerProcessingJob,
   QuestionSendingJob,
@@ -36,8 +38,8 @@ export function startWorkers(): void {
   new Worker<QuestionSendingJob>(
     "question-sending",
     async (job) => {
-      console.log(`Sending question for exchange: ${job.data.exchangeId}`);
-      // TODO: Look up exchange, build Block Kit message, send via Slack
+      console.log(`Sending question to participant: ${job.data.participantId}`);
+      await sendNextQuestion(job);
     },
     { connection, concurrency: 5 }
   );
@@ -47,17 +49,18 @@ export function startWorkers(): void {
     "nudge",
     async (job) => {
       console.log(`Sending nudge for participant: ${job.data.participantId}`);
-      // TODO: Build nudge message, send via Slack, update lastNudgeAt
+      await sendNudge(job);
     },
     { connection, concurrency: 2 }
   );
 
-  // Draft compilation worker
+  // Draft compilation worker (placeholder — compile endpoint handles this synchronously for now)
   new Worker<CompilationJob>(
     "compilation",
     async (job) => {
       console.log(`Compiling draft for project: ${job.data.projectId}`);
-      // TODO: Load all exchanges, run compileDraft(), store in drafts table
+      // The /api/projects/[id]/compile route handles compilation synchronously.
+      // This worker is here for future async compilation of very large projects.
     },
     { connection, concurrency: 1 }
   );
