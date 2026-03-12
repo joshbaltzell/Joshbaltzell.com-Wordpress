@@ -25,6 +25,16 @@
 			return;
 		}
 
+		// Immediately reveal hero elements on page load.
+		var hero = document.querySelector('.jb-hero, .jb-hero-dramatic');
+		if (hero) {
+			animatedElements.forEach(function (el) {
+				if (hero.contains(el)) {
+					el.classList.add('jb-visible');
+				}
+			});
+		}
+
 		var observer = new IntersectionObserver(
 			function (entries) {
 				entries.forEach(function (entry) {
@@ -51,6 +61,7 @@
 		);
 
 		animatedElements.forEach(function (el) {
+			if (hero && hero.contains(el)) return;
 			observer.observe(el);
 		});
 	}
@@ -416,6 +427,18 @@
 			return;
 		}
 
+		// Immediately reveal hero elements on page load (above the fold).
+		var hero = document.querySelector('.jb-hero, .jb-hero-dramatic');
+		if (hero) {
+			var heroElements = hero.querySelectorAll(
+				'.jb-text-reveal, .jb-scale-in, .jb-clip-reveal, .jb-line-grow'
+			);
+			heroElements.forEach(function (el) {
+				el.classList.add('jb-visible');
+			});
+		}
+
+
 		var observer = new IntersectionObserver(
 			function (entries) {
 				entries.forEach(function (entry) {
@@ -432,6 +455,8 @@
 		);
 
 		elements.forEach(function (el) {
+			// Skip hero elements — already revealed above.
+			if (hero && hero.contains(el)) return;
 			observer.observe(el);
 		});
 	}
