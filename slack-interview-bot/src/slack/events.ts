@@ -21,8 +21,10 @@ export function registerEvents(app: App): void {
       return;
     }
 
-    const slackUserId = event.user;
-    const messageText = "text" in event ? event.text : undefined;
+    // After the guards above, TS narrows to `never`. Use a runtime alias.
+    const msg = event as { user?: string; text?: string; channel: string; ts: string };
+    const slackUserId = msg.user;
+    const messageText = msg.text;
 
     if (!slackUserId || !messageText) return;
 
@@ -36,7 +38,7 @@ export function registerEvents(app: App): void {
 
     if (!participant) {
       await client.chat.postMessage({
-        channel: event.channel,
+        channel: msg.channel,
         text: "Hey! I'm Quotable :speech_balloon: — I help collect great quotes for articles. If you've been invited to participate in an interview, I'll reach out to you directly.",
       });
       return;
@@ -53,7 +55,7 @@ export function registerEvents(app: App): void {
 
     if (!pendingExchange) {
       await client.chat.postMessage({
-        channel: event.channel,
+        channel: msg.channel,
         text: "Thanks for the message! I don't have a pending question for you right now. I'll follow up when the next one is ready.",
       });
       return;
@@ -72,9 +74,9 @@ export function registerEvents(app: App): void {
     // Acknowledge receipt (non-critical — don't fail the handler if this errors)
     try {
       await client.reactions.add({
-        channel: event.channel,
+        channel: msg.channel,
         name: "white_check_mark",
-        timestamp: event.ts,
+        timestamp: msg.ts,
       });
     } catch (err) {
       console.warn("Failed to add reaction to message:", err);
@@ -136,7 +138,7 @@ export function registerEvents(app: App): void {
     }
 
     await client.chat.postMessage({
-      channel: event.channel,
+      channel: msg.channel,
       text: "Got it — great answer! I'll follow up with the next question soon.",
     });
   });

@@ -12,13 +12,14 @@ import type {
 
 let _connection: IORedis | null = null;
 
-function getRedisConnection(): IORedis {
+function getRedisConnection() {
   if (!_connection) {
     _connection = new IORedis(process.env.REDIS_URL!, {
       maxRetriesPerRequest: null,
     });
   }
-  return _connection;
+  // Cast needed: bullmq bundles its own ioredis types that conflict with the top-level ioredis
+  return _connection as unknown as import("bullmq").ConnectionOptions;
 }
 
 export function startWorkers(): void {
