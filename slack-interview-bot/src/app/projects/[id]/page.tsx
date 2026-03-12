@@ -256,7 +256,7 @@ export default async function ProjectDetailPage({ params }: PageParams) {
       </div>
 
       {/* Quick links */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-4 gap-4">
         <Link
           href={`/projects/${id}/exchanges`}
           className="card p-4 hover:border-brand-300 transition-colors text-center"
@@ -270,6 +270,13 @@ export default async function ProjectDetailPage({ params }: PageParams) {
         >
           <div className="font-medium text-gray-900">Questions</div>
           <div className="text-sm text-gray-500">Review & approve</div>
+        </Link>
+        <Link
+          href={`/projects/${id}/quotes`}
+          className="card p-4 hover:border-brand-300 transition-colors text-center"
+        >
+          <div className="font-medium text-gray-900">Quotes</div>
+          <div className="text-sm text-gray-500">Browse & star</div>
         </Link>
         {data.latestDraft ? (
           <Link

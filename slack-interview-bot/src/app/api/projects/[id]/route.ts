@@ -34,11 +34,32 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
   return NextResponse.json(project);
 }
 
+const VALID_STATUS_TRANSITIONS: Record<string, string[]> = {
+  setup: ["interviewing"],
+  interviewing: ["compiling", "review"],
+  compiling: ["review", "interviewing"],
+  review: ["published", "interviewing"],
+  published: [],
+};
+
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   const { id } = await params;
   try {
     const body = await request.json();
     const data = updateProjectSchema.parse(body);
+
+    // Validate status transitions
+    if (data.status) {
+      const current = await db.query.projects.findFirst({
+        where: eq(projects.id, id),
+      });
+      if (current && !VALID_STATUS_TRANSITIONS[current.status]?.includes(data.status)) {
+        return NextResponse.json(
+          { error: `Cannot transition from "${current.status}" to "${data.status}"` },
+          { status: 400 }
+        );
+      }
+    }
 
     const [updated] = await db
       .update(projects)

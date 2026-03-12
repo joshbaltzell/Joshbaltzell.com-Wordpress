@@ -137,7 +137,10 @@ export const questions = pgTable(
     approved: boolean("approved").notNull().default(true),
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   },
-  (table) => [index("idx_questions_project").on(table.projectId)]
+  (table) => [
+    index("idx_questions_project").on(table.projectId),
+    index("idx_questions_project_approved").on(table.projectId, table.approved),
+  ]
 );
 
 // ============================================================
@@ -156,7 +159,7 @@ export const exchanges = pgTable(
       .references(() => participants.id, { onDelete: "cascade" }),
     questionId: uuid("question_id")
       .notNull()
-      .references(() => questions.id),
+      .references(() => questions.id, { onDelete: "cascade" }),
     answerText: text("answer_text"),
     sequence: integer("sequence").notNull(),
     status: exchangeStatusEnum("status").notNull().default("pending"),

@@ -69,12 +69,16 @@ export function registerEvents(app: App): void {
       })
       .where(eq(exchanges.id, pendingExchange.id));
 
-    // Acknowledge receipt
-    await client.reactions.add({
-      channel: event.channel,
-      name: "white_check_mark",
-      timestamp: event.ts,
-    });
+    // Acknowledge receipt (non-critical — don't fail the handler if this errors)
+    try {
+      await client.reactions.add({
+        channel: event.channel,
+        name: "white_check_mark",
+        timestamp: event.ts,
+      });
+    } catch (err) {
+      console.warn("Failed to add reaction to message:", err);
+    }
 
     // Enqueue answer processing (follow-ups, cross-poll, saturation)
     await answerProcessingQueue.add(

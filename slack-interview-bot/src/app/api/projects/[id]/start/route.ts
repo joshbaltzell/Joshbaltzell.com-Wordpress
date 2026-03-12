@@ -39,11 +39,12 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
     );
   }
 
-  // Get all pending participants
+  // Get participants eligible for outreach (skip declined)
   const pendingParticipants = await db.query.participants.findMany({
     where: and(
       eq(participants.projectId, id),
-      eq(participants.role, "interviewee")
+      eq(participants.role, "interviewee"),
+      eq(participants.status, "pending")
     ),
   });
 
@@ -62,23 +63,38 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
   // Generate seed questions for participants that don't have any
   if (existingQuestions.length === 0) {
     for (const participant of pendingParticipants) {
-      const seedQuestions = await generateSeedQuestions({
-        thesis: project.thesis || project.title,
-        audience: project.targetAudience || "",
-        participantName: participant.name,
-        participantTitle: participant.title || "",
-        participantContext: participant.context || "",
-        questionCount: Math.min(project.maxRounds || 10, 5), // Generate first 5 seed questions
-      });
-
-      for (const questionText of seedQuestions) {
-        await db.insert(questions).values({
-          projectId: id,
-          text: questionText,
-          origin: "manual",
-          priority: "high",
-          approved: true,
+      try {
+        const seedQuestions = await generateSeedQuestions({
+          thesis: project.thesis || project.title,
+          audience: project.targetAudience || "",
+          participantName: participant.name,
+          participantTitle: participant.title || "",
+          participantContext: participant.context || "",
+          questionCount: Math.min(project.maxRounds || 10, 5),
         });
+
+        if (seedQuestions.length === 0) {
+          return NextResponse.json(
+            { error: `Failed to generate seed questions for ${participant.name}. Check your Gemini API key.` },
+            { status: 500 }
+          );
+        }
+
+        for (const questionText of seedQuestions) {
+          await db.insert(questions).values({
+            projectId: id,
+            text: questionText,
+            origin: "manual",
+            priority: "high",
+            approved: true,
+          });
+        }
+      } catch (err: any) {
+        console.error(`Seed question generation failed for ${participant.name}:`, err);
+        return NextResponse.json(
+          { error: `Failed to generate questions: ${err.message}` },
+          { status: 500 }
+        );
       }
     }
   }

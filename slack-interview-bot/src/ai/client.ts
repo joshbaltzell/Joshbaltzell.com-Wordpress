@@ -29,5 +29,10 @@ export function parseJsonResponse<T>(text: string): T {
     .replace(/^```(?:json)?\s*/i, "")
     .replace(/\s*```$/i, "")
     .trim();
-  return JSON.parse(cleaned) as T;
+  try {
+    return JSON.parse(cleaned) as T;
+  } catch (err) {
+    console.error("Failed to parse AI JSON response. Raw text:", text.substring(0, 500));
+    throw new Error(`Invalid JSON from AI: ${(err as Error).message}`);
+  }
 }

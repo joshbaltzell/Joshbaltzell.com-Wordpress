@@ -77,6 +77,7 @@ CREATE TABLE questions (
 );
 
 CREATE INDEX idx_questions_project ON questions(project_id);
+CREATE INDEX idx_questions_project_approved ON questions(project_id, approved);
 
 -- ============================================================
 -- EXCHANGES
@@ -86,7 +87,7 @@ CREATE TABLE exchanges (
     id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     project_id          UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     participant_id      UUID NOT NULL REFERENCES participants(id) ON DELETE CASCADE,
-    question_id         UUID NOT NULL REFERENCES questions(id),
+    question_id         UUID NOT NULL REFERENCES questions(id) ON DELETE CASCADE,
     answer_text         TEXT,
     sequence            INT NOT NULL,
     status              exchange_status NOT NULL DEFAULT 'pending',

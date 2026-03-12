@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { exchanges, participants, questions } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, asc, desc } from "drizzle-orm";
 
 type RouteParams = { params: Promise<{ id: string }> };
 
@@ -9,6 +9,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
   const { id } = await params;
 
   // Get all exchanges for this project with participant and question data
+  // Sort by askedAt (not answeredAt) so unanswered exchanges have stable positions
   const projectExchanges = await db
     .select({
       id: exchanges.id,
@@ -27,7 +28,7 @@ export async function GET(_request: NextRequest, { params }: RouteParams) {
     .innerJoin(participants, eq(exchanges.participantId, participants.id))
     .innerJoin(questions, eq(exchanges.questionId, questions.id))
     .where(eq(exchanges.projectId, id))
-    .orderBy(exchanges.answeredAt);
+    .orderBy(desc(exchanges.askedAt));
 
   return NextResponse.json(projectExchanges);
 }

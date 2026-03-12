@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { db } from "@/db";
 import { projects, participants, exchanges } from "@/db/schema";
-import { eq, count, sql } from "drizzle-orm";
+import { eq, and, count } from "drizzle-orm";
 
 const STATUS_BADGES: Record<string, { class: string; label: string }> = {
   setup: { class: "badge-gray", label: "Setup" },
@@ -31,7 +31,7 @@ async function getProjects() {
         .select({ count: count() })
         .from(exchanges)
         .where(
-          sql`${exchanges.projectId} = ${project.id} AND ${exchanges.status} = 'answered'`
+          and(eq(exchanges.projectId, project.id), eq(exchanges.status, "answered"))
         );
 
       return {
