@@ -3,8 +3,8 @@ import Link from "next/link";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Interview Bot — Dashboard",
-  description: "AI-powered async interview bot for Slack",
+  title: "Quotable — Dashboard",
+  description: "Quotable: AI-powered async interview bot for Slack",
 };
 
 function Nav() {
@@ -14,7 +14,7 @@ function Nav() {
         <div className="flex h-14 items-center justify-between">
           <div className="flex items-center gap-6">
             <Link href="/" className="text-lg font-semibold text-gray-900">
-              Interview Bot
+              <span className="text-brand-600">Quotable</span>
             </Link>
             <div className="flex items-center gap-4">
               <Link

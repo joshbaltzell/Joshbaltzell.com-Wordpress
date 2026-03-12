@@ -46,7 +46,7 @@ export function buildOutreachMessage(params: {
       type: "section",
       text: {
         type: "mrkdwn",
-        text: `${pick(GREETINGS)} ${params.participantName}! :wave: I'm a friendly interview bot helping ${params.editorName} put together a piece on *"${params.projectTitle}"*.`,
+        text: `${pick(GREETINGS)} ${params.participantName}! :wave: I'm *Quotable* — I help collect the good stuff for articles. ${params.editorName} is putting together a piece on *"${params.projectTitle}"*.`,
       },
     },
     {
@@ -431,6 +431,147 @@ export function buildQuoteApprovalMessage(params: {
       {
         type: "mrkdwn",
         text: ":lock: Nothing gets published without your approval. Take your time!",
+      },
+    ],
+  });
+
+  return blocks;
+}
+
+/** Article progress summary for the editor */
+export function buildProgressMessage(params: {
+  projectTitle: string;
+  status: string;
+  participantSummary: Array<{
+    name: string;
+    status: string;
+    answered: number;
+    total: number;
+  }>;
+  totalAnswered: number;
+  totalExchanges: number;
+  saturationReady: boolean;
+  saturationScores: Record<string, number> | null;
+  deadline: string | null;
+  daysRemaining: number | null;
+  latestDraftVersion: number | null;
+  dashboardUrl: string;
+}): KnownBlock[] {
+  const blocks: KnownBlock[] = [
+    {
+      type: "header",
+      text: {
+        type: "plain_text",
+        text: `Quotable: "${params.projectTitle}"`,
+      },
+    },
+  ];
+
+  // Deadline countdown
+  if (params.deadline) {
+    const urgency =
+      params.daysRemaining !== null && params.daysRemaining <= 2
+        ? ":rotating_light:"
+        : params.daysRemaining !== null && params.daysRemaining <= 7
+          ? ":hourglass_flowing_sand:"
+          : ":calendar:";
+
+    const daysText =
+      params.daysRemaining !== null
+        ? params.daysRemaining <= 0
+          ? "*Past deadline!*"
+          : params.daysRemaining === 1
+            ? "*1 day left*"
+            : `*${params.daysRemaining} days left*`
+        : "";
+
+    blocks.push({
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: `${urgency} Deadline: ${params.deadline} — ${daysText}`,
+      },
+    });
+  }
+
+  // Overall progress bar
+  const pct =
+    params.totalExchanges > 0
+      ? Math.round((params.totalAnswered / params.totalExchanges) * 100)
+      : 0;
+  const filled = Math.round(pct / 5);
+  const bar = ":large_green_square:".repeat(filled) + ":white_large_square:".repeat(20 - filled);
+
+  blocks.push({
+    type: "section",
+    text: {
+      type: "mrkdwn",
+      text: `*Overall progress:* ${params.totalAnswered}/${params.totalExchanges} exchanges (${pct}%)\n${bar}`,
+    },
+  });
+
+  // Per-participant breakdown
+  const participantLines = params.participantSummary.map((p) => {
+    const statusIcon =
+      p.status === "completed"
+        ? ":white_check_mark:"
+        : p.status === "active"
+          ? ":writing_hand:"
+          : p.status === "declined"
+            ? ":no_entry_sign:"
+            : ":hourglass:";
+    return `${statusIcon} *${p.name}* — ${p.answered}/${p.total} answered`;
+  });
+
+  blocks.push({
+    type: "section",
+    text: {
+      type: "mrkdwn",
+      text: `*Participants:*\n${participantLines.join("\n")}`,
+    },
+  });
+
+  // Saturation scores
+  if (params.saturationScores) {
+    const scores = Object.entries(params.saturationScores)
+      .map(([key, val]) => {
+        const emoji = val >= 4 ? ":large_green_circle:" : val >= 3 ? ":large_yellow_circle:" : ":red_circle:";
+        return `${emoji} ${key}: ${val}/5`;
+      })
+      .join("  ");
+
+    blocks.push({
+      type: "context",
+      elements: [
+        {
+          type: "mrkdwn",
+          text: `*Saturation:* ${scores}${params.saturationReady ? "  :white_check_mark: Ready to compile!" : ""}`,
+        },
+      ],
+    });
+  }
+
+  // Draft status
+  if (params.latestDraftVersion) {
+    blocks.push({
+      type: "context",
+      elements: [
+        {
+          type: "mrkdwn",
+          text: `:page_facing_up: Draft v${params.latestDraftVersion} compiled`,
+        },
+      ],
+    });
+  }
+
+  blocks.push({
+    type: "actions",
+    elements: [
+      {
+        type: "button",
+        text: { type: "plain_text", text: "Open Dashboard" },
+        url: params.dashboardUrl,
+        action_id: "open_dashboard",
       },
     ],
   });

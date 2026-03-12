@@ -1,8 +1,8 @@
 {
-  "name": "slack-interview-bot",
+  "name": "quotable",
   "version": "0.1.0",
   "private": true,
-  "description": "AI-powered async interview bot for Slack — conducts multi-person interviews and compiles articles",
+  "description": "Quotable: AI-powered async interview bot for Slack — conducts multi-person interviews and compiles articles",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

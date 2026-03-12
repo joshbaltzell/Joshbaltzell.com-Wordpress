@@ -14,7 +14,7 @@ export function ProjectActions({
   const [loading, setLoading] = useState("");
 
   async function handleStart() {
-    if (!confirm("This will send outreach messages to all participants. Continue?"))
+    if (!confirm("This will send outreach messages to all participants via Quotable. Continue?"))
       return;
     setLoading("start");
     try {
@@ -50,8 +50,41 @@ export function ProjectActions({
         return;
       }
       const result = await res.json();
+      const parts = [`Draft v${result.draft.version} compiled with ${result.quoteCount} quotes`];
+      if (result.paraphraseCount > 0) {
+        parts.push(`${result.paraphraseCount} paraphrases`);
+      }
+      if (result.mismatches?.length > 0) {
+        parts.push(`Warning: ${result.mismatches.length} quote mismatches`);
+      }
+      if (result.riskyParaphraseCount > 0) {
+        parts.push(`${result.riskyParaphraseCount} paraphrases need source approval`);
+      }
+      alert(parts.join(". ") + ".");
+      router.refresh();
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setLoading("");
+    }
+  }
+
+  async function handleSendQuoteApprovals() {
+    if (!confirm("Send quote approval requests to all participants via Slack?"))
+      return;
+    setLoading("approvals");
+    try {
+      const res = await fetch(`/api/projects/${projectId}/quote-approvals`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        const body = await res.json();
+        alert(body.error || "Failed to send approvals");
+        return;
+      }
+      const result = await res.json();
       alert(
-        `Draft v${result.draft.version} compiled with ${result.quoteCount} quotes.${result.mismatches.length > 0 ? ` Warning: ${result.mismatches.length} quote mismatches detected.` : ""}`
+        `Sent ${result.totalQuotesSent} quotes to ${result.participantsContacted} participants for review.`
       );
       router.refresh();
     } catch (err: any) {
@@ -79,6 +112,15 @@ export function ProjectActions({
           className="btn-primary"
         >
           {loading === "compile" ? "Compiling..." : "Compile Draft"}
+        </button>
+      )}
+      {status === "review" && (
+        <button
+          onClick={handleSendQuoteApprovals}
+          disabled={loading === "approvals"}
+          className="btn-primary"
+        >
+          {loading === "approvals" ? "Sending..." : "Send Quote Approvals"}
         </button>
       )}
     </div>

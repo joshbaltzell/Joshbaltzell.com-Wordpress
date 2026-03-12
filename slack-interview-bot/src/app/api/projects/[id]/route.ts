@@ -17,6 +17,8 @@ const updateProjectSchema = z.object({
     .optional(),
   maxRounds: z.number().int().positive().optional(),
   nudgeAfterHours: z.number().int().positive().optional(),
+  deadline: z.string().datetime().nullable().optional(),
+  autoCompileOnDeadline: z.boolean().optional(),
 });
 
 type RouteParams = { params: Promise<{ id: string }> };
@@ -61,9 +63,15 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       }
     }
 
+    // Convert deadline string to Date if provided
+    const updatePayload: Record<string, unknown> = { ...data, updatedAt: new Date() };
+    if (data.deadline !== undefined) {
+      updatePayload.deadline = data.deadline ? new Date(data.deadline) : null;
+    }
+
     const [updated] = await db
       .update(projects)
-      .set({ ...data, updatedAt: new Date() })
+      .set(updatePayload)
       .where(eq(projects.id, id))
       .returning();
 

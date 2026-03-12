@@ -160,10 +160,10 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
     }
   }
 
-  // Update project status
+  // Update project status and record start time
   await db
     .update(projects)
-    .set({ status: "interviewing", updatedAt: new Date() })
+    .set({ status: "interviewing", startedAt: new Date(), updatedAt: new Date() })
     .where(eq(projects.id, id));
 
   return NextResponse.json({

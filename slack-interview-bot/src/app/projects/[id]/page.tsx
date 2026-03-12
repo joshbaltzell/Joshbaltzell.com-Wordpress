@@ -93,6 +93,84 @@ async function getProjectData(id: string) {
   };
 }
 
+function DeadlineBanner({ deadline, startedAt }: { deadline: Date; startedAt: Date | null }) {
+  const now = new Date();
+  const msRemaining = deadline.getTime() - now.getTime();
+  const daysRemaining = Math.ceil(msRemaining / (1000 * 60 * 60 * 24));
+  const isPast = daysRemaining <= 0;
+
+  // Calculate elapsed progress if we have a start date
+  let elapsedPct = 0;
+  if (startedAt) {
+    const totalDuration = deadline.getTime() - startedAt.getTime();
+    const elapsed = now.getTime() - startedAt.getTime();
+    elapsedPct = Math.min(100, Math.max(0, Math.round((elapsed / totalDuration) * 100)));
+  }
+
+  const urgencyClass = isPast
+    ? "bg-red-50 border-red-200 text-red-800"
+    : daysRemaining <= 2
+      ? "bg-orange-50 border-orange-200 text-orange-800"
+      : daysRemaining <= 7
+        ? "bg-yellow-50 border-yellow-200 text-yellow-800"
+        : "bg-blue-50 border-blue-200 text-blue-800";
+
+  const barColor = isPast
+    ? "bg-red-500"
+    : daysRemaining <= 2
+      ? "bg-orange-500"
+      : daysRemaining <= 7
+        ? "bg-yellow-500"
+        : "bg-blue-500";
+
+  return (
+    <div className={`rounded-lg border p-4 mb-8 ${urgencyClass}`}>
+      <div className="flex items-center justify-between mb-2">
+        <span className="font-medium">
+          {isPast
+            ? "Past deadline!"
+            : daysRemaining === 1
+              ? "1 day until deadline"
+              : `${daysRemaining} days until deadline`}
+        </span>
+        <span className="text-sm">
+          {deadline.toLocaleDateString("en-US", {
+            weekday: "short",
+            month: "short",
+            day: "numeric",
+          })}
+        </span>
+      </div>
+      {startedAt && (
+        <div className="w-full bg-white/50 rounded-full h-2">
+          <div
+            className={`h-2 rounded-full ${barColor} transition-all`}
+            style={{ width: `${elapsedPct}%` }}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ProgressBar({ answered, total }: { answered: number; total: number }) {
+  const pct = total > 0 ? Math.round((answered / total) * 100) : 0;
+  return (
+    <div className="w-full">
+      <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+        <span>{pct}% complete</span>
+        <span>{answered}/{total}</span>
+      </div>
+      <div className="w-full bg-gray-100 rounded-full h-2">
+        <div
+          className="h-2 rounded-full bg-brand-500 transition-all"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
 export default async function ProjectDetailPage({ params }: PageParams) {
   const { id } = await params;
   const data = await getProjectData(id);
@@ -124,6 +202,24 @@ export default async function ProjectDetailPage({ params }: PageParams) {
         </div>
         <ProjectActions projectId={id} status={project.status} />
       </div>
+
+      {/* Deadline banner */}
+      {project.deadline && (
+        <DeadlineBanner
+          deadline={project.deadline}
+          startedAt={project.startedAt}
+        />
+      )}
+
+      {/* Overall progress (when interviewing) */}
+      {project.status === "interviewing" && data.exchangeCount > 0 && (
+        <div className="card p-5 mb-8">
+          <h2 className="text-sm font-semibold text-gray-900 mb-3">
+            Article Progress
+          </h2>
+          <ProgressBar answered={data.answeredExchanges} total={data.exchangeCount} />
+        </div>
+      )}
 
       {/* Stats row */}
       <div className="grid grid-cols-4 gap-4 mb-8">
@@ -229,25 +325,37 @@ export default async function ProjectDetailPage({ params }: PageParams) {
           <div className="divide-y divide-gray-100">
             {participantList.map((p) => {
               const pBadge = PARTICIPANT_STATUS_BADGES[p.status] ?? PARTICIPANT_STATUS_BADGES.pending;
+              const pPct = p.totalCount > 0 ? Math.round((p.answeredCount / p.totalCount) * 100) : 0;
               return (
-                <div key={p.id} className="p-4 flex items-center justify-between">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-gray-900">{p.name}</span>
-                      <span className={pBadge.class}>{pBadge.label}</span>
-                    </div>
-                    {p.title && (
-                      <div className="text-sm text-gray-500">{p.title}</div>
-                    )}
-                    {p.context && (
-                      <div className="text-xs text-gray-400 mt-0.5">
-                        {p.context}
+                <div key={p.id} className="p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-gray-900">{p.name}</span>
+                        <span className={pBadge.class}>{pBadge.label}</span>
                       </div>
-                    )}
+                      {p.title && (
+                        <div className="text-sm text-gray-500">{p.title}</div>
+                      )}
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      {p.answeredCount}/{p.totalCount} answered
+                    </div>
                   </div>
-                  <div className="text-sm text-gray-500">
-                    {p.answeredCount}/{p.totalCount} answered
-                  </div>
+                  {p.totalCount > 0 && (
+                    <div className="w-full bg-gray-100 rounded-full h-1.5">
+                      <div
+                        className={`h-1.5 rounded-full transition-all ${
+                          p.status === "completed"
+                            ? "bg-green-500"
+                            : p.status === "declined"
+                              ? "bg-red-300"
+                              : "bg-brand-400"
+                        }`}
+                        style={{ width: `${pPct}%` }}
+                      />
+                    </div>
+                  )}
                 </div>
               );
             })}

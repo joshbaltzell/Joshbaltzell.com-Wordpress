@@ -77,5 +77,5 @@ export interface NudgeJob {
 
 export interface CompilationJob {
   projectId: string;
-  triggeredBy: string; // editor slack user ID
+  triggeredBy: string; // editor slack user ID, or "deadline" for auto-compile
 }

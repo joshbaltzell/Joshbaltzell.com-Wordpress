@@ -37,7 +37,7 @@ export function registerEvents(app: App): void {
     if (!participant) {
       await client.chat.postMessage({
         channel: event.channel,
-        text: "Hi! I'm an interview bot. If you've been invited to participate in an interview, I'll reach out to you directly.",
+        text: "Hey! I'm Quotable :speech_balloon: — I help collect great quotes for articles. If you've been invited to participate in an interview, I'll reach out to you directly.",
       });
       return;
     }
