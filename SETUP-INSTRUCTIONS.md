@@ -59,13 +59,20 @@ cp .env.example .env
 ```
 
 ### 5. Run in Development
-```bash
-# Terminal 1: Next.js app (dashboard + API)
-npm run dev
 
-# Terminal 2: Background workers (processes answers, sends questions, nudges)
-npx tsx src/jobs/worker.ts
+**Option A: Docker Compose (recommended)**
+```bash
+cp .env.example .env
+# Fill in your Slack tokens, Gemini key, and NEXTAUTH_SECRET
+docker compose up --build
 ```
+This starts Postgres, Redis, syncs the DB schema, and runs the dev server. Source is bind-mounted for hot reload.
+
+**Option B: Manual (requires local Postgres + Redis)**
+```bash
+npm run dev
+```
+Note: Workers run inside the Next.js process via `instrumentation.ts` — no separate worker process needed.
 
 ### 6. Using Quotable
 
