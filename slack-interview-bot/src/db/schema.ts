@@ -67,6 +67,13 @@ export const followUpRelationshipEnum = pgEnum("followup_relationship", [
   "clarification",
 ]);
 
+export const quoteApprovalStatusEnum = pgEnum("quote_approval_status", [
+  "pending",
+  "approved",
+  "rejected",
+  "edit_suggested",
+]);
+
 // ============================================================
 // PROJECTS
 // ============================================================
@@ -226,6 +233,43 @@ export const drafts = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
   },
   (table) => [index("idx_drafts_project").on(table.projectId)]
+);
+
+// ============================================================
+// QUOTE APPROVALS
+// ============================================================
+
+export const quoteApprovals = pgTable(
+  "quote_approvals",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    draftId: uuid("draft_id")
+      .notNull()
+      .references(() => drafts.id, { onDelete: "cascade" }),
+    exchangeId: uuid("exchange_id")
+      .notNull()
+      .references(() => exchanges.id),
+    participantId: uuid("participant_id")
+      .notNull()
+      .references(() => participants.id),
+    projectId: uuid("project_id")
+      .notNull()
+      .references(() => projects.id, { onDelete: "cascade" }),
+    quoteText: text("quote_text").notNull(),
+    originalText: text("original_text").notNull(),
+    isParaphrased: boolean("is_paraphrased").notNull().default(false),
+    contextInArticle: text("context_in_article"),
+    status: quoteApprovalStatusEnum("status").notNull().default("pending"),
+    suggestedEdit: text("suggested_edit"),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+    slackMessageTs: text("slack_message_ts"),
+    createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  },
+  (table) => [
+    index("idx_quote_approvals_draft").on(table.draftId),
+    index("idx_quote_approvals_participant").on(table.participantId),
+    index("idx_quote_approvals_project_status").on(table.projectId, table.status),
+  ]
 );
 
 // ============================================================

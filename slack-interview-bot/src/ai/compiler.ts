@@ -6,7 +6,9 @@ import {
 } from "./prompts";
 import type {
   ThematicAnalysis,
+  AuditResult,
   QuoteMismatch,
+  ParaphraseFlag,
   FormattedExchange,
 } from "@/lib/types";
 
@@ -15,14 +17,15 @@ export interface CompilationResult {
   body: string;
   thematicAnalysis: ThematicAnalysis;
   mismatches: QuoteMismatch[];
+  paraphraseFlags: ParaphraseFlag[];
   modelUsed: string;
 }
 
 /**
  * Three-pass draft compilation:
  * 1. Thematic extraction — identify threads and cluster quotes
- * 2. Draft assembly — write the article with inline quote markers
- * 3. Quote fidelity audit — verify every quote matches its source
+ * 2. Draft assembly — write a narrative article with inline quote/paraphrase markers
+ * 3. Quote fidelity & paraphrase audit — verify quotes match sources, flag risky paraphrases
  */
 export async function compileDraft(params: {
   title: string;
@@ -53,7 +56,7 @@ export async function compileDraft(params: {
   const analysisText = extractionResult.response.text();
   const thematicAnalysis = parseJsonResponse<ThematicAnalysis>(analysisText);
 
-  // PASS 2: Draft Assembly
+  // PASS 2: Draft Assembly (narrative article, not interview transcript)
   const assemblyPrompt = buildAssemblyPrompt({
     title: params.title,
     thesis: params.thesis,
@@ -73,7 +76,7 @@ export async function compileDraft(params: {
 
   const draftBody = assemblyResult.response.text();
 
-  // PASS 3: Quote Fidelity Audit
+  // PASS 3: Quote Fidelity & Paraphrase Audit
   const auditPrompt = buildAuditPrompt({
     draft: draftBody,
     allExchanges: params.allExchanges,
@@ -83,20 +86,19 @@ export async function compileDraft(params: {
     contents: [{ role: "user", parts: [{ text: auditPrompt }] }],
     generationConfig: {
       temperature: 0,
-      maxOutputTokens: 2048,
+      maxOutputTokens: 4096,
       responseMimeType: "application/json",
     },
   });
 
-  const mismatches = parseJsonResponse<QuoteMismatch[]>(
-    auditResult.response.text()
-  );
+  const audit = parseJsonResponse<AuditResult>(auditResult.response.text());
 
   return {
     title: params.title,
     body: draftBody,
     thematicAnalysis,
-    mismatches,
+    mismatches: audit.quoteMismatches || [],
+    paraphraseFlags: audit.paraphraseFlags || [],
     modelUsed: "gemini-2.0-pro",
   };
 }

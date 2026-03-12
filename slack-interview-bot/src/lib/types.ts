@@ -68,6 +68,21 @@ export interface QuoteMismatch {
   issue: string;
 }
 
+/** Paraphrase fidelity flag from audit */
+export interface ParaphraseFlag {
+  paraphraseInDraft: string;
+  sourceText: string;
+  exchangeId: string;
+  rating: "faithful" | "minor_shift" | "context_changed";
+  concern: string;
+}
+
+/** Combined audit result from pass 3 */
+export interface AuditResult {
+  quoteMismatches: QuoteMismatch[];
+  paraphraseFlags: ParaphraseFlag[];
+}
+
 /** Formatted exchange for AI prompts */
 export interface FormattedExchange {
   exchangeId: string;

@@ -182,7 +182,7 @@ Return structured JSON:
 }
 
 // ============================================================
-// DRAFT COMPILATION — PASS 2: ASSEMBLY
+// DRAFT COMPILATION — PASS 2: ASSEMBLY (NARRATIVE ARTICLE)
 // ============================================================
 
 export function buildAssemblyPrompt(params: {
@@ -200,7 +200,7 @@ export function buildAssemblyPrompt(params: {
     )
     .join("\n\n");
 
-  return `Write a ${params.targetWordCount}-word article using the thematic analysis and raw exchanges below.
+  return `You are a skilled feature writer composing a ${params.targetWordCount}-word article. Write a proper narrative article — NOT an interview transcript.
 
 ARTICLE TITLE: ${params.title}
 THESIS: ${params.thesis}
@@ -209,24 +209,37 @@ AUDIENCE: ${params.audience}
 THEMATIC ANALYSIS:
 ${params.thematicAnalysis}
 
-RAW EXCHANGES (for exact quote wording):
+RAW EXCHANGES (source material — you don't need to use everything):
 ${formatted}
 
-Rules:
-- Every quote must be EXACTLY as it appears in the raw exchanges — no paraphrasing inside quotation marks
-- Mark every quote with [QUOTE_ID:{exchange_id}] immediately after the closing quotation mark
-- Attribute quotes to participants by name and title
-- Where participants disagree, present both perspectives
-- Insert [EDITOR_CHOICE: option A | option B] where two similar quotes could work and the editor should pick
-- Insert [EDITOR_NOTE: ...] where you need editorial judgment
-- Write in a professional but accessible tone
-- Include an introduction that sets up the thesis and a conclusion that synthesizes insights
+ARTICLE STRUCTURE:
+- Write a compelling narrative that weaves together the best insights from your sources
+- Open with a scene-setting introduction that draws the reader in and establishes the thesis
+- Organize by theme, not by person — each section should explore an idea, not list what one person said
+- Close with a synthesis that ties themes together and looks forward
+- Use connective tissue between quotes: context, analysis, transitions
+- You are the writer — interpret, connect, and frame the material. Don't just string quotes together.
+
+QUOTING RULES:
+- Be SELECTIVE — use the strongest 40-60% of available quotes. Quality over quantity.
+- Direct quotes inside quotation marks must be EXACTLY as they appear in the raw exchanges, word-for-word
+- Mark every direct quote with [QUOTE_ID:{exchange_id}] immediately after the closing quotation mark
+- You may paraphrase when a source's point is important but their exact words aren't particularly compelling
+- When paraphrasing, mark with [PARAPHRASE_ID:{exchange_id}] at the end of the paraphrased passage
+- Attribute quotes to participants by name and title on first mention, name only after
+- Where sources disagree, present both perspectives with context — don't just list contradictions
+
+EDITORIAL MARKERS:
+- [EDITOR_CHOICE: option A | option B] where two quotes could work and the editor should pick
+- [EDITOR_NOTE: ...] where editorial judgment is needed (e.g., sensitive claims, missing context)
+
+TONE: Professional but accessible, authoritative but warm. Match the audience: ${params.audience}.
 
 Write the article now.`;
 }
 
 // ============================================================
-// DRAFT COMPILATION — PASS 3: QUOTE FIDELITY AUDIT
+// DRAFT COMPILATION — PASS 3: QUOTE FIDELITY & PARAPHRASE AUDIT
 // ============================================================
 
 export function buildAuditPrompt(params: {
@@ -240,8 +253,7 @@ export function buildAuditPrompt(params: {
     )
     .join("\n\n");
 
-  return `Compare every quoted string in the draft below against the raw exchanges.
-Flag ANY quote that differs from its source by even one word.
+  return `You are a fact-checker auditing a draft article for quote accuracy and paraphrase fidelity.
 
 DRAFT:
 ${params.draft}
@@ -249,10 +261,26 @@ ${params.draft}
 RAW EXCHANGES:
 ${formatted}
 
-Return ONLY a JSON array of mismatches:
-[{"quoteInDraft": "...", "sourceText": "...", "exchangeId": "...", "issue": "..."}]
+Perform TWO checks:
 
-Return an empty array [] if all quotes match exactly.`;
+1. DIRECT QUOTE FIDELITY: For every string in quotation marks followed by [QUOTE_ID:xxx], verify it matches the raw source EXACTLY. Flag any difference, no matter how small.
+
+2. PARAPHRASE CONTEXT CHECK: For every passage marked with [PARAPHRASE_ID:xxx], assess whether the paraphrase:
+   - Preserves the original meaning and intent
+   - Could be seen as changing what the person actually said
+   - Rate each: "faithful" (meaning preserved), "minor_shift" (slightly different emphasis), or "context_changed" (materially different meaning — requires source approval)
+
+Return JSON:
+{
+  "quoteMismatches": [
+    {"quoteInDraft": "...", "sourceText": "...", "exchangeId": "...", "issue": "..."}
+  ],
+  "paraphraseFlags": [
+    {"paraphraseInDraft": "...", "sourceText": "...", "exchangeId": "...", "rating": "faithful|minor_shift|context_changed", "concern": "..."}
+  ]
+}
+
+Return empty arrays if everything checks out.`;
 }
 
 // ============================================================

@@ -7,6 +7,7 @@ import {
   followUpThreads,
   drafts,
   draftQuoteRefs,
+  quoteApprovals,
 } from "./schema";
 
 export const projectsRelations = relations(projects, ({ many }) => ({
@@ -14,6 +15,7 @@ export const projectsRelations = relations(projects, ({ many }) => ({
   questions: many(questions),
   exchanges: many(exchanges),
   drafts: many(drafts),
+  quoteApprovals: many(quoteApprovals),
 }));
 
 export const participantsRelations = relations(participants, ({ one, many }) => ({
@@ -22,6 +24,7 @@ export const participantsRelations = relations(participants, ({ one, many }) => 
     references: [projects.id],
   }),
   exchanges: many(exchanges),
+  quoteApprovals: many(quoteApprovals),
 }));
 
 export const questionsRelations = relations(questions, ({ one, many }) => ({
@@ -70,6 +73,7 @@ export const draftsRelations = relations(drafts, ({ one, many }) => ({
     references: [projects.id],
   }),
   quoteRefs: many(draftQuoteRefs),
+  quoteApprovals: many(quoteApprovals),
 }));
 
 export const draftQuoteRefsRelations = relations(draftQuoteRefs, ({ one }) => ({
@@ -80,5 +84,24 @@ export const draftQuoteRefsRelations = relations(draftQuoteRefs, ({ one }) => ({
   exchange: one(exchanges, {
     fields: [draftQuoteRefs.exchangeId],
     references: [exchanges.id],
+  }),
+}));
+
+export const quoteApprovalsRelations = relations(quoteApprovals, ({ one }) => ({
+  draft: one(drafts, {
+    fields: [quoteApprovals.draftId],
+    references: [drafts.id],
+  }),
+  exchange: one(exchanges, {
+    fields: [quoteApprovals.exchangeId],
+    references: [exchanges.id],
+  }),
+  participant: one(participants, {
+    fields: [quoteApprovals.participantId],
+    references: [participants.id],
+  }),
+  project: one(projects, {
+    fields: [quoteApprovals.projectId],
+    references: [projects.id],
   }),
 }));

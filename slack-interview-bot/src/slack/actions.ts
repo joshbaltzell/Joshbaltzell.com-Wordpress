@@ -1,8 +1,10 @@
 import type { App } from "@slack/bolt";
+import type { WebClient } from "@slack/web-api";
 import { db } from "@/db";
-import { participants, exchanges, questions, projects } from "@/db/schema";
+import { participants, exchanges, questions, projects, quoteApprovals } from "@/db/schema";
 import { eq, and } from "drizzle-orm";
 import { questionSendingQueue, nudgeQueue } from "@/jobs/queue";
+import { buildQuoteReviewCompleteNotification } from "./messages";
 
 /**
  * Register Block Kit interactive action handlers.
@@ -335,6 +337,133 @@ export function registerActions(app: App): void {
     await ack();
   });
 
+  // Quote approval — participant approves a quote
+  app.action("approve_quote", async ({ ack, body, client }) => {
+    await ack();
+
+    if (body.type !== "block_actions" || !body.actions?.[0]) return;
+    const quoteApprovalId = body.actions[0].type === "button" ? body.actions[0].value : undefined;
+    if (!quoteApprovalId) return;
+
+    await db
+      .update(quoteApprovals)
+      .set({ status: "approved", reviewedAt: new Date() })
+      .where(eq(quoteApprovals.id, quoteApprovalId));
+
+    if ("channel" in body && body.channel && "message" in body && body.message) {
+      // Update just the action block to show the result
+      const blockId = `quote_review_${quoteApprovalId}`;
+      const updatedBlocks = (body.message.blocks || []).map((block: any) => {
+        if (block.block_id === blockId) {
+          return {
+            type: "context",
+            block_id: blockId,
+            elements: [{ type: "mrkdwn", text: ":white_check_mark: *Approved* — thanks!" }],
+          };
+        }
+        return block;
+      });
+
+      try {
+        await client.chat.update({
+          channel: body.channel.id,
+          ts: body.message.ts,
+          blocks: updatedBlocks,
+          text: "Quote approved",
+        });
+      } catch (err) {
+        console.error("Failed to update quote approval message:", err);
+      }
+    }
+
+    await checkAndNotifyQuoteReviewComplete(quoteApprovalId, client);
+  });
+
+  // Quote rejection — participant rejects a quote
+  app.action("reject_quote", async ({ ack, body, client }) => {
+    await ack();
+
+    if (body.type !== "block_actions" || !body.actions?.[0]) return;
+    const quoteApprovalId = body.actions[0].type === "button" ? body.actions[0].value : undefined;
+    if (!quoteApprovalId) return;
+
+    await db
+      .update(quoteApprovals)
+      .set({ status: "rejected", reviewedAt: new Date() })
+      .where(eq(quoteApprovals.id, quoteApprovalId));
+
+    if ("channel" in body && body.channel && "message" in body && body.message) {
+      const blockId = `quote_review_${quoteApprovalId}`;
+      const updatedBlocks = (body.message.blocks || []).map((block: any) => {
+        if (block.block_id === blockId) {
+          return {
+            type: "context",
+            block_id: blockId,
+            elements: [{ type: "mrkdwn", text: ":x: *Rejected* — this quote won't be used." }],
+          };
+        }
+        return block;
+      });
+
+      try {
+        await client.chat.update({
+          channel: body.channel.id,
+          ts: body.message.ts,
+          blocks: updatedBlocks,
+          text: "Quote rejected",
+        });
+      } catch (err) {
+        console.error("Failed to update quote rejection message:", err);
+      }
+    }
+
+    await checkAndNotifyQuoteReviewComplete(quoteApprovalId, client);
+  });
+
+  // Quote edit suggestion — participant wants to suggest changes
+  app.action("suggest_quote_edit", async ({ ack, body, client }) => {
+    await ack();
+
+    if (body.type !== "block_actions" || !body.actions?.[0]) return;
+    const quoteApprovalId = body.actions[0].type === "button" ? body.actions[0].value : undefined;
+    if (!quoteApprovalId) return;
+
+    // Open a modal for the participant to suggest their edit
+    if ("trigger_id" in body && body.trigger_id) {
+      try {
+        await client.views.open({
+          trigger_id: body.trigger_id,
+          view: {
+            type: "modal",
+            callback_id: "quote_edit_modal",
+            private_metadata: quoteApprovalId,
+            title: { type: "plain_text", text: "Suggest an edit" },
+            submit: { type: "plain_text", text: "Submit" },
+            close: { type: "plain_text", text: "Cancel" },
+            blocks: [
+              {
+                type: "input",
+                block_id: "suggested_text",
+                label: { type: "plain_text", text: "How would you phrase this?" },
+                element: {
+                  type: "plain_text_input",
+                  action_id: "suggested_text_input",
+                  multiline: true,
+                  placeholder: {
+                    type: "plain_text",
+                    text: "Type your preferred version of the quote here...",
+                  },
+                },
+              },
+            ],
+          },
+        });
+      } catch (err) {
+        console.error("Failed to open quote edit modal:", err);
+      }
+    }
+  });
+
   // Editor approves pending questions from Slack notification
   app.action("approve_pending_questions", async ({ ack, body, client }) => {
     await ack();
@@ -374,4 +503,100 @@ export function registerActions(app: App): void {
       }
     }
   });
+
+  // Modal submission for quote edit suggestions
+  app.view("quote_edit_modal", async ({ ack, view, client }) => {
+    await ack();
+
+    const quoteApprovalId = view.private_metadata;
+    const suggestedText =
+      view.state.values.suggested_text?.suggested_text_input?.value || "";
+
+    if (!quoteApprovalId || !suggestedText) return;
+
+    await db
+      .update(quoteApprovals)
+      .set({
+        status: "edit_suggested",
+        suggestedEdit: suggestedText,
+        reviewedAt: new Date(),
+      })
+      .where(eq(quoteApprovals.id, quoteApprovalId));
+
+    await checkAndNotifyQuoteReviewComplete(quoteApprovalId, client);
+  });
+}
+
+/**
+ * Check if all quotes for a participant in a draft have been reviewed.
+ * If so, notify the editor with a summary.
+ */
+async function checkAndNotifyQuoteReviewComplete(
+  quoteApprovalId: string,
+  client: WebClient
+): Promise<void> {
+  try {
+    const approval = await db.query.quoteApprovals.findFirst({
+      where: eq(quoteApprovals.id, quoteApprovalId),
+    });
+    if (!approval) return;
+
+    // Check if all quotes for this participant + draft are reviewed
+    const allQuotesForParticipant = await db.query.quoteApprovals.findMany({
+      where: and(
+        eq(quoteApprovals.draftId, approval.draftId),
+        eq(quoteApprovals.participantId, approval.participantId)
+      ),
+    });
+
+    const allReviewed = allQuotesForParticipant.every(
+      (q) => q.status !== "pending"
+    );
+    if (!allReviewed) return;
+
+    // All reviewed — notify the editor
+    const project = await db.query.projects.findFirst({
+      where: eq(projects.id, approval.projectId),
+    });
+    if (!project) return;
+
+    const participant = await db.query.participants.findFirst({
+      where: eq(participants.id, approval.participantId),
+    });
+    if (!participant) return;
+
+    const approved = allQuotesForParticipant.filter(
+      (q) => q.status === "approved"
+    ).length;
+    const rejected = allQuotesForParticipant.filter(
+      (q) => q.status === "rejected"
+    ).length;
+    const edited = allQuotesForParticipant.filter(
+      (q) => q.status === "edit_suggested"
+    ).length;
+
+    const dashboardUrl = `${process.env.NEXT_PUBLIC_BASE_URL || ""}/projects/${project.id}/draft`;
+
+    const editorDm = await client.conversations.open({
+      users: project.editorSlackUserId,
+    });
+    if (!editorDm.channel?.id) return;
+
+    const blocks = buildQuoteReviewCompleteNotification({
+      participantName: participant.name,
+      projectTitle: project.title,
+      approved,
+      rejected,
+      edited,
+      dashboardUrl,
+    });
+
+    await client.chat.postMessage({
+      channel: editorDm.channel.id,
+      blocks,
+      text: `${participant.name} finished reviewing quotes for "${project.title}"`,
+    });
+  } catch (err) {
+    console.error("Failed to check/notify quote review completion:", err);
+  }
 }

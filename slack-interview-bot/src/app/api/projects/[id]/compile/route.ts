@@ -101,7 +101,6 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
     const exchangeId = match[1];
     const sourceExchange = formatted.find((e) => e.exchangeId === exchangeId);
     if (sourceExchange) {
-      // Extract the quote text that precedes the marker (rough heuristic)
       const beforeMarker = result.body.substring(0, match.index);
       const lastQuote = beforeMarker.match(/"([^"]+)"\s*$/);
 
@@ -114,15 +113,45 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
     }
   }
 
+  // Parse [PARAPHRASE_ID:xxx] markers and create quote refs (marked as paraphrased)
+  const paraphrasePattern = /\[PARAPHRASE_ID:([^\]]+)\]/g;
+  while ((match = paraphrasePattern.exec(result.body)) !== null) {
+    const exchangeId = match[1];
+    const sourceExchange = formatted.find((e) => e.exchangeId === exchangeId);
+    if (sourceExchange) {
+      // Extract the sentence or clause before the marker
+      const beforeMarker = result.body.substring(
+        Math.max(0, match.index - 300),
+        match.index
+      );
+      const lastSentence = beforeMarker.match(/[^.!?]*[.!?]?\s*$/)?.[0]?.trim() || "";
+
+      await db.insert(draftQuoteRefs).values({
+        draftId: draft.id,
+        exchangeId,
+        quoteSnippet: lastSentence || sourceExchange.answer.substring(0, 200),
+        locationHint: `Paraphrase near character position ${match.index}`,
+      });
+    }
+  }
+
   // Update project status
   await db
     .update(projects)
     .set({ status: "review", updatedAt: new Date() })
     .where(eq(projects.id, id));
 
+  // Count context-changed paraphrases that need source approval
+  const riskyParaphrases = result.paraphraseFlags.filter(
+    (p) => p.rating === "context_changed"
+  );
+
   return NextResponse.json({
     draft,
     mismatches: result.mismatches,
+    paraphraseFlags: result.paraphraseFlags,
     quoteCount: (result.body.match(/\[QUOTE_ID:/g) || []).length,
+    paraphraseCount: (result.body.match(/\[PARAPHRASE_ID:/g) || []).length,
+    riskyParaphraseCount: riskyParaphrases.length,
   });
 }

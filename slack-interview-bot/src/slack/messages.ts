@@ -5,6 +5,34 @@ import type { KnownBlock } from "@slack/web-api";
  * Slack Block Kit reference: https://api.slack.com/block-kit
  */
 
+// Fun greeting variants for variety
+const GREETINGS = [
+  "Hey there",
+  "Hi",
+  "Hey",
+  "Hello",
+];
+
+const THANKS_VARIANTS = [
+  "That was a great answer",
+  "Really appreciate that insight",
+  "Love the perspective",
+  "That's really interesting",
+  "Fantastic answer",
+];
+
+const TRANSITION_PHRASES = [
+  "Here's the next one:",
+  "Moving right along:",
+  "Next up:",
+  "Here's another one for you:",
+  "Okay, next question:",
+];
+
+function pick<T>(arr: T[]): T {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
 /** Initial outreach to a new participant */
 export function buildOutreachMessage(params: {
   participantName: string;
@@ -18,40 +46,49 @@ export function buildOutreachMessage(params: {
       type: "section",
       text: {
         type: "mrkdwn",
-        text: `Hi ${params.participantName}! I'm helping ${params.editorName} put together an article about *"${params.projectTitle}"*.`,
+        text: `${pick(GREETINGS)} ${params.participantName}! :wave: I'm a friendly interview bot helping ${params.editorName} put together a piece on *"${params.projectTitle}"*.`,
       },
     },
     {
       type: "section",
       text: {
         type: "mrkdwn",
-        text: `${params.editorName} thought you'd have great perspective — ${params.participantContext}`,
+        text: `${params.editorName} specifically thought of you — ${params.participantContext}`,
       },
     },
     {
       type: "section",
       text: {
         type: "mrkdwn",
-        text: `I'll ask you about ${params.estimatedQuestions} questions over the next few days. Reply whenever it's convenient — no rush at all.`,
+        text: `Here's the deal: I'll send you about *${params.estimatedQuestions} questions* over the next few days. You can answer whenever works for you — morning coffee, lunch break, 2am inspiration :coffee: — totally async, totally at your pace.`,
       },
+    },
+    {
+      type: "context",
+      elements: [
+        {
+          type: "mrkdwn",
+          text: ":lock: Your words matter — before anything you say gets published, you'll get a chance to review and approve your quotes.",
+        },
+      ],
     },
     {
       type: "actions",
       elements: [
         {
           type: "button",
-          text: { type: "plain_text", text: "Let's go" },
+          text: { type: "plain_text", text: "Let's do it! :rocket:" },
           style: "primary",
           action_id: "participant_accept",
         },
         {
           type: "button",
-          text: { type: "plain_text", text: "Not right now" },
+          text: { type: "plain_text", text: "Maybe later" },
           action_id: "participant_delay",
         },
         {
           type: "button",
-          text: { type: "plain_text", text: "Decline" },
+          text: { type: "plain_text", text: "Not this time" },
           style: "danger",
           action_id: "participant_decline",
         },
@@ -65,14 +102,26 @@ export function buildQuestionMessage(params: {
   questionNumber: number;
   estimatedTotal: number;
   questionText: string;
+  isFollowUp?: boolean;
 }): KnownBlock[] {
+  const progressEmoji =
+    params.questionNumber <= 1
+      ? ":speech_balloon:"
+      : params.questionNumber >= params.estimatedTotal
+        ? ":checkered_flag:"
+        : ":pencil2:";
+
+  const contextNote = params.isFollowUp
+    ? "This is a follow-up to your last answer — I wanted to dig a little deeper."
+    : "Just reply to this message. Long, short, stream-of-consciousness — whatever feels natural.";
+
   return [
     {
       type: "context",
       elements: [
         {
           type: "mrkdwn",
-          text: `Question ${params.questionNumber} of ~${params.estimatedTotal}`,
+          text: `${progressEmoji} Question ${params.questionNumber} of ~${params.estimatedTotal}`,
         },
       ],
     },
@@ -88,7 +137,7 @@ export function buildQuestionMessage(params: {
       elements: [
         {
           type: "mrkdwn",
-          text: "Just reply to this message with your answer. Take as much space as you need.",
+          text: contextNote,
         },
       ],
     },
@@ -97,10 +146,23 @@ export function buildQuestionMessage(params: {
       elements: [
         {
           type: "button",
-          text: { type: "plain_text", text: "Skip this question" },
+          text: { type: "plain_text", text: "Skip this one" },
           action_id: "skip_question",
         },
       ],
+    },
+  ];
+}
+
+/** Acknowledgment after receiving an answer (sent before the next question) */
+export function buildAnswerAcknowledgment(): KnownBlock[] {
+  return [
+    {
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: `${pick(THANKS_VARIANTS)}! :star: ${pick(TRANSITION_PHRASES)}`,
+      },
     },
   ];
 }
@@ -110,46 +172,54 @@ export function buildNudgeMessage(params: {
   participantName: string;
   daysSinceSent: number;
   questionPreview: string;
+  nudgeNumber: number;
 }): KnownBlock[] {
-  const timeDescription =
-    params.daysSinceSent === 1
-      ? "yesterday"
-      : `${params.daysSinceSent} days ago`;
+  // Escalating tone: first nudge is gentle, later ones are more direct
+  let nudgeText: string;
+  if (params.nudgeNumber <= 1) {
+    const timeDesc =
+      params.daysSinceSent === 1
+        ? "yesterday"
+        : `${params.daysSinceSent} days ago`;
+    nudgeText = `Hey ${params.participantName} :wave: — just floating this back to the top. I sent a question ${timeDesc} and wanted to make sure it didn't get lost in the Slack shuffle.`;
+  } else if (params.nudgeNumber === 2) {
+    nudgeText = `Hi ${params.participantName}! Still have a question waiting for you whenever you get a chance. No pressure — even a quick one-liner helps. :slightly_smiling_face:`;
+  } else {
+    nudgeText = `Hey ${params.participantName} — last nudge from me on this one, promise! If now isn't a good time, no worries at all — you can skip it or let me know you're done.`;
+  }
 
   return [
     {
       type: "section",
       text: {
         type: "mrkdwn",
-        text: `Hey ${params.participantName} — just a friendly follow-up on the question I sent ${timeDescription}. No rush, but wanted to make sure it didn't get buried.`,
+        text: nudgeText,
       },
     },
     {
-      type: "context",
-      elements: [
-        {
-          type: "mrkdwn",
-          text: `> ${params.questionPreview}`,
-        },
-      ],
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: `> ${params.questionPreview}`,
+      },
     },
     {
       type: "actions",
       elements: [
         {
           type: "button",
-          text: { type: "plain_text", text: "Answer now" },
+          text: { type: "plain_text", text: "I'll answer now" },
           style: "primary",
           action_id: "nudge_answer",
         },
         {
           type: "button",
-          text: { type: "plain_text", text: "Ask me something else" },
+          text: { type: "plain_text", text: "Different question please" },
           action_id: "nudge_different_question",
         },
         {
           type: "button",
-          text: { type: "plain_text", text: "I'm done" },
+          text: { type: "plain_text", text: "I'm all done" },
           action_id: "participant_complete",
         },
       ],
@@ -172,14 +242,14 @@ export function buildEditorNotification(params: {
       type: "header",
       text: {
         type: "plain_text",
-        text: `Project Update: "${params.projectTitle}"`,
+        text: `New answer on "${params.projectTitle}"`,
       },
     },
     {
       type: "section",
       text: {
         type: "mrkdwn",
-        text: `*${params.participantName}* just answered question ${params.questionNumber}.`,
+        text: `*${params.participantName}* answered question ${params.questionNumber}:`,
       },
     },
     {
@@ -195,7 +265,7 @@ export function buildEditorNotification(params: {
     const parts: string[] = [];
     if (params.followUpCount > 0) {
       parts.push(
-        `${params.followUpCount} follow-up question${params.followUpCount > 1 ? "s" : ""}`
+        `${params.followUpCount} follow-up${params.followUpCount > 1 ? "s" : ""}`
       );
     }
     if (params.crossPollCount > 0) {
@@ -209,7 +279,7 @@ export function buildEditorNotification(params: {
       elements: [
         {
           type: "mrkdwn",
-          text: `I generated ${parts.join(" and ")}.`,
+          text: `:brain: Generated ${parts.join(" and ")} from this answer.`,
         },
       ],
     });
@@ -220,13 +290,13 @@ export function buildEditorNotification(params: {
     elements: [
       {
         type: "button",
-        text: { type: "plain_text", text: "View in Dashboard" },
+        text: { type: "plain_text", text: "View Dashboard" },
         url: params.dashboardUrl,
         action_id: "open_dashboard",
       },
       {
         type: "button",
-        text: { type: "plain_text", text: "Approve questions" },
+        text: { type: "plain_text", text: "Approve new questions" },
         style: "primary",
         action_id: "approve_pending_questions",
       },
@@ -247,7 +317,14 @@ export function buildCompletionMessage(params: {
       type: "section",
       text: {
         type: "mrkdwn",
-        text: `Thanks so much, ${params.participantName}! That's all ${params.totalQuestions} questions done. Your insights are going to make this article great.`,
+        text: `That's a wrap, ${params.participantName}! :tada: You answered ${params.totalQuestions} questions and gave us some seriously great material.`,
+      },
+    },
+    {
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: "Before anything gets published, you'll get a message from me with your quotes for review. Nothing goes out without your okay.",
       },
     },
     {
@@ -255,7 +332,142 @@ export function buildCompletionMessage(params: {
       elements: [
         {
           type: "mrkdwn",
-          text: `${params.editorName} will be putting the article together and may reach out if anything needs clarification.`,
+          text: `${params.editorName} will be putting the article together. Thanks for being part of this! :raised_hands:`,
+        },
+      ],
+    },
+  ];
+}
+
+/** Quote approval request sent to a participant for review before publication */
+export function buildQuoteApprovalMessage(params: {
+  participantName: string;
+  projectTitle: string;
+  editorName: string;
+  quotes: Array<{
+    quoteApprovalId: string;
+    quoteText: string;
+    context: string;
+    isParaphrased: boolean;
+  }>;
+}): KnownBlock[] {
+  const blocks: KnownBlock[] = [
+    {
+      type: "header",
+      text: {
+        type: "plain_text",
+        text: "Quote review time!",
+      },
+    },
+    {
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: `Hey ${params.participantName}! :wave: ${params.editorName} is putting the finishing touches on *"${params.projectTitle}"* and wants to use some of your quotes. Can you take a quick look and approve them?`,
+      },
+    },
+    {
+      type: "divider",
+    },
+  ];
+
+  for (const quote of params.quotes) {
+    const paraphraseWarning = quote.isParaphrased
+      ? "\n:warning: *This quote has been lightly paraphrased for clarity.* Please review carefully — if the meaning has changed, hit reject and we'll use your original words."
+      : "";
+
+    blocks.push(
+      {
+        type: "section",
+        text: {
+          type: "mrkdwn",
+          text: `> _"${quote.quoteText}"_${paraphraseWarning}`,
+        },
+      },
+      {
+        type: "context",
+        elements: [
+          {
+            type: "mrkdwn",
+            text: `Context: ${quote.context}`,
+          },
+        ],
+      },
+      {
+        type: "actions",
+        block_id: `quote_review_${quote.quoteApprovalId}`,
+        elements: [
+          {
+            type: "button",
+            text: { type: "plain_text", text: "Approve :white_check_mark:" },
+            style: "primary",
+            action_id: "approve_quote",
+            value: quote.quoteApprovalId,
+          },
+          {
+            type: "button",
+            text: { type: "plain_text", text: "Reject :x:" },
+            style: "danger",
+            action_id: "reject_quote",
+            value: quote.quoteApprovalId,
+          },
+          {
+            type: "button",
+            text: { type: "plain_text", text: "Suggest edit :pencil:" },
+            action_id: "suggest_quote_edit",
+            value: quote.quoteApprovalId,
+          },
+        ],
+      },
+      {
+        type: "divider",
+      }
+    );
+  }
+
+  blocks.push({
+    type: "context",
+    elements: [
+      {
+        type: "mrkdwn",
+        text: ":lock: Nothing gets published without your approval. Take your time!",
+      },
+    ],
+  });
+
+  return blocks;
+}
+
+/** Notification to editor that all quotes from a participant have been reviewed */
+export function buildQuoteReviewCompleteNotification(params: {
+  participantName: string;
+  projectTitle: string;
+  approved: number;
+  rejected: number;
+  edited: number;
+  dashboardUrl: string;
+}): KnownBlock[] {
+  const summary: string[] = [];
+  if (params.approved > 0) summary.push(`${params.approved} approved`);
+  if (params.rejected > 0) summary.push(`${params.rejected} rejected`);
+  if (params.edited > 0) summary.push(`${params.edited} need edits`);
+
+  return [
+    {
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: `:clipboard: *${params.participantName}* finished reviewing their quotes for "${params.projectTitle}": ${summary.join(", ")}.`,
+      },
+    },
+    {
+      type: "actions",
+      elements: [
+        {
+          type: "button",
+          text: { type: "plain_text", text: "View details" },
+          url: params.dashboardUrl,
+          action_id: "open_dashboard",
         },
       ],
     },
