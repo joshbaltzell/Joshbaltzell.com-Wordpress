@@ -1,0 +1,141 @@
+/* Josh Baltzell: the rules only WordPress needs.
+   bundle.css is the design system's stylesheet and is not edited. This file maps WordPress's own markup onto it
+   and undoes a few core block styles that fight it. Every value is a token. */
+
+/* ───────── Dark mode ─────────
+   Each color in theme.json that differs between themes is written light-dark(light, dark). That only switches
+   when the root says both schemes are offered. The theme follows the visitor's device; there is no switch. */
+:root{color-scheme:light dark}
+
+/* ───────── Spacing the design system set inline ───────── */
+.jb-spine-count{margin:0 0 var(--space-3)}
+.jb-spine-name{margin:0 0 var(--space-2)}
+.jb-more-line{margin:var(--space-8) 0 0}
+.jb-lost-row{margin-top:var(--space-5)}
+.jb-lost{max-width:var(--measure)}
+/* a picture in a page's spine never grows past the spine's own width, including on a phone */
+.jb-spine-picture{max-width:var(--spine);height:auto}
+
+/* ───────── The Button block: primary by default, with Secondary and Play as block styles ─────────
+   Selectors are long on purpose: inside an article they must outrank the text-link rules. */
+.jb .wp-block-button a.wp-block-button__link{display:inline-flex;align-items:center;justify-content:center;gap:var(--space-2);min-height:var(--size-tap);white-space:nowrap;background:var(--primary);color:var(--on-primary);text-decoration:none;transform:translateY(0);transition:transform var(--dur-press) var(--ease-out),box-shadow var(--dur-press) var(--ease-out)}
+.jb .wp-block-button a.wp-block-button__link:hover{transform:translateY(calc(-1 * var(--outline-hair)));box-shadow:var(--edge-lift)}
+.jb .wp-block-button a.wp-block-button__link:active{transform:translateY(calc(var(--space-1) - var(--outline-hair)));box-shadow:var(--edge-press)}
+.jb .wp-block-button a.wp-block-button__link:focus-visible{border-radius:var(--radius-md);box-shadow:var(--focus-ring),var(--edge-rest)}
+.jb .wp-block-button.is-style-secondary a.wp-block-button__link{background:var(--ground-raised);color:var(--ink)}
+.jb .wp-block-button.is-style-play a.wp-block-button__link{min-height:calc(var(--size-tap) + var(--space-3));padding:var(--space-3) var(--space-6) var(--space-3) var(--space-5);font-size:var(--text-lead);font-weight:var(--weight-heavy);letter-spacing:var(--track-tile);box-shadow:var(--edge-deep)}
+.jb .wp-block-button.is-style-play a.wp-block-button__link:hover{box-shadow:0 calc(var(--space-2) - var(--outline-hair)) 0 var(--ink)}
+.jb .wp-block-button.is-style-play a.wp-block-button__link:active{transform:translateY(var(--space-1));box-shadow:var(--edge-press)}
+.jb .wp-block-button.is-style-play a.wp-block-button__link:focus-visible{box-shadow:var(--focus-ring),var(--edge-deep)}
+.jb .wp-block-button.is-style-play a.wp-block-button__link::before{content:"";flex:none;width:0;height:0;border-style:solid;border-width:calc(var(--space-2) - var(--outline-hair)) 0 calc(var(--space-2) - var(--outline-hair)) var(--space-3);border-color:transparent transparent transparent currentColor}
+
+/* ───────── Core block styles that fight the article styles ───────── */
+/* The Gallery block is a flex row sized by its own rules; here it is an even grid and each picture fills its cell. */
+.jb .prose figure.wp-block-gallery.has-nested-images{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-3);align-items:start}
+.jb .prose .wp-block-gallery.has-nested-images figure.wp-block-image:not(#individual-image){width:100%;margin:0}
+.jb .prose .wp-block-gallery.has-nested-images figure.wp-block-image img{width:100%;height:auto;aspect-ratio:4 / 3;object-fit:cover}
+.jb .prose .wp-block-gallery.has-nested-images>figcaption{grid-column:1 / -1;flex-basis:auto;margin:0;text-align:left;font-size:var(--text-small);line-height:var(--leading-small);color:var(--ink-muted)}
+@media (min-width:600px){.jb .prose figure.wp-block-gallery.has-nested-images.columns-3{grid-template-columns:repeat(3,minmax(0,1fr))}}
+/* The Table block draws a box round every cell; the design has rules between rows only. */
+.jb .prose .wp-block-table td,.jb .prose .wp-block-table th{border-width:0 0 var(--outline-hair);border-style:solid;border-color:var(--line)}
+.jb .prose .wp-block-table thead{border-bottom:0}
+.jb .prose .wp-block-table thead th,.jb .prose .wp-block-table tbody tr:last-child td{border-bottom:var(--outline-part) solid var(--ink)}
+/* The Code block wraps long lines; here a long line scrolls inside the block. */
+.jb .prose pre.wp-block-code code{display:block;white-space:pre;overflow-wrap:normal}
+/* The Pullquote block centers its text. */
+.jb .prose .wp-block-pullquote{text-align:left}
+/* A picture's link should not pick up the text-link hover. */
+.jb .prose figure>a:hover{background:none}
+/* Embeds keep to the reading column and take the outline. */
+.jb .prose .wp-block-embed iframe{display:block;max-width:100%;border:var(--outline-part) solid var(--ink);border-radius:var(--radius-sm)}
+/* A toy's artwork, placed by WordPress, is fitted to its mat like any other. */
+.art-stage>img{height:100%}
+
+/* ───────── Comments, in WordPress's own markup ───────── */
+.comments .children{display:grid;gap:var(--space-4);margin:0;padding:0;list-style:none}
+.comment__text>*{margin:0}
+.comment__text>*+*{margin-top:var(--space-3)}
+.comment__reply{margin:var(--space-2) 0 0;font-size:var(--text-small);line-height:var(--leading-small)}
+.comment-reply-link,#cancel-comment-reply-link{color:inherit;text-decoration:underline;text-decoration-color:var(--accent);text-decoration-thickness:var(--outline-part);text-underline-offset:var(--underline-offset)}
+.comment-reply-link:hover,#cancel-comment-reply-link:hover{background:var(--part-straw);color:var(--on-straw)}
+.comment-respond{margin-top:var(--space-8)}
+.comment-respond #reply-title{margin:0}
+#cancel-comment-reply-link{display:inline-block;margin-bottom:var(--space-3)}
+.comment .comment-respond{margin-top:var(--space-4)}
+
+/* ───────── The admin bar, when signed in ───────── */
+.jb.admin-bar .skip{top:calc(var(--space-2) + var(--wp-admin--admin-bar--height,0px))}
+
+/* ───────── Departures from the design system ─────────
+   The home page's opening. In the design system it is the line with one paragraph under it. Here the paragraph
+   says what the site is for and sits beside the line from 900px, with two ways in underneath. */
+.home-hero__intro{display:grid;gap:var(--space-4);max-width:var(--measure)}
+.home-hero__ways{display:flex;flex-wrap:wrap;gap:var(--space-2) var(--space-8);margin:0}
+@media (min-width:900px){
+  .home-hero{grid-template-columns:auto minmax(0,1fr);align-items:end;column-gap:var(--space-16)}
+  .home-hero__intro{padding-bottom:var(--space-2)}
+}
+
+/* Depth on blocks. In the design system a block is flat. Here it is a shallow box you look into: the cover and
+   the words are on the back wall, the four inner walls slope back to meet it, and the front is a pane of glass
+   with a glare across it. You are looking in from slightly above and to the right, so the floor and the left
+   wall show more than the ceiling and the right wall. Each wall is one flat step of the block's own color;
+   the glare is two hard-edged bands. No blur, and nothing fades. */
+/* Proportions: picture each block as an object 4 inches wide and 1 inch deep, held about ten inches away.
+   At that distance the back wall looks about a tenth smaller than the front frame, so the walls take up a
+   tenth of the block's width between them, split unevenly because you are looking in from above and right.
+   The widths are in cqw (hundredths of the block's own width), so a wide block is deeper in pixels than a
+   narrow one and every block keeps the same shape. */
+.blk{container-type:inline-size;--wall-t:2.2cqw;--wall-r:3.4cqw;--wall-b:4.2cqw;--wall-l:6.4cqw;
+  --wall-floor:color-mix(in srgb,var(--c,var(--part-olive)) 70%,var(--part-paper));
+  --wall-right:color-mix(in srgb,var(--c,var(--part-olive)) 86%,var(--part-paper));
+  --wall-left:color-mix(in srgb,var(--c,var(--part-olive)) 74%,var(--part-night));
+  --wall-ceiling:color-mix(in srgb,var(--c,var(--part-olive)) 58%,var(--part-night));
+  padding:0}
+/* a box cannot size its own padding from its own width, so its two children carry the inset as margins */
+.blk>.cov{margin:var(--wall-t) var(--wall-r) 0 var(--wall-l)}
+.blk>.det{margin:0 var(--wall-r) var(--wall-b) var(--wall-l)}
+/* the four inner walls: one thick border, mitred at the corners, and an ink line where they meet the back wall */
+.blk::before{content:"";position:absolute;inset:0;z-index:1;box-sizing:border-box;border-style:solid;border-width:var(--wall-t) var(--wall-r) var(--wall-b) var(--wall-l);border-color:var(--wall-ceiling) var(--wall-right) var(--wall-floor) var(--wall-left);box-shadow:inset 0 0 0 var(--outline-fine) var(--ink);pointer-events:none}
+/* the glass: the glare falls across the picture, with only a faint band over the whole pane so the words stay easy to read */
+.blk::after{content:"";position:absolute;inset:0;z-index:2;background:linear-gradient(112deg,transparent 0 14%,rgb(255 255 255 / .05) 14% 22%,transparent 22% 81%,rgb(255 255 255 / .05) 81% 84%,transparent 84%);background-size:150% 100%;background-repeat:no-repeat;background-position:var(--glare-x,18%) 0;pointer-events:none}
+.blk .cov::after{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(112deg,transparent 0 14%,rgb(255 255 255 / .16) 14% 22%,transparent 22% 25%,rgb(255 255 255 / .09) 25% 28%,transparent 28%);background-size:150% 100%;background-repeat:no-repeat;background-position:var(--glare-x,18%) 0;pointer-events:none}
+.blk .cov{border-radius:0}
+/* a white or near-black block steps its walls the other way so they stay visible */
+.blk[data-kind="writing"]{--wall-floor:var(--part-paper);--wall-right:color-mix(in srgb,var(--part-paper) 90%,var(--part-night));--wall-left:color-mix(in srgb,var(--part-paper) 78%,var(--part-night));--wall-ceiling:color-mix(in srgb,var(--part-paper) 66%,var(--part-night))}
+.blk[data-kind="photo"]{--wall-floor:color-mix(in srgb,var(--part-night) 66%,var(--part-paper));--wall-right:color-mix(in srgb,var(--part-night) 76%,var(--part-paper));--wall-left:color-mix(in srgb,var(--part-night) 86%,var(--part-paper));--wall-ceiling:color-mix(in srgb,var(--part-night) 93%,var(--part-paper))}
+/* on a pale block a white band would not show, so the faint one is dark */
+.blk[data-kind="writing"]::after,.blk[data-kind="design"]::after{background-image:linear-gradient(112deg,transparent 0 14%,rgb(20 24 16 / .05) 14% 22%,transparent 22%)}
+
+/* The well has depth too. It is a cabinet a little deeper than the blocks standing in it: two inner side
+   walls and a floor slope back to the dotted back wall, and each block casts a hard-edged shadow onto that
+   back wall, offset further than before because the wall is further away. The side walls, the dots and the
+   shadows all shift a little with where you are looking from (set by site.js), and stay put without it. */
+.well{--well-l:var(--space-5);--well-r:var(--space-3);background-position:calc(var(--space-3) + var(--bgx,0px)) calc(var(--space-3) + var(--bgy,0px)),var(--bgx,0px) 0}
+.well::before{content:"";position:absolute;inset:0;z-index:0;box-sizing:border-box;border-style:solid;border-width:0 var(--well-r) var(--space-3) var(--well-l);border-color:transparent color-mix(in srgb,var(--ground-raised) 55%,var(--line)) color-mix(in srgb,var(--ground-raised) 30%,var(--line)) color-mix(in srgb,var(--ground-raised) 10%,var(--line));box-shadow:inset 0 0 0 var(--outline-hair) var(--line);pointer-events:none}
+.well--empty::before{display:none}
+.rack--live .blk,.rack--live .blk:hover,.rack--live .blk:active{box-shadow:calc(var(--sx,var(--size-drop-x)) * 2.4 + var(--cast-x,0px)) calc(var(--sy,var(--size-drop-y)) * 2.4 + var(--cast-y,0px)) 0 rgb(0 0 0 / .34)}
+.rack--live .blk:focus-visible{box-shadow:var(--focus-ring),calc(var(--sx,var(--size-drop-x)) * 2.4 + var(--cast-x,0px)) calc(var(--sy,var(--size-drop-y)) * 2.4 + var(--cast-y,0px)) 0 rgb(0 0 0 / .34)}
+
+/* The pile as a toy: a landed block can be picked up and thrown. */
+@media (pointer:fine){.rack--live .blk{cursor:grab}}
+.rack--held,.rack--held .blk{cursor:grabbing;user-select:none}
+/* on a touch screen a block is picked up by pressing and holding, so holding must not select text or open a menu */
+.rack--live .blk{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+
+/* A block with its own look. data-skin="gyms": Gyms of War, in distressed lettering on a box that has been
+   knocked about. The colors and the typeface belong to that game, not to the site. The dents are an uneven
+   outline, and the scratches and scuffs are hard-edged streaks: still no gradients that fade and no blur. */
+@font-face{font-family:"Rubik Dirt";font-weight:400;font-style:normal;font-display:swap;src:url("../fonts/RubikDirt-latin.woff2") format("woff2")}
+.blk[data-skin="gyms"]{--c:#4b4f43;--on:#eef0e4;--wall-floor:#6d7262;--wall-right:#5b6052;--wall-left:#35382f;--wall-ceiling:#2a2d25;border-radius:var(--space-half) var(--space-3) var(--space-1) var(--space-2) / var(--space-2) var(--space-1) var(--space-3) var(--space-half)}
+.blk[data-skin="gyms"] .det{position:relative;background-image:
+  linear-gradient(118deg,transparent 0 21%,rgb(255 255 255 / .16) 21% 21.7%,transparent 21.7% 23.4%,rgb(255 255 255 / .1) 23.4% 23.8%,transparent 23.8%),
+  linear-gradient(64deg,transparent 0 67%,rgb(0 0 0 / .28) 67% 68.2%,transparent 68.2% 71%,rgb(0 0 0 / .2) 71% 71.5%,transparent 71.5%),
+  linear-gradient(171deg,transparent 0 78%,rgb(255 255 255 / .12) 78% 79%,transparent 79%),
+  linear-gradient(to right,rgb(0 0 0 / .22) 0 var(--space-2),transparent var(--space-2)),
+  linear-gradient(to top,rgb(0 0 0 / .18) 0 var(--space-1),transparent var(--space-1))}
+.blk[data-skin="gyms"] .det__title{font-family:"Rubik Dirt",var(--font-display);font-weight:400;font-size:calc(var(--text-tile) * 1.12);letter-spacing:.01em;text-transform:uppercase;color:#b6ff3c}
+.blk[data-skin="gyms"] .det__meta{color:#c9cdbd}
+
+/* while the next part of a list is being fetched, the old one dims so a press is seen to have landed */
+.jb-loading main .l-shell{opacity:.6}
