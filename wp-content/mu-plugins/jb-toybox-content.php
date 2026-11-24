@@ -83,6 +83,7 @@ function jb_content_fields() {
 					'sun'  => __( 'Sun: warm light', 'jb-toybox' ),
 					'hole' => __( 'Black hole: dark light, a pull, orbiting stars', 'jb-toybox' ),
 					'pond'   => __( 'Pond: the Pond Chorus frog croaks', 'jb-toybox' ),
+					'ants'     => __( 'Ants: Picnic Raid\'s ants march out in single file to raid other blocks (keeps the cover)', 'jb-toybox' ),
 					'microbes' => __( 'Microbes: Look Alive\'s cells crawl the rim and wander to other blocks (keeps the cover)', 'jb-toybox' ),
 				),
 			),

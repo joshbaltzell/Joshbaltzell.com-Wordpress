@@ -203,4 +203,91 @@
       g.globalAlpha = 1;
     }
   };
+
+  /* ---- ants: Picnic Raid's ants raid the pile ----
+     A few ants mill around the rim of the block. Every so often a column of them marches out in single file
+     behind a leader: across to a nearby block, along part of its edge, and home again, carrying crumbs back.
+     Followers walk the leader's exact path, a fixed distance apart. The block keeps its own cover (no art). */
+  var ANT = { home: 5, file: 8, gap: 13, walk: 14, lap: [.25, .4], every: [14, 24] };
+  function antPaint(g, x, y, ang, step, crumb, a) {
+    g.save(); g.translate(x, y); g.rotate(ang); g.scale(1.5, 1.5); g.globalAlpha = a;
+    /* legs first: three a side, swinging in turn */
+    g.strokeStyle = '#3a120b'; g.lineWidth = .8; g.lineCap = 'round';
+    for (var k = -1; k <= 1; k++) {
+      var sw = Math.sin(step + k * 2.1) * 1.4;
+      g.beginPath(); g.moveTo(k * 1.6, 0); g.lineTo(k * 1.6 + sw, -3.4); g.moveTo(k * 1.6, 0); g.lineTo(k * 1.6 - sw, 3.4); g.stroke();
+    }
+    g.fillStyle = '#8a2414'; /* Picnic Raid's ants are red */
+    g.beginPath(); g.ellipse(-3.4, 0, 2.3, 1.7, 0, 0, Math.PI * 2); g.fill();   /* abdomen */
+    g.beginPath(); g.ellipse(0, 0, 1.4, 1.1, 0, 0, Math.PI * 2); g.fill();      /* thorax */
+    g.beginPath(); g.arc(2.6, 0, 1.3, 0, Math.PI * 2); g.fill();                /* head */
+    g.strokeStyle = 'rgba(255,255,255,.35)'; g.lineWidth = .6; g.beginPath(); g.arc(-3.6, -.5, 1.1, Math.PI * 1.1, Math.PI * 1.7); g.stroke();
+    if (crumb) { g.fillStyle = '#f4d58a'; g.strokeStyle = '#8a5a1c'; g.lineWidth = .6; g.beginPath(); g.rect(3.4, -1.6, 3, 3); g.fill(); g.stroke(); }
+    g.restore();
+  }
+  JBStack.rules.ants = {
+    over: function (g, S) {
+      var st = S.state, me = S.blocks[S.self], t = S.t, dt = S.dt, inset = Math.max(4, S.U * .03);
+      if (!me) return;
+      var per = rim(me, 0, inset).per;
+      if (!st.home) {
+        st.home = []; st.march = null; st.next = t + rnd(4, 8);
+        for (var k = 0; k < ANT.home; k++) st.home.push({ d: rnd(0, per), dir: Math.random() < .5 ? -1 : 1, v: rnd(8, 13), step: rnd(0, 6) });
+      }
+
+      /* the ants at home wander the rim, turning back now and then */
+      st.home.forEach(function (a) { if (dt && Math.random() < dt * .25) a.dir = -a.dir; a.d += a.dir * a.v * dt; a.step += a.v * dt * .9; });
+
+      /* a march: the leader's path is recorded, the file follows it */
+      if (!st.march && dt && t > st.next) {
+        var near = S.blocks.map(function (b, i) { return b && i !== S.self ? { i: i, e: Math.hypot(b.x - me.x, b.y - me.y) } : null; }).filter(Boolean).sort(function (a, b) { return a.e - b.e; }).slice(0, 3);
+        if (near.length) {
+          var to = near[Math.floor(Math.random() * near.length)].i, start = rnd(0, per), p0 = rim(me, start, inset);
+          st.march = { leg: 'out', to: to, d: start, dir: Math.random() < .5 ? -1 : 1, x: p0.x, y: p0.y, path: [[p0.x, p0.y]], len: [0], done: 0, fade: 1, step: 0 };
+        }
+      }
+      var m = st.march;
+      if (m && dt) {
+        var step = ANT.walk * dt, tb = S.blocks[m.to];
+        if (!tb && m.leg !== 'home' && m.leg !== 'back') { m.leg = 'back'; m.aim = nearestOnRim(me, m.x, m.y, inset); }
+        if (m.leg === 'out' || m.leg === 'back') {
+          /* cross the gap in a straight line to the nearest point on the other block (or home) */
+          var target = m.leg === 'out' ? tb : me;
+          if (m.aim === undefined) m.aim = nearestOnRim(target, m.x, m.y, inset);
+          var p = rim(target, m.aim, inset), dx = p.x - m.x, dy = p.y - m.y, n = Math.hypot(dx, dy) || 1;
+          if (n <= step) { m.x = p.x; m.y = p.y; m.d = m.aim; m.aim = undefined; m.walked = 0; m.leg = m.leg === 'out' ? 'visit' : 'home'; m.lap = rnd(ANT.lap[0], ANT.lap[1]) * rim(target, 0, inset).per; }
+          else { m.x += dx / n * step; m.y += dy / n * step; }
+        } else if (m.leg === 'visit' || m.leg === 'home') {
+          var host = m.leg === 'visit' ? tb : me;
+          m.d += m.dir * step; m.walked += step;
+          var q = rim(host, m.d, inset); m.x = q.x; m.y = q.y;
+          if (m.walked > m.lap) { if (m.leg === 'visit') { m.leg = 'back'; m.turn = m.path.length; } else m.leg = 'end'; }
+        }
+        if (m.leg !== 'end') {
+          var last = m.path[m.path.length - 1], seg = Math.hypot(m.x - last[0], m.y - last[1]);
+          if (seg > 1.5) { m.path.push([m.x, m.y]); m.len.push(m.len[m.len.length - 1] + seg); }
+        } else m.done += step;
+        m.step += step * .9;
+        /* the march is over when the last ant has reached the end of the path */
+        if (m.leg === 'end' && m.done > (ANT.file - 1) * ANT.gap) { st.march = null; st.next = t + rnd(ANT.every[0], ANT.every[1]); }
+      }
+
+      /* draw: home ants, then the file (each ant found by distance along the leader's path) */
+      st.home.forEach(function (a) { var p = rim(me, a.d, inset); antPaint(g, p.x, p.y, Math.atan2(p.ty * a.dir, p.tx * a.dir), a.step, false, .95 * S.lit); });
+      m = st.march;
+      if (m) {
+        var total = m.len[m.len.length - 1] + m.done, j = m.len.length - 1;
+        for (var f = 0; f < ANT.file; f++) {
+          var at = total - f * ANT.gap;
+          if (at < 0) break;
+          if (at > m.len[m.len.length - 1]) continue; /* already home and gone in */
+          while (j > 0 && m.len[j - 1] > at) j--;
+          var i0 = Math.max(0, j - 1), a0 = m.path[i0], a1 = m.path[j], sl = (m.len[j] - m.len[i0]) || 1, u = (at - m.len[i0]) / sl;
+          var x = a0[0] + (a1[0] - a0[0]) * u, y = a0[1] + (a1[1] - a0[1]) * u;
+          antPaint(g, x, y, Math.atan2(a1[1] - a0[1], a1[0] - a0[0]), m.step - f * 1.3, m.turn !== undefined && j >= m.turn, .95 * S.lit);
+        }
+      }
+      g.globalAlpha = 1;
+    }
+  };
 })();

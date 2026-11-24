@@ -283,8 +283,9 @@
 
     function draw(lit) {
       var i, j, p, b, P = [], lights = [], orbit = null;
-      /* play: with a long list in the well, only the first two special blocks in it light up and move */
-      var specials = allSpecials.filter(function (s) { return active[s.i] && !falling[s.i]; }).slice(0, 2);
+      /* play: up to four move at once; only the first two that cast light (sun, hole) light the pile, since lighting is the costly part */
+      var lamps = 0;
+      var specials = allSpecials.filter(function (s) { return active[s.i] && !falling[s.i]; }).slice(0, 4).filter(function (s) { if (!s.rule.light) return true; return ++lamps <= 2; });
       /* play: physics to screen, mirrored top to bottom (y flips, so the angle does too); a held block still lifts up */
       for (i = 0; i < N; i++) P[i] = pose[i] ? [pose[i][0], H - pose[i][1] - 3 * lift[i], -pose[i][2]] : null;
       /* pulls first, so the light falls on blocks where they have been dragged to */
