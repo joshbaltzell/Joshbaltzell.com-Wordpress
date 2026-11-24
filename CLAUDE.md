@@ -35,6 +35,8 @@ The design system is the source of truth: https://claude.ai/artifact/X3s5eC5Atjv
 - The five kinds are categories with the slugs `toys`, `code`, `design`, `writing`, `photos` (`inc/kinds.php`). A post's kind picks its face color (`data-kind`), its spine facts and its body layout in `single.php`. Topics are tags.
 - A post's lead paragraph is its Excerpt. Other facts come from the "Post details" box.
 - `[game name="…" version="…" url="…" poster="…" keys="{←} {→} move | second note"]` puts a playable game in an article. Point `url` at a frozen copy of that version.
+- `[text_toys]` (`inc/text-toys.php`, `assets/js/text-toys.js`) adds a row of toys that play with the page's own words: nouns, redact, voice swap. The noun parser (compromise 14.10.0, `assets/js/vendor/`) loads only when asked for.
+- `node bin/lint-tokens.mjs` lists raw colours, lengths and durations in `wp.css` with the nearest token. A deliberate raw value carries `/* raw: reason */` on its line.
 - Departures from the design system are in a labelled section at the end of `wp.css`: the two-part home page opening, and depth on blocks (each block is a glass-fronted box: content on the back wall, four inner walls drawn as one mitred border on `::before`, and a glare on `::after`). Box depth is in `cqw` so it scales with each block (pictured as 4 inches wide, 1 inch deep). `assets/js/site.js` moves the walls, the well's side walls, its back-wall pattern and the cast shadows with the pointer, or with scrolling on touch screens; it does nothing under reduced motion. On touch, a block is picked up by pressing and holding (in `stack.js`). There is no pager. Every list puts its whole set in the page (capped at 48; the home page at 36), and the stack shows a first batch (12, or 9 on a phone and on the home page). `stack.js` keeps an "active set" with three operations: add (blocks fall in from the top), remove (the floor opens and they fall out) and tidy (re-drop). Built on those:
   - **More:** the "N more" button under the well adds the next batch.
   - **Filters:** chips with `data-stack-filter` (Games, Toys) swap the active set in place and update the address with `history.replaceState`. On a list the server already filtered (`?tag=`), the chips are plain links. Without script, every item shows and the chip links filter on the server.
@@ -85,6 +87,8 @@ Toys are static builds hosted outside WordPress. The first set is the games in `
 - Games stay in their own repo, served from a subdomain (planned: `play.joshbaltzell.com`).
 - Each toy gets a `toy` post with a Play link to the live build.
 - An article about a specific version embeds a frozen copy (planned: `/archive/<game>/v<n>/` in the games repo), never the live build.
+
+`toys/` holds standalone toys built here (each a static page with a `POST.md` draft) that move to the games repo once the `play` subdomain exists. `toys/kit/` is their shared look: the site palette and faces without WordPress.
 
 The root `docker-compose.yml` is an older, separate WordPress setup on port 8080 with an empty database.
 
