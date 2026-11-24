@@ -246,3 +246,9 @@
 
 /* the kind link at the top of a post is small type; give it a finger-sized target without moving anything */
 a.kind{padding-block:var(--space-1);margin-block:calc(-1 * var(--space-1))}
+
+/* The status line above the pile changes length as it goes (rising, settled, loose). It gets a fixed starting
+   width instead of its text's width, so a longer message never pushes the buttons onto another row; text that
+   doesn't fit is trimmed, and the whole line is in its tooltip. */
+.rack__bar>[data-stack-status]{flex:1 1 14rem;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rack__bar>.l-row{margin-left:auto}
