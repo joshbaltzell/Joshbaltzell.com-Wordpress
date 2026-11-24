@@ -50,18 +50,26 @@
      A small colony crawls slowly round the edge of the box. Every so often one leaves, crosses to a nearby
      block, explores its rim, maybe hops to another, and fades out about a minute after it set off. The colony
      buds a new cell to replace it. The block keeps its own cover (no art); everything is drawn over the pile.
-     The look is borrowed from Look Alive's draw.js: the soft cell sprite from sprite() and the wiggling
-     flagellum from portrait(), in the game's own colours. */
-  var MCOL = ['#ff6b95', '#ff6b95', '#a78bfa', '#2dd4a7'], AMB = '#f5a524', cells = {};
-  function cell(color) {
-    if (cells[color]) return cells[color];
-    var c = document.createElement('canvas'); c.width = c.height = 48; var g = c.getContext('2d');
-    var gr = g.createRadialGradient(20, 19, 2, 24, 24, 23);
-    gr.addColorStop(0, 'rgba(255,255,255,.75)'); gr.addColorStop(.25, color); gr.addColorStop(.75, color); gr.addColorStop(1, 'rgba(0,0,0,0)');
-    g.globalAlpha = .9; g.fillStyle = gr; g.beginPath(); g.arc(24, 24, 23, 0, 7); g.fill();
-    return (cells[color] = c);
+     They look like bacteria under a microscope: lavender rods (bacilli) with bright edges and darker middles,
+     some joined end to end in short chains, and small red rings (cocci). No tails. */
+  var SC = 3, sprites = {};
+  /* a rod or a ring drawn once, three times over size, with a soft glow, then scaled down when used */
+  function sprite(kind, a, b) {
+    var key = kind + a.toFixed(1) + 'x' + b.toFixed(1);
+    if (sprites[key]) return sprites[key];
+    var pad = 4, w = kind === 'rod' ? a : b * 2, h = kind === 'rod' ? b : b * 2;
+    var c = document.createElement('canvas'); c.width = Math.ceil((w + pad * 2) * SC); c.height = Math.ceil((h + pad * 2) * SC);
+    var g = c.getContext('2d'); g.scale(SC, SC); g.translate(pad, pad);
+    g.beginPath();
+    if (kind === 'rod') { var r = h / 2; g.moveTo(r, 0); g.lineTo(w - r, 0); g.arc(w - r, r, r, -Math.PI / 2, Math.PI / 2); g.lineTo(r, h); g.arc(r, r, r, Math.PI / 2, Math.PI * 1.5); g.closePath(); }
+    else g.arc(b, b, b - .6, 0, Math.PI * 2);
+    g.shadowColor = kind === 'rod' ? 'rgba(170,150,255,.9)' : 'rgba(255,90,70,.85)'; g.shadowBlur = 3;
+    g.fillStyle = kind === 'rod' ? 'rgba(92,72,196,.72)' : 'rgba(40,8,12,.55)'; g.fill();
+    g.shadowBlur = 0; g.lineWidth = kind === 'rod' ? 1.1 : 1.4;
+    g.strokeStyle = kind === 'rod' ? '#e4ddff' : '#ff8f78'; g.stroke();
+    return (sprites[key] = { c: c, w: w + pad * 2, h: h + pad * 2 });
   }
-  var COLONY = 7, CRAWL = [5, 11], CROSS = 18, LIFE = [50, 70], FADE = 4;
+  var COLONY = 8, CRAWL = [4, 9], CROSS = 18, LIFE = [50, 70], FADE = 4;
   function rnd(a, b) { return a + Math.random() * (b - a); }
   /* a point on a block's rim, `d` pixels along it clockwise from the top-left corner, in screen space */
   function rim(b, d, inset) {
@@ -81,7 +89,7 @@
     return best;
   }
   function born(home, d, now) {
-    return { host: home, d: d, dir: Math.random() < .5 ? -1 : 1, v: rnd(CRAWL[0], CRAWL[1]), col: MCOL[Math.floor(Math.random() * MCOL.length)], r: rnd(4, 5.6), ph: Math.random() * 6.28, mode: 'rim', left: 0, alpha: 0, x: 0, y: 0, hx: 1, hy: 0, next: now + rnd(12, 24) };
+    return { host: home, d: d, dir: Math.random() < .5 ? -1 : 1, v: rnd(CRAWL[0], CRAWL[1]), kind: Math.random() < .65 ? 'rod' : 'ring', len: rnd(11, 17), wid: rnd(4.2, 5.2), r: rnd(3.3, 4.2), links: Math.random() < .5 ? 1 : Math.random() < .6 ? 2 : 3, kink: rnd(-.18, .18), ph: Math.random() * 6.28, mode: 'rim', left: 0, alpha: 0, x: 0, y: 0, hx: 1, hy: 0, next: now + rnd(12, 24) };
   }
   JBStack.rules.microbes = {
     over: function (g, S) {
@@ -125,16 +133,16 @@
       });
       st.list = st.list.filter(function (q) { return q.alpha > 0 || !q.dying; });
 
-      /* draw: tail first, then the cell */
-      g.lineCap = 'round';
+      /* draw: a rod lies along the way it is going, its chain trailing behind; a ring just sits */
       st.list.forEach(function (q) {
         var a = Math.max(0, q.alpha) * S.lit; if (a <= .01 || (!S.blocks[q.host] && !q.left)) return;
-        var bx = q.x - q.hx * q.r, by = q.y - q.hy * q.r, nx = -q.hy, ny = q.hx;
-        g.globalAlpha = .85 * a; g.strokeStyle = AMB; g.lineWidth = 1.6; g.beginPath(); g.moveTo(bx, by);
-        for (var s = 1; s <= 10; s++) { var w = Math.sin(s * .9 + t * 3 + q.ph) * 3.2 * (s / 10); g.lineTo(bx - q.hx * s * 2.2 + nx * w, by - q.hy * s * 2.2 + ny * w); }
-        g.stroke();
-        var sz = q.r * 2.6, wob = 1 + Math.sin(t * 1.3 + q.ph) * .06;
-        g.globalAlpha = a; g.drawImage(cell(q.col), q.x - sz / 2 * wob, q.y - sz / 2 / wob, sz * wob, sz / wob);
+        g.globalAlpha = a;
+        if (q.kind === 'ring') { var sr = sprite('ring', 0, q.r); g.drawImage(sr.c, q.x - sr.w / 2, q.y - sr.h / 2, sr.w, sr.h); return; }
+        var sp = sprite('rod', q.len, q.wid), ang = Math.atan2(q.hy, q.hx) + Math.sin(t * .7 + q.ph) * .05, x = q.x, y = q.y;
+        for (var k = 0; k < q.links; k++) {
+          g.save(); g.translate(x, y); g.rotate(ang); g.drawImage(sp.c, -sp.w / 2, -sp.h / 2, sp.w, sp.h); g.restore();
+          ang += q.kink; x -= Math.cos(ang) * (q.len + .8); y -= Math.sin(ang) * (q.len + .8);
+        }
       });
       g.globalAlpha = 1;
     }
