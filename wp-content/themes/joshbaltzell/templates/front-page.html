@@ -35,8 +35,8 @@
 </div>
 <!-- /wp:group -->
 
-<!-- wp:group {"className":"jb-carousel-section","style":{"spacing":{"padding":{"top":"var:preset|spacing|70","bottom":"var:preset|spacing|70","left":"0","right":"0"}}},"layout":{"type":"default"}} -->
-<div class="wp-block-group jb-carousel-section" style="padding-top:var(--wp--preset--spacing--70);padding-right:0;padding-bottom:var(--wp--preset--spacing--70);padding-left:0">
+<!-- wp:group {"className":"jb-featured-section","style":{"spacing":{"padding":{"top":"var:preset|spacing|70","bottom":"var:preset|spacing|70","left":"var:preset|spacing|30","right":"var:preset|spacing|30"}}},"layout":{"type":"constrained","contentSize":"1200px"}} -->
+<div class="wp-block-group jb-featured-section" style="padding-top:var(--wp--preset--spacing--70);padding-right:var(--wp--preset--spacing--30);padding-bottom:var(--wp--preset--spacing--70);padding-left:var(--wp--preset--spacing--30)">
 
 <!-- wp:group {"style":{"spacing":{"margin":{"bottom":"var:preset|spacing|50"}}},"layout":{"type":"constrained","contentSize":"800px"}} -->
 <div class="wp-block-group" style="margin-bottom:var(--wp--preset--spacing--50)">
@@ -56,28 +56,30 @@
 </div>
 <!-- /wp:group -->
 
-<!-- wp:query {"queryId":2,"query":{"perPage":6,"pages":0,"offset":0,"postType":"ai_interview","order":"desc","orderBy":"date","inherit":false}} -->
+<!-- wp:query {"queryId":2,"query":{"perPage":4,"pages":0,"offset":0,"postType":"ai_interview","order":"desc","orderBy":"date","inherit":false}} -->
 <div class="wp-block-query">
 
-<!-- wp:post-template {"className":"jb-carousel","layout":{"type":"flex","flexWrap":"nowrap"}} -->
+<!-- wp:post-template {"className":"jb-featured-stack","layout":{"type":"default"}} -->
 
-<!-- wp:group {"className":"jb-carousel-card","style":{"spacing":{"padding":{"top":"0","bottom":"0","left":"0","right":"0"}},"border":{"radius":"8px"}},"layout":{"type":"default"}} -->
-<div class="wp-block-group jb-carousel-card" style="border-radius:8px;padding-top:0;padding-right:0;padding-bottom:0;padding-left:0">
+<!-- wp:group {"className":"jb-featured-card jb-scale-in","style":{"spacing":{"padding":{"top":"0","bottom":"0","left":"0","right":"0"}},"border":{"radius":"20px"}},"layout":{"type":"default"}} -->
+<div class="wp-block-group jb-featured-card jb-scale-in" style="border-radius:20px;padding-top:0;padding-right:0;padding-bottom:0;padding-left:0">
 
-<!-- wp:group {"className":"jb-carousel-image","layout":{"type":"default"}} -->
-<div class="wp-block-group jb-carousel-image">
+<!-- wp:group {"className":"jb-featured-card-image","layout":{"type":"default"}} -->
+<div class="wp-block-group jb-featured-card-image">
 
-<!-- wp:post-featured-image {"isLink":true,"aspectRatio":"16/10","style":{"spacing":{"margin":{"top":"0","bottom":"0"}}}} /-->
+<!-- wp:post-featured-image {"isLink":true,"aspectRatio":"16/9","style":{"spacing":{"margin":{"top":"0","bottom":"0"}}}} /-->
 
 </div>
 <!-- /wp:group -->
 
-<!-- wp:group {"className":"jb-carousel-overlay","layout":{"type":"default"}} -->
-<div class="wp-block-group jb-carousel-overlay">
+<!-- wp:group {"className":"jb-featured-card-overlay","layout":{"type":"default"}} -->
+<div class="wp-block-group jb-featured-card-overlay">
 
-<!-- wp:post-terms {"term":"interview_topic","className":"jb-carousel-topic","style":{"typography":{"fontSize":"0.75rem","textTransform":"uppercase","letterSpacing":"0.08em","fontWeight":"600"}}} /-->
+<!-- wp:post-terms {"term":"interview_topic","className":"jb-featured-pill","style":{"typography":{"fontSize":"0.75rem","textTransform":"uppercase","letterSpacing":"0.08em","fontWeight":"600"}}} /-->
 
-<!-- wp:post-title {"isLink":true,"className":"jb-carousel-title","style":{"typography":{"fontSize":"var:preset|font-size|xx-large","lineHeight":"1.15","fontWeight":"700"}}} /-->
+<!-- wp:post-title {"isLink":true,"className":"jb-featured-title","style":{"typography":{"lineHeight":"1.1","fontWeight":"700","textTransform":"uppercase","letterSpacing":"-0.02em"}}} /-->
+
+<!-- wp:post-excerpt {"className":"jb-featured-excerpt","moreText":"","excerptLength":25,"style":{"typography":{"lineHeight":"1.6"}}} /-->
 
 </div>
 <!-- /wp:group -->
@@ -89,10 +91,6 @@
 
 </div>
 <!-- /wp:query -->
-
-<!-- wp:html -->
-<div class="jb-carousel-indicators" aria-hidden="true"></div>
-<!-- /wp:html -->
 
 <!-- wp:buttons {"className":"jb-text-reveal","layout":{"type":"flex","justifyContent":"center"},"style":{"spacing":{"margin":{"top":"var:preset|spacing|50"}}}} -->
 <div class="wp-block-buttons jb-text-reveal" style="margin-top:var(--wp--preset--spacing--50)">

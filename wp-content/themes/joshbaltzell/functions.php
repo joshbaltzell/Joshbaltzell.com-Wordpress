@@ -41,7 +41,7 @@ function joshbaltzell_enqueue_styles() {
 		'joshbaltzell-custom',
 		get_theme_file_uri( 'assets/css/custom.css' ),
 		array(),
-		wp_get_theme()->get( 'Version' )
+		filemtime( get_theme_file_path( 'assets/css/custom.css' ) )
 	);
 }
 add_action( 'wp_enqueue_scripts', 'joshbaltzell_enqueue_styles' );
@@ -62,7 +62,7 @@ function joshbaltzell_enqueue_scripts() {
 		'joshbaltzell-custom',
 		get_theme_file_uri( 'assets/js/custom.js' ),
 		array(),
-		wp_get_theme()->get( 'Version' ),
+		filemtime( get_theme_file_path( 'assets/js/custom.js' ) ),
 		true
 	);
 }

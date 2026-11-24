@@ -13,8 +13,7 @@
 	--jb-transition-base: 0.4s;
 	--jb-transition-slow: 0.8s;
 	--jb-transition-dramatic: 1.2s;
-	--jb-carousel-card-width: 65vw;
-	--jb-carousel-gap: 2rem;
+	--jb-featured-card-height: 70vh;
 }
 
 /* --- Animations: Keyframes --- */
@@ -852,144 +851,170 @@ body:has(.jb-header-overlay) main {
 	padding-top: 0;
 }
 
-/* --- Featured Interview Carousel --- */
+/* --- Featured Interviews (Vertical Stack) --- */
 
-.jb-carousel-section {
-	overflow: hidden;
+.jb-featured-section {
 	position: relative;
 }
 
-.jb-carousel {
+.jb-featured-stack {
 	display: flex;
-	gap: var(--jb-carousel-gap);
-	overflow-x: auto;
-	scroll-snap-type: x mandatory;
-	-webkit-overflow-scrolling: touch;
-	scrollbar-width: none;
-	cursor: grab;
-	padding-left: calc((100vw - var(--jb-carousel-card-width)) / 2);
-	padding-right: calc((100vw - var(--jb-carousel-card-width)) / 2);
+	flex-direction: column;
+	gap: 2.5rem;
+	list-style: none;
+	padding: 0;
+	margin: 0;
 }
 
-.jb-carousel::-webkit-scrollbar {
-	display: none;
-}
-
-.jb-carousel.is-dragging {
-	cursor: grabbing;
-	user-select: none;
-	scroll-snap-type: none;
-}
-
-/* Override WordPress post-template flex-wrap */
-.jb-carousel.wp-block-post-template {
-	flex-wrap: nowrap !important;
-}
-
-.jb-carousel-card {
-	flex: 0 0 var(--jb-carousel-card-width);
-	scroll-snap-align: center;
-	border-radius: 8px;
-	overflow: hidden;
+.jb-featured-card {
 	position: relative;
+	min-height: var(--jb-featured-card-height);
+	border-radius: 20px;
+	overflow: hidden;
+	background: linear-gradient(
+		135deg,
+		var(--wp--preset--color--primary) 0%,
+		rgba(44, 62, 107, 0.7) 40%,
+		var(--wp--preset--color--accent) 100%
+	);
 	transition: transform 0.6s var(--jb-ease-dramatic),
 	            box-shadow 0.6s ease;
-	box-shadow: 0 4px 24px rgba(44, 62, 107, 0.08);
+	box-shadow: 0 8px 40px rgba(44, 62, 107, 0.1);
 }
 
-.jb-carousel-card:hover {
-	transform: scale(1.02) translateY(-8px);
-	box-shadow: 0 20px 60px rgba(44, 62, 107, 0.15),
-	            0 8px 20px rgba(196, 120, 91, 0.08);
+.jb-featured-card:hover {
+	transform: scale(1.01) translateY(-4px);
+	box-shadow: 0 24px 80px rgba(44, 62, 107, 0.18),
+	            0 8px 24px rgba(196, 120, 91, 0.06);
 }
 
-.jb-carousel-card .jb-carousel-image {
-	aspect-ratio: 16 / 10;
-	overflow: hidden;
-	position: relative;
+/* Image fills the entire card */
+.jb-featured-card .jb-featured-card-image {
+	position: absolute;
+	inset: 0;
+	z-index: 0;
 }
 
-.jb-carousel-card .jb-carousel-image img {
+.jb-featured-card .jb-featured-card-image img,
+.jb-featured-card .jb-featured-card-image .wp-block-post-featured-image {
 	width: 100%;
 	height: 100%;
+	margin: 0;
+}
+
+.jb-featured-card .jb-featured-card-image img {
 	object-fit: cover;
 	transition: transform 0.8s var(--jb-ease-dramatic);
 }
 
-.jb-carousel-card:hover .jb-carousel-image img {
-	transform: scale(1.06);
+.jb-featured-card:hover .jb-featured-card-image img {
+	transform: scale(1.04);
 }
 
-.jb-carousel-card .jb-carousel-overlay {
+/* Centered overlay */
+.jb-featured-card .jb-featured-card-overlay {
 	position: absolute;
-	bottom: 0;
-	left: 0;
-	right: 0;
-	padding: 2.5rem;
-	background: linear-gradient(transparent, rgba(44, 62, 107, 0.85));
-	color: #fff;
+	inset: 0;
 	z-index: 2;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	text-align: center;
+	padding: clamp(1.5rem, 4vw, 3rem);
+	overflow: hidden;
+	background: radial-gradient(
+		ellipse at center,
+		rgba(44, 62, 107, 0.45) 0%,
+		rgba(44, 62, 107, 0.7) 100%
+	);
 }
 
-.jb-carousel-card .jb-carousel-topic {
+/* Category pill badge */
+.jb-featured-card .jb-featured-pill,
+.jb-featured-card .jb-featured-pill a {
+	display: inline-block;
+	background: var(--wp--preset--color--secondary);
+	color: var(--wp--preset--color--primary);
+	padding: 0.4rem 1.2rem;
+	border-radius: 100px;
 	font-size: 0.75rem;
+	font-weight: 600;
 	text-transform: uppercase;
 	letter-spacing: 0.08em;
-	color: var(--wp--preset--color--secondary);
-	font-weight: 600;
+	text-decoration: none;
+	line-height: 1.4;
 }
 
-.jb-carousel-card .jb-carousel-title {
+.jb-featured-card .jb-featured-pill a:hover {
+	color: var(--wp--preset--color--primary);
+}
+
+/* Title — clamp keeps it readable at all viewport sizes */
+.jb-featured-card .jb-featured-title {
 	font-family: var(--wp--preset--font-family--heading);
-	font-size: var(--wp--preset--font-size--xx-large);
-	line-height: 1.15;
-	margin-top: 0.5rem;
+	font-size: clamp(1.8rem, 4vw, 3.5rem) !important;
 	color: #fff;
+	margin-top: 1.5rem;
+	max-width: 800px;
 }
 
-.jb-carousel-card .jb-carousel-title a {
+.jb-featured-card .jb-featured-title a {
 	color: inherit;
 	text-decoration: none;
 }
 
-.jb-carousel-card .jb-carousel-title a:hover {
+.jb-featured-card .jb-featured-title a:hover {
 	color: inherit;
 }
 
-/* Carousel Indicators */
-.jb-carousel-indicators {
-	display: flex;
-	justify-content: center;
-	gap: 0.5rem;
-	margin-top: 2rem;
+/* Excerpt */
+.jb-featured-card .jb-featured-excerpt,
+.jb-featured-card .jb-featured-excerpt p {
+	color: rgba(255, 255, 255, 0.8);
+	max-width: 600px;
+	margin-top: 1rem;
+	font-size: clamp(0.85rem, 1.5vw, 1.05rem) !important;
+	line-height: 1.6;
 }
 
-.jb-carousel-indicator {
-	width: 2rem;
-	height: 3px;
-	background: var(--wp--preset--color--border);
-	border-radius: 2px;
-	transition: width 0.4s var(--jb-ease-out),
-	            background-color 0.4s ease;
-	cursor: pointer;
+.jb-featured-card .jb-featured-excerpt .wp-block-post-excerpt__more-link {
+	display: none;
 }
 
-.jb-carousel-indicator.is-active {
-	width: 3rem;
-	background: var(--wp--preset--color--secondary);
+/* --- Archive Page: Shorter Featured Cards --- */
+
+.jb-featured-card--archive {
+	min-height: 50vh;
 }
 
 /* --- Responsive Adjustments --- */
 
 @media (max-width: 1024px) {
 	:root {
-		--jb-carousel-card-width: 85vw;
+		--jb-featured-card-height: 60vh;
+	}
+
+	.jb-featured-card--archive {
+		min-height: 45vh;
 	}
 }
 
 @media (max-width: 781px) {
 	:root {
-		--jb-carousel-card-width: 92vw;
+		--jb-featured-card-height: 55vh;
+	}
+
+	.jb-featured-card--archive {
+		min-height: 40vh;
+	}
+
+	.jb-featured-stack {
+		gap: 1.5rem;
+	}
+
+	.jb-featured-card .jb-featured-card-overlay {
+		padding: 2rem 1.5rem;
 	}
 
 	.jb-hero-dramatic {
@@ -1010,13 +1035,8 @@ body:has(.jb-header-overlay) main {
 		box-shadow: 0 2px 12px rgba(45, 45, 45, 0.04);
 	}
 
-	.jb-carousel-card:hover {
+	.jb-featured-card:hover {
 		transform: none;
-		box-shadow: 0 4px 24px rgba(44, 62, 107, 0.08);
-	}
-
-	.jb-carousel-card .jb-carousel-overlay {
-		padding: 1.5rem;
 	}
 
 	.jb-watercolor-bg::before {
@@ -1053,8 +1073,8 @@ body:has(.jb-header-overlay) main {
 
 	.jb-watercolor-frame img,
 	.jb-interview-card,
-	.jb-carousel-card,
-	.jb-carousel-card .jb-carousel-image img,
+	.jb-featured-card,
+	.jb-featured-card .jb-featured-card-image img,
 	.wp-block-button__link,
 	.wp-block-post-title a,
 	.wp-block-post-featured-image img,
@@ -1065,11 +1085,6 @@ body:has(.jb-header-overlay) main {
 	.jb-interview-content .interview-question,
 	footer.wp-block-group a {
 		transition: none !important;
-	}
-
-	.jb-carousel {
-		scroll-snap-type: none;
-		scroll-behavior: auto;
 	}
 
 	html {
@@ -1092,19 +1107,12 @@ button:focus-visible,
 	header.wp-block-group,
 	footer.wp-block-group,
 	.jb-watercolor-bg::before,
-	.wp-block-buttons,
-	.jb-carousel-indicators {
+	.wp-block-buttons {
 		display: none !important;
 	}
 
-	.jb-carousel {
-		flex-wrap: wrap !important;
-		overflow: visible;
-		padding: 0;
-	}
-
-	.jb-carousel-card {
-		flex: 0 0 100%;
+	.jb-featured-card {
+		min-height: auto;
 		page-break-inside: avoid;
 	}
 
