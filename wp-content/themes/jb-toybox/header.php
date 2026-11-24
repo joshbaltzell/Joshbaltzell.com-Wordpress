@@ -26,6 +26,10 @@ $jb_about = get_page_by_path( 'about' );
 			<?php
 			foreach ( array_keys( jb_kinds() ) as $jb_slug ) :
 				$jb_kind = jb_kind_by_slug( $jb_slug );
+				// Only kinds that have something in them yet (or the one being shown).
+				if ( ( empty( $jb_kind['term'] ) || ! (int) $jb_kind['term']->count ) && ! is_category( $jb_slug ) ) {
+					continue;
+				}
 				?>
 			<li><a href="<?php echo esc_url( $jb_kind['url'] ); ?>" data-kind="<?php echo esc_attr( $jb_kind['kind'] ); ?>"<?php echo is_category( $jb_slug ) ? ' aria-current="page"' : ''; ?>><?php echo esc_html( $jb_kind['plural'] ); ?></a></li>
 			<?php endforeach; ?>

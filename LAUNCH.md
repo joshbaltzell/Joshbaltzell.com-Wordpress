@@ -26,6 +26,11 @@ Git push to WP Engine is not an option from this Mac: `git@git.wpengine.com` ref
 
 ## Decide before pushing
 
+0. **Look Alive's post describes the new version of the game** (seventeen dishes, three waters, the ending).
+   That version is only on the Browser-Games branch `look-alive-wave-2`; the live game (`main`, GitHub Pages)
+   is still the ten-dish one. Merge that branch first, or put the old text back (a WordPress revision of the
+   post has it).
+
 1. **Search engines: decided, nothing to do.** Production only. `jb-search-visibility.php`
    turns indexing on when the site's address is joshbaltzell.com and off everywhere else,
    whatever the database says. Check after the push: view source on the live home page
@@ -60,7 +65,14 @@ Git push to WP Engine is not an option from this Mac: `git@git.wpengine.com` ref
    - Settings → Permalinks → Save. This rebuilds the rules for `/%postname%/`.
    - WP Engine portal → Clear all caches.
 7. **Smoke test** in a private window:
-   - [ ] Home: the pile drops, blocks can be thrown, More and the Pile/Shelf switch work.
+   - [ ] View source on the home page: no `noindex` robots tag (the live site has one today).
+   - [ ] Home: the pile rises and settles at the top of the well, newest first, blocks can be thrown, the
+         lever (bottom of the screen, on the well's edge) and the Pile/Shelf switch work.
+   - [ ] Look Alive: microbes drift inside its case and now and then escape through the crack at the top right.
+   - [ ] Picnic Raid: ants mill around its rim and, every 15 to 25 seconds, march to a nearby block.
+   - [ ] Pond Chorus: the frog croaks and a little water sloshes on its floor when the box moves.
+   - [ ] Nerf the Wolves: move the pointer across it, or tilt the well; the layers separate.
+   - [ ] Hal's Minigolf: pixelated walls and the pixel title typeface (Chrome; other browsers may skip the filter).
    - [ ] `/toys/` with the Games/Toys chips, and `/writing/`.
    - [ ] One game post (Play opens the game) and Gyms of War (live cover runs).
    - [ ] `/about/` shows in the nav and loads.

@@ -66,8 +66,14 @@ add_filter(
 		}
 
 		// phpcs:disable WordPress.Security.NonceVerification -- the stamp is the check.
-		$decoy = isset( $_POST['jb_website'] ) ? trim( wp_unslash( $_POST['jb_website'] ) ) : '';
-		$stamp = isset( $_POST['jb_stamp'] ) ? sanitize_text_field( wp_unslash( $_POST['jb_stamp'] ) ) : '';
+		$decoy = isset( $_POST['jb_website'] ) ? wp_unslash( $_POST['jb_website'] ) : '';
+		$stamp = isset( $_POST['jb_stamp'] ) ? wp_unslash( $_POST['jb_stamp'] ) : '';
+		// Anything but plain text in either field is a script, not a person.
+		if ( ! is_string( $decoy ) || ! is_string( $stamp ) ) {
+			jb_guard_refuse();
+		}
+		$decoy = trim( $decoy );
+		$stamp = sanitize_text_field( $stamp );
 		// phpcs:enable
 
 		if ( '' !== $decoy ) {
