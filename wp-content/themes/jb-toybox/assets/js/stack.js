@@ -9,6 +9,10 @@
      data-seed="n"           which drop; the same number always lands the same way
      data-min-rows="n"       keep the well at least this many rows tall
    A block becomes special with data-rule="name"; rules live in JBStack.rules.
+   play: a rule may leave out art(), so the block keeps its own cover, and may add over(g, scene): it draws on
+   the canvas in front of the whole pile every frame, in screen coordinates, so it can reach past its own block.
+   scene = { t, dt, lit, self, blocks, W, H, U, C, state }: blocks[i] is { x, y, a, w, h } (centre, angle, size)
+   or null when that block is not in the well; dt is 0 while motion is paused; state is the rule's own object.
    A button with data-stack-motion, and an element with data-stack-status, beside the rack are wired if present.
 
    CHANGED FROM THE DESIGN SYSTEM'S COPY: the pile is also a toy. Once it has landed, a block can be picked up
@@ -93,7 +97,7 @@
     /* feel: how each block was moving last frame, how squashed it is, dust in the air, and how far the well is knocked */
     var prevY = [], vy = [], squash = [], dust = [], kickY = 0, shaftEl = rack.querySelector('.shaft');
     /* the machine: an optional lever for More and a handle that tilts the well */
-    var machine = rack.querySelector('.rack__machine'), lever = rack.querySelector('[data-lever]'), tiltEl = rack.querySelector('[data-tilt]'), tilt = 0;
+    var machine = rack.querySelector('.rack__machine'), lever = rack.querySelector('[data-lever]'), dock = rack.querySelector('.lever-dock'), tiltEl = rack.querySelector('[data-tilt]'), tilt = 0;
     var W = 0, H = 0, U = 0, L = [], sim = null, fin = [], endAt = 0, phase = 'rest', t0 = 0, litAt = -1e9, clock = 0, last = 0, raf = 0, seen = false, armed = true, dpr = 1, queued = 0;
     var pose = [], lift = [], want = [], cov = [], face = [], shadow = [], own = [], C = {}, specials = [], allSpecials = specials;
 
@@ -138,7 +142,7 @@
     if (soundBtn) soundBtn.addEventListener('click', function () { soundOn = !soundOn; try { localStorage.setItem('jb-sound', soundOn ? 'on' : 'off'); } catch (e) {} if (soundOn) { arm(); clack(); } syncSound(); });
     /* touching the pile, or any of its controls, is what lets it make sound */
     rack.addEventListener('pointerdown', arm, true);
-    if (scope.addEventListener) scope.addEventListener('click', function (e) { if (e.target.closest && e.target.closest('.rack__bar button, [data-stack-more], .rack__machine')) arm(); }, true);
+    if (scope.addEventListener) scope.addEventListener('click', function (e) { if (e.target.closest && e.target.closest('.rack__bar button, [data-stack-more], .rack__machine, .lever-dock')) arm(); }, true);
     chips.forEach(function (c) { c.addEventListener('click', arm, true); });
     var moreWrap = moreBtn && moreBtn.parentNode; if (moreWrap) moreWrap.addEventListener('click', arm, true);
 
@@ -151,9 +155,10 @@
       lift[i] = want[i] = 0;
       var r = JBStack.rules[b.getAttribute('data-rule')];
       if (!r) return;
-      var c = b.querySelector('.cov'), cv = c && (c.querySelector('canvas') || mk('canvas', 'cov__art', c, false));
+      /* play: a rule without art keeps the block's own cover and only draws over the pile */
+      var c = b.querySelector('.cov'), cv = r.art && c && (c.querySelector('canvas') || mk('canvas', 'cov__art', c, false));
       own[i] = !!cv;
-      if (cv) specials.push({ i: i, rule: r, cv: cv, g: cv.getContext('2d'), heat: 0, ph: [0, 2.1, 4.4] });
+      if (cv || (!r.art && r.over)) specials.push({ i: i, rule: r, cv: cv || null, g: cv ? cv.getContext('2d') : null, heat: 0, ph: [0, 2.1, 4.4], state: {}, at: null });
     });
 
     function colors() {
@@ -250,7 +255,7 @@
       well.style.height = H + 'px';
       [under, over].forEach(function (c) { c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); });
       blks.forEach(function (b, i) { var c = b.querySelector('.cov'); cov[i] = c ? { x: c.offsetLeft + b.clientLeft, y: c.offsetTop + b.clientTop, w: c.clientWidth, h: c.clientHeight } : { x: 0, y: 0, w: L[i].w, h: 0 }; });
-      specials.forEach(function (s) { s.cv.width = Math.round(cov[s.i].w * dpr); s.cv.height = Math.round(cov[s.i].h * dpr); });
+      specials.forEach(function (s) { if (!s.cv) return; s.cv.width = Math.round(cov[s.i].w * dpr); s.cv.height = Math.round(cov[s.i].h * dpr); });
       if (replay && S.motion && M && sim.frames.length > 1) { phase = 'drop'; t0 = performance.now(); }
       else { phase = 'rest'; litAt = replay ? performance.now() : -1e9; }
       report(); last = 0; kick();
@@ -347,7 +352,16 @@
       strip(lits.r, 'to bottom', w0 ? w0.y : 0, w0 ? w0.R : 0, w0 ? W - w0.x : 1e9, 6, w0 ? w0.amt : 0);
       strip(lits.f, 'to right', w0 ? w0.x : 0, w0 ? w0.R : 0, w0 ? w0.y : 1e9, 14, w0 ? w0.amt : 0); /* play: the floor is the ceiling now */
 
-      specials.forEach(function (s) { var c = cov[s.i]; s.g.setTransform(dpr, 0, 0, dpr, 0, 0); s.rule.art(s.g, c.w, c.h, clock, s.heat, C); });
+      specials.forEach(function (s) { if (!s.g) return; var c = cov[s.i]; s.g.setTransform(dpr, 0, 0, dpr, 0, 0); s.rule.art(s.g, c.w, c.h, clock, s.heat, C); });
+
+      /* play: rules that draw over the pile get every block where it is on screen */
+      var boxes = null;
+      specials.forEach(function (s) {
+        if (!s.rule.over) return;
+        if (!boxes) { boxes = []; for (var q = 0; q < N; q++) boxes[q] = P[q] && L[q] && !falling[q] ? { x: P[q][0], y: P[q][1], a: P[q][2], w: L[q].w, h: L[q].h } : null; }
+        var dt = s.at === null ? 0 : Math.min(.1, Math.max(0, clock - s.at)); s.at = clock;
+        og.save(); s.rule.over(og, { t: clock, dt: dt, lit: lit, self: s.i, blocks: boxes, W: W, H: H, U: U, C: C, state: s.state }); og.restore();
+      });
     }
 
     /* feel: a block that was falling and suddenly is not has landed. It squashes a little, kicks up a puff of
@@ -694,6 +708,7 @@
     function syncMachine() {
       if (!machine) return;
       machine.hidden = !M || shelf || !S.motion;
+      if (dock) dock.hidden = machine.hidden; /* play: the lever lives on the well's edge now, and shows when the machine does */
       if (lever) { var left = totalMatching() - count(); lever.disabled = left <= 0; var lb = lever.querySelector('.lever__label'); if (lb) lb.textContent = left > 0 ? 'Pull for ' + Math.min(batch, left) + ' more' : 'All in'; }
     }
     if (lever) lever.addEventListener('click', function () {

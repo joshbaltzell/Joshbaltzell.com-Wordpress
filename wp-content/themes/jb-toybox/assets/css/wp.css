@@ -224,3 +224,11 @@
    the page. The floor bar is above the well as a ceiling, and the rails hang from it with their open ends at
    the bottom, where blocks come in. */
 .rail{top:calc(-1 * var(--outline-part));bottom:calc(-1 * var(--space-2));border-radius:0 0 var(--radius-sm) var(--radius-sm)}
+
+/* The lever docks on the well's right edge instead of in the machine panel. The dock has no height and sticks
+   to the bottom of the screen while the well scrolls past, so the lever stays in reach and ends up at the
+   bottom of the well, where the blocks it brings come in. */
+.lever-dock{position:sticky;z-index:3;bottom:var(--space-4);height:0;pointer-events:none}
+.lever-dock[hidden]{display:none}
+.lever-dock .lever{position:absolute;right:calc(var(--size-rail) + var(--space-3));bottom:var(--space-3);pointer-events:auto;padding:var(--space-1) var(--space-3) var(--space-1) var(--space-2);border:var(--outline-part) solid var(--ink);border-radius:var(--radius-md);background:var(--ground-raised);box-shadow:var(--edge-rest)}
+.lever-dock .lever:disabled{box-shadow:none}

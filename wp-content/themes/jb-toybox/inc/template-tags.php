@@ -226,7 +226,6 @@ function jb_stack( $posts, $args = array() ) {
 <section class="rack" data-stack data-across="mix" data-seed="<?php echo esc_attr( $args['seed'] ); ?>" data-batch="<?php echo esc_attr( $args['batch'] ); ?>" data-batch-phone="<?php echo esc_attr( $args['batch_phone'] ); ?>" aria-label="<?php echo esc_attr( $args['label'] ); ?>">
 	<div class="rack__machine" hidden>
 		<div class="tilt" data-tilt role="slider" tabindex="0" aria-label="<?php esc_attr_e( 'Tilt the well. Hold the left or right arrow key.', 'jb-toybox' ); ?>" aria-valuemin="-1" aria-valuemax="1" aria-valuenow="0"><span class="tilt__track" aria-hidden="true"></span><span class="tilt__knob" aria-hidden="true"></span><span class="tilt__label" aria-hidden="true"><?php esc_html_e( 'Tilt', 'jb-toybox' ); ?></span></div>
-		<button class="lever" type="button" data-lever><span class="lever__slot" aria-hidden="true"><span class="lever__arm"></span></span><span class="lever__label"></span></button>
 	</div>
 	<div class="floor"></div><?php // The pile floats up, so its floor is a ceiling above the well. ?>
 	<div class="shaft"><span class="rail rail--l"></span>
@@ -235,7 +234,11 @@ function jb_stack( $posts, $args = array() ) {
 			<li><?php jb_card( $post, $args['toy_types'], $i / $last ); ?></li>
 			<?php endforeach; ?>
 		</ol></div>
-	<span class="rail rail--r"></span></div>
+	<span class="rail rail--r"></span>
+	<div class="lever-dock" hidden><?php // Sticks to the bottom of the screen while you scroll the well, and rests where new blocks come in. ?>
+		<button class="lever" type="button" data-lever><span class="lever__slot" aria-hidden="true"><span class="lever__arm"></span></span><span class="lever__label"></span></button>
+	</div>
+	</div>
 </section>
 <p class="rack__more"><button class="btn" type="button" data-stack-more hidden></button></p>
 	<?php
