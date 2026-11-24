@@ -276,7 +276,7 @@
       var lean = leanOf(fin), n = count();
       var N = n; /* play: the line describes what is in the well, not the whole list */
       var text = shelf ? N + ' on the shelf' : !M ? N + ' blocks · placed, not floated (the physics did not load)' : phase === 'play' ? N + ' blocks · loose · drag one, or tidy up' : N + ' blocks · ' + (phase === 'drop' ? 'rising' : 'settled in ' + (endAt / 1000).toFixed(1) + ' s') + ' · steepest lean ' + lean.toFixed(1) + '°' + (phase === 'rest' && canPlay() ? (fine ? ' · pick one up' : ' · press and hold one') : '');
-      if (status) status.textContent = text;
+      if (status) { status.textContent = text; status.title = text; }
       syncMore(); syncMachine();
       if (opts.onReport) opts.onReport({ blocks: N, phase: phase, landedMs: endAt, lean: lean, physics: !!M });
     }
