@@ -228,3 +228,21 @@
 .shaft{transition:rotate var(--dur-settle) var(--ease-out)}
 /* on a phone the well is one block wide, so the pad spans it */
 @media (max-width:599.98px){.well__pad{left:var(--space-4);width:auto!important}}
+
+/* Text toys ([text_toys]): a row of buttons that plays with the page's own words. The row is a dashed tray
+   like the launch pad; the buttons are topic chips. Nouns get a straw highlight, redacted words go solid ink,
+   and swapped words carry a dotted underline so the change is visible. */
+.text-toys{display:grid;gap:var(--space-3);margin-block:var(--space-8);padding:var(--space-4);border:var(--outline-part) dashed var(--edge);border-radius:var(--radius-md)}
+.text-toys[hidden]{display:none}
+.text-toys__label{margin:0;color:var(--ink-muted)}
+.text-toys__readout{margin:0;min-height:calc(var(--text-small) * var(--leading-small));font-family:var(--font-mono);color:var(--ink-muted)}
+.text-toys .topic{cursor:pointer}
+.text-toys .topic:hover{background:var(--part-straw);color:var(--on-straw)}
+.text-toys .topic[aria-pressed="true"]{background:var(--ink);color:var(--ground)}
+.text-toys .topic:focus-visible{box-shadow:var(--focus-ring);outline:0}
+.tt-w{border-radius:var(--radius-sm);transition:background-color var(--dur-quick) var(--ease-out),color var(--dur-quick) var(--ease-out)}
+.tt-w.is-noun{background:var(--part-straw);color:var(--on-straw);box-shadow:0 0 0 var(--space-half) var(--part-straw)}
+.tt-w.is-swapped{text-decoration:underline dotted var(--edge);text-underline-offset:var(--underline-offset)}
+.prose.is-redacting .tt-w{cursor:pointer}
+.tt-w.is-gone,.tt-w.is-gone.is-noun{background:var(--ink);color:transparent;box-shadow:0 0 0 var(--space-half) var(--ink);text-decoration:none}
+@media (prefers-reduced-motion:reduce){.tt-w{transition:none}}

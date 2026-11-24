@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Twelve Reviews</title>
+<meta name="description" content="4.8 stars from 12 reviews, or 4.5 from 2,000? A short game about how many reviews an average needs.">
+<link rel="stylesheet" href="../kit/toy.css">
+<style>
+  [hidden] { display: none !important; }
+  #play { display: grid; gap: var(--space-4); min-width: 0; }
+  .round-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: var(--space-2); }
+  .round-head h2 { font-size: 1.35rem; }
+
+  .product { cursor: pointer; border-width: 2px; align-content: start; }
+  .product:hover, .product.is-focus { border-color: var(--edge); }
+  .product.is-focus { outline: 3px solid var(--ember); outline-offset: 2px; }
+  .product.is-picked { border-color: var(--ember); cursor: default; }
+  .product.is-other { cursor: default; }
+  .product.is-other .product__body { opacity: .7; }
+  .product__body { display: grid; gap: var(--space-3); }
+  .product__top { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3); }
+  .product__name { font-size: 1.1rem; font-weight: 700; }
+  .product__key { font: 600 .75rem/1 var(--font-mono); color: var(--muted); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: .2rem .4rem; }
+  .product__score { display: flex; align-items: baseline; gap: var(--space-2); flex-wrap: wrap; }
+  .product__score .readout { font-size: 2rem; }
+
+  .hist { display: grid; gap: .3rem; }
+  .bar { display: grid; grid-template-columns: 2.2rem 1fr 2.6rem; align-items: center; gap: var(--space-2); font: .85rem/1 var(--font-mono); font-variant-numeric: tabular-nums; }
+  .bar__label { color: var(--muted); }
+  .bar__pct { text-align: right; color: var(--muted); }
+  .bar__track { height: .8rem; background: var(--sunk); border-radius: 2px; overflow: hidden; }
+  .bar__fill { display: block; height: 100%; background: var(--olive); transition: width .35s ease; }
+  .product.is-picked .bar__fill { background: var(--ember); }
+
+  .pick { justify-self: start; }
+  .product.is-picked .pick:disabled { opacity: 1; }
+  .product.is-other .pick { display: none; }
+
+  #reveal { border-left: 4px solid var(--ember); }
+  #reveal-copy { margin: 0; font-size: 1.05rem; max-width: var(--measure); }
+  .iv { display: grid; grid-template-columns: 7.5rem 1fr 9.5rem; align-items: center; gap: var(--space-3); font-size: .9rem; }
+  .iv__name { color: var(--muted); }
+  .iv--pick .iv__name { color: var(--ink); font-weight: 700; }
+  .iv__track { position: relative; height: 1rem; background: var(--sunk); border-radius: 2px; }
+  .iv__range { position: absolute; top: .2rem; bottom: .2rem; background: var(--edge); border-radius: 2px; min-width: 2px; }
+  .iv--pick .iv__range { background: var(--ember); }
+  .iv__dot { position: absolute; top: 50%; width: .7rem; height: .7rem; margin: -.35rem 0 0 -.35rem; border-radius: 50%; background: var(--ink); border: 2px solid var(--raised); }
+  .iv__val { font: .85rem/1.2 var(--font-mono); font-variant-numeric: tabular-nums; text-align: right; }
+  .iv--axis { margin-top: -.4rem; }
+  .iv__axis { display: flex; justify-content: space-between; font: .75rem/1 var(--font-mono); color: var(--muted); }
+  #intervals { display: grid; gap: var(--space-2); }
+  .notes { display: grid; gap: var(--space-1); margin: 0; padding: 0; list-style: none; }
+  .notes p { margin: 0; }
+
+  #summary { margin: 0; padding-left: 1.2rem; display: grid; gap: var(--space-2); }
+  #verdict { margin: 0; font-weight: 700; max-width: var(--measure); }
+  .keys { font: .8rem/1.4 var(--font-mono); color: var(--muted); }
+  a { color: var(--ink); text-decoration-color: var(--ember); text-underline-offset: 2px; }
+
+  @media (max-width: 34rem) {
+    .iv { grid-template-columns: 1fr; gap: var(--space-1); }
+    .iv__val { text-align: left; }
+    .iv--axis > span:first-child, .iv--axis > span:last-child { display: none; }
+    .iv--axis { margin-top: 0; }
+  }
+</style>
+</head>
+<body>
+<main class="toy">
+  <header class="toy-head">
+    <span class="tag">Toy</span>
+    <h1>Twelve Reviews</h1>
+    <p>4.8 stars from 12 reviews, or 4.5 from 2,000? Two products, same shelf. Which would you trust? Then see what the numbers think.</p>
+  </header>
+
+  <section id="play">
+    <div class="round-head">
+      <h2><span id="round-no">Round 1 of 10</span> · <span id="aisle">Phone cables</span></h2>
+      <span class="small muted" id="tally"></span>
+    </div>
+
+    <div class="grid-2" id="cards">
+      <article class="panel product" data-i="0">
+        <div class="product__body">
+          <div class="product__top"><span class="product__name"></span><span class="product__key" aria-hidden="true">1</span></div>
+          <div class="product__score"><span class="readout product__avg"></span><span class="muted">average from <span class="product__count"></span></span></div>
+          <div class="hist" aria-label="Share of reviews at each star level"></div>
+        </div>
+        <button class="btn btn--primary pick" type="button">Pick this one</button>
+      </article>
+      <article class="panel product" data-i="1">
+        <div class="product__body">
+          <div class="product__top"><span class="product__name"></span><span class="product__key" aria-hidden="true">2</span></div>
+          <div class="product__score"><span class="readout product__avg"></span><span class="muted">average from <span class="product__count"></span></span></div>
+          <div class="hist" aria-label="Share of reviews at each star level"></div>
+        </div>
+        <button class="btn btn--primary pick" type="button">Pick this one</button>
+      </article>
+    </div>
+    <p class="keys" style="margin:0">Keys: 1 or 2 to pick. Arrows then Enter also work.</p>
+
+    <section id="reveal" class="panel" hidden>
+      <span class="tag">What the numbers think</span>
+      <p id="reveal-copy" aria-live="polite"></p>
+      <div id="intervals" aria-label="Estimated true average with 95% range"></div>
+      <div class="notes small">
+        <p class="muted">Dot: estimated true average. Bar: the range it falls in 95% of the time.</p>
+        <p class="muted" id="aisle-note"></p>
+        <p class="muted" id="truth"></p>
+        <p><span id="miller"></span> <span class="muted">Evan Miller's lower bound: one review added at each star level, then the average minus 1.65 standard errors. It ignores the aisle.</span></p>
+      </div>
+      <div class="row"><button class="btn btn--primary" id="next" type="button">Next round</button></div>
+    </section>
+  </section>
+
+  <section id="end" class="panel" hidden>
+    <span class="tag">Ten rounds</span>
+    <h2>How you shopped</h2>
+    <ul id="summary"></ul>
+    <p id="verdict"></p>
+    <div class="row">
+      <button class="btn btn--primary" id="again" type="button">New shelf</button>
+      <button class="btn" id="replay" type="button">Same ten again</button>
+    </div>
+  </section>
+
+  <footer class="credit">
+    <p style="margin:0 0 .5rem">How it works: each aisle has a typical spread of star ratings, worth about 30 reviews. A product's own reviews are added to that, so a few reviews barely move it and thousands swamp it. The ranges come from 4,000 random draws. The products and their reviews are made up from a hidden true rating, so the reveal is honest.</p>
+    <p style="margin:0 0 .5rem">The aisle priors are illustrative, not measured. Fitting them from the public Amazon Reviews 2023 dataset (McAuley Lab) is the follow-up.</p>
+    <p style="margin:0">Second opinion from Evan Miller, "How Not To Sort By Average Rating" and its star-rating follow-up. Seed <span id="seed"></span>, <a id="seed-link" href="#">link to replay this set</a>.</p>
+  </footer>
+</main>
+<script src="toy.js"></script>
+</body>
+</html>

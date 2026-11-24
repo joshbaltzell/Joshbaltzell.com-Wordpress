@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Repricer Spiral</title>
+<meta name="description" content="Three repricing bots, each with a sensible rule, and what they do to a price in a week.">
+<link rel="stylesheet" href="../kit/toy.css">
+<style>
+  /* Seller colors. Slate uses the lighter note tone so it reads in dark mode. */
+  .toy { --c-you: var(--ember); --c-a: var(--note); --c-b: var(--olive); }
+
+  .grid-2 > .panel { align-content: start; }
+  .presets { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+  .preset-note { margin: 0; color: var(--muted); max-width: var(--measure); min-height: 3em; }
+
+  .controls { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-3); align-items: center; }
+  .controls .spacer { flex: 1 1 auto; }
+  .controls label { display: inline-flex; align-items: center; gap: var(--space-2); }
+  .clock { font: 600 .95rem/1.2 var(--font-mono); font-variant-numeric: tabular-nums; }
+  .keys { margin: 0; }
+  kbd { font: .8rem var(--font-mono); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: var(--radius-sm); padding: 0 .3rem; background: var(--ground); }
+
+  .legend { display: grid; gap: var(--space-2) var(--space-4); grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr)); }
+  .legend > div { display: grid; gap: .1rem; border-left: 4px solid var(--c); padding-left: var(--space-2); }
+  .legend .readout { font-size: 1.25rem; overflow-wrap: anywhere; }
+  .legend .out { color: var(--muted); font: .9rem var(--font-text); }
+
+  .chart-wrap { position: relative; }
+  #chart { height: 300px; touch-action: pan-y; }
+  @media (max-width: 30rem) { #chart { height: 240px; } }
+
+  .share { display: grid; gap: var(--space-2); }
+  .share-row { display: grid; grid-template-columns: 4.5rem 1fr 3.5rem; gap: var(--space-2); align-items: center; font-size: .9rem; }
+  .bar { height: 14px; background: var(--sunk); border-radius: var(--radius-sm); overflow: hidden; }
+  .bar > i { display: block; height: 100%; width: 0; background: var(--c); }
+  .share-row .pct { font: 600 .9rem var(--font-mono); text-align: right; font-variant-numeric: tabular-nums; }
+
+  .weights { display: grid; gap: var(--space-2); }
+  .weights label { display: grid; grid-template-columns: 7rem 1fr 2.5rem; gap: var(--space-2); align-items: center; }
+  .weights output { font: .9rem var(--font-mono); text-align: right; }
+
+  .log { list-style: none; margin: 0; padding: 0; max-height: 19rem; overflow-y: auto; display: grid; gap: var(--space-2); align-content: start; font-size: .9rem; overscroll-behavior: contain; }
+  .log li { border-left: 2px solid var(--line); padding-left: var(--space-2); }
+  .log time { font: 600 .8rem var(--font-mono); color: var(--muted); display: block; }
+
+  .sellers { display: grid; gap: var(--space-4); grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); }
+  .seller { border-top: 4px solid var(--c); }
+  .seller[data-off="true"] .fields { opacity: .5; }
+  .seller h3 { font-size: 1.2rem; display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-2); }
+  .fields { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-2) var(--space-3); }
+  .fields label { display: grid; gap: .15rem; min-width: 0; }
+  .fields .wide { grid-column: 1 / -1; }
+  .fields input[type="number"], .fields select { width: 100%; min-width: 0; min-height: 36px; }
+  .check { display: flex !important; align-items: center; gap: var(--space-2); }
+  .check input { width: 1.1rem; height: 1.1rem; accent-color: var(--ember); }
+  .hint { font-size: .8rem; color: var(--muted); }
+
+  .credit a { color: inherit; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+</style>
+</head>
+<body>
+<main class="toy">
+  <header class="toy-head">
+    <span class="tag">Toy</span>
+    <h1>The Repricer Spiral</h1>
+    <p>Each seller's bot follows one simple rule, and every rule sounds sensible. Set your rule and press play to see what two polite bots do to a price in a week.</p>
+  </header>
+
+  <section class="panel" aria-labelledby="presets-h">
+    <h2 id="presets-h" class="tag">Presets</h2>
+    <div class="presets" id="presets" role="group" aria-label="Presets"></div>
+    <p class="preset-note" id="preset-note" aria-live="polite"></p>
+  </section>
+
+  <section class="panel" aria-labelledby="chart-h">
+    <h2 id="chart-h" class="sr">Price over time</h2>
+    <div class="controls">
+      <button class="btn btn--primary" id="play" type="button">Play</button>
+      <button class="btn" id="step" type="button" title="Jump to the next time any bot reacts">Step</button>
+      <button class="btn" id="reset" type="button">Reset</button>
+      <label>Speed
+        <select id="speed">
+          <option value="60">1 hour a second</option>
+          <option value="360">6 hours a second</option>
+          <option value="1440" selected>1 day a second</option>
+          <option value="4320">3 days a second</option>
+          <option value="10080">1 week a second</option>
+        </select>
+      </label>
+      <label>Run for
+        <select id="length">
+          <option value="10080">1 week</option>
+          <option value="40320">4 weeks</option>
+          <option value="80640">8 weeks</option>
+        </select>
+      </label>
+      <label class="check"><input type="checkbox" id="logscale"> Log scale</label>
+      <span class="spacer"></span>
+      <span class="clock" id="clock" aria-live="off"></span>
+    </div>
+    <div class="legend" id="legend"></div>
+    <div class="chart-wrap">
+      <canvas id="chart" role="img" aria-label="Price of each seller over time"></canvas>
+    </div>
+    <p class="small muted keys">The band under the chart shows who held the Buy Box. Keys: <kbd>Space</kbd> play or pause, <kbd>S</kbd> step, <kbd>R</kbd> reset, <kbd>L</kbd> log scale.</p>
+  </section>
+
+  <div class="grid-2">
+    <section class="panel" aria-labelledby="share-h">
+      <h2 id="share-h" style="font-size:1.2rem">Buy Box share</h2>
+      <div class="share" id="share"></div>
+      <p class="small muted" style="margin:0">Each minute the Buy Box goes to the best score from this mix. The real marketplace formula isn't public. These weights are a made-up stand-in.</p>
+      <div class="weights">
+        <label>Price <input type="range" id="w-price" min="0" max="100" step="5"><output id="o-price"></output></label>
+        <label>Fulfillment <input type="range" id="w-fba" min="0" max="100" step="5"><output id="o-fba"></output></label>
+        <label>Rating <input type="range" id="w-rating" min="0" max="100" step="5"><output id="o-rating"></output></label>
+      </div>
+      <p class="hint" style="margin:0">Price scores as cheapest price divided by yours. Fulfillment counts if the marketplace ships it. Rating counts out of 5.</p>
+    </section>
+
+    <section class="panel" aria-labelledby="log-h">
+      <h2 id="log-h" style="font-size:1.2rem">What happened</h2>
+      <ol class="log" id="log" tabindex="0" aria-label="Event log"></ol>
+    </section>
+  </div>
+
+  <section aria-labelledby="sellers-h" style="display:grid;gap:var(--space-3)">
+    <h2 id="sellers-h" style="font-size:1.2rem">The sellers</h2>
+    <p class="small muted" style="margin:0">Every rule reacts to the lowest price among the other sellers. Changes take effect from the current minute.</p>
+    <div class="sellers" id="sellers"></div>
+  </section>
+
+  <p class="credit">The fly book is from Michael Eisen's 2011 post <a href="https://www.michaeleisen.org/blog/?p=358">"Amazon's $23,698,655.93 book about flies"</a>. The Buy Box weights here are invented. The sellers are not real.</p>
+</main>
+<script src="sim.js"></script>
+<script src="toy.js"></script>
+</body>
+</html>

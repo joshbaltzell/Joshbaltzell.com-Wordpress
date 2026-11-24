@@ -1,0 +1,71 @@
+/* Shared look for the small standalone toys: the joshbaltzell.com palette and faces,
+   without the WordPress theme. Light and dark follow the visitor's setting. */
+
+@font-face { font-family: "Bricolage Grotesque"; src: url("fonts/BricolageGrotesque-latin-opsz-wght.woff2") format("woff2"); font-weight: 200 800; font-display: swap; }
+@font-face { font-family: "Atkinson Hyperlegible Next"; src: url("fonts/AtkinsonHyperlegibleNext-latin-wght.woff2") format("woff2"); font-weight: 200 800; font-display: swap; }
+@font-face { font-family: "JetBrains Mono"; src: url("fonts/JetBrainsMono-latin-wght.woff2") format("woff2"); font-weight: 100 800; font-display: swap; }
+
+:root {
+  color-scheme: light dark;
+  --ground: light-dark(#f3f6f4, #141810);
+  --raised: light-dark(#ffffff, #1f251a);
+  --sunk: light-dark(#e1e7e1, #0a0d07);
+  --ink: light-dark(#1b2013, #f3f6f4);
+  --muted: light-dark(#555d4a, #a8b09e);
+  --line: light-dark(#d3dad2, #2b3225);
+  --edge: light-dark(#757d69, #727b67);
+  --ember: #ff5a22;
+  --on-ember: #141810;
+  --olive: #7d8d39;
+  --moss: #5b6e2c;
+  --straw: #d9df8f;
+  --slate: #3a6b7c;
+  --ok: light-dark(#4f6126, #c3d67a);
+  --note: light-dark(#3a6b7c, #9cc7d6);
+  --error: light-dark(#b3261e, #ff9a8b);
+
+  --font-display: "Bricolage Grotesque", system-ui, sans-serif;
+  --font-text: "Atkinson Hyperlegible Next", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, Menlo, monospace;
+
+  --space-1: .25rem; --space-2: .5rem; --space-3: .75rem; --space-4: 1rem; --space-6: 1.5rem; --space-8: 2rem;
+  --radius-sm: 4px; --radius-md: 8px;
+  --measure: 40rem;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0; background: var(--ground); color: var(--ink);
+  font: 1rem/1.55 var(--font-text);
+  padding: var(--space-6) max(16px, env(safe-area-inset-right)) var(--space-8) max(16px, env(safe-area-inset-left));
+}
+.toy { max-width: 56rem; margin: 0 auto; display: grid; gap: var(--space-6); }
+.toy-head { display: grid; gap: var(--space-2); }
+.toy-head h1 { font: 800 clamp(1.8rem, 5vw, 2.6rem)/1.05 var(--font-display); letter-spacing: -.02em; margin: 0; text-wrap: balance; }
+.toy-head p { margin: 0; color: var(--muted); max-width: var(--measure); }
+h2, h3 { font-family: var(--font-display); margin: 0; text-wrap: balance; }
+
+.panel { background: var(--raised); border: 1px solid var(--line); border-radius: var(--radius-md); padding: var(--space-4); display: grid; gap: var(--space-3); min-width: 0; }
+.row { display: flex; flex-wrap: wrap; gap: var(--space-3); align-items: center; }
+.grid-2 { display: grid; gap: var(--space-4); grid-template-columns: repeat(auto-fit, minmax(min(100%, 22rem), 1fr)); }
+
+.btn { font: 700 .95rem/1 var(--font-text); border: 2px solid var(--ink); background: transparent; color: var(--ink); border-radius: var(--radius-sm); padding: .6rem 1rem; cursor: pointer; min-height: 44px; }
+.btn--primary { background: var(--ember); border-color: var(--ember); color: var(--on-ember); }
+.btn:disabled { opacity: .45; cursor: default; }
+.chip { font: .85rem/1 var(--font-text); border: 1px solid var(--line); background: var(--raised); color: var(--ink); border-radius: 999px; padding: .45rem .8rem; cursor: pointer; min-height: 36px; }
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--ground); border-color: var(--ink); }
+
+label { font-size: .9rem; }
+input[type="range"] { accent-color: var(--ember); width: 100%; }
+input[type="number"], select { font: inherit; background: var(--ground); color: var(--ink); border: 1px solid var(--edge); border-radius: var(--radius-sm); padding: .35rem .5rem; }
+
+.readout { font: 600 1.6rem/1.1 var(--font-mono); font-variant-numeric: tabular-nums; }
+.tag { font: 600 .72rem/1.2 var(--font-mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+.muted { color: var(--muted); }
+.small { font-size: .85rem; }
+canvas { display: block; width: 100%; max-width: 100%; }
+:focus-visible { outline: 3px solid var(--ember); outline-offset: 2px; }
+.credit { font-size: .85rem; color: var(--muted); border-top: 1px solid var(--line); padding-top: var(--space-3); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }

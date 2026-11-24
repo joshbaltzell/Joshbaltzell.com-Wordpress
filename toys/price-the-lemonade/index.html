@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Price the Lemonade</title>
+<meta name="description" content="You don't know the demand curve. Pick a lemonade price each day for 30 days, beside a bot that is learning too.">
+<link rel="stylesheet" href="../kit/toy.css">
+<style>
+  [hidden] { display: none !important; }
+  .play-top { justify-content: space-between; }
+  .seed { font: .75rem/1 var(--font-mono); color: var(--muted); text-decoration: none; }
+  .seed:hover { text-decoration: underline; }
+
+  .ladder { display: grid; grid-template-columns: repeat(auto-fill, minmax(5.2rem, 1fr)); gap: var(--space-2); }
+  .price { font: 600 .95rem/1 var(--font-mono); font-variant-numeric: tabular-nums; border-radius: var(--radius-sm); min-height: 44px; position: relative; padding: .45rem .3rem; }
+  .price__key { position: absolute; top: 3px; left: 5px; font-size: .62rem; font-weight: 400; color: var(--muted); }
+  .price[aria-pressed="true"] .price__key { color: inherit; opacity: .7; }
+  .price:disabled { opacity: .45; cursor: default; }
+
+  .actions .btn--primary { min-width: 11rem; }
+  .keys kbd { font: .75rem var(--font-mono); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: var(--radius-sm); padding: 0 .3rem; background: var(--ground); }
+
+  .who { display: flex; align-items: center; gap: var(--space-2); }
+  .key { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: .4rem; vertical-align: -1px; }
+  .key--you { background: var(--ember); }
+  .key--bot { border: 2px solid var(--note); }
+  .player p { margin: 0; }
+
+  .strip { height: 220px; }
+  .history { max-height: 16rem; overflow: auto; border-top: 1px solid var(--line); }
+  table { width: 100%; border-collapse: collapse; font: .82rem/1.3 var(--font-mono); font-variant-numeric: tabular-nums; }
+  th, td { text-align: right; padding: .35rem .4rem; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  thead th { background: var(--raised); color: var(--muted); font-weight: 600; font-size: .7rem; letter-spacing: .04em; text-transform: uppercase; }
+  .history thead th { position: sticky; top: 0; }
+  td.empty { text-align: left; white-space: normal; color: var(--muted); font-family: var(--font-text); padding: var(--space-3) .4rem; }
+  tr.fresh td { animation: fresh .6s ease-out; }
+  tr.hot td { background: var(--sunk); }
+  @keyframes fresh { from { background: var(--sunk); } to { background: transparent; } }
+
+  .end h2 { font-size: 1.5rem; }
+  .summary p { margin: 0 0 var(--space-2); max-width: var(--measure); }
+  .summary p:last-child { margin-bottom: 0; }
+  .results th[scope="row"] { font-family: var(--font-text); font-weight: 600; }
+  .curve { height: 260px; }
+  .legend { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); font-size: .85rem; color: var(--muted); margin: 0; }
+
+  @media (max-width: 30rem) {
+    .ladder { grid-template-columns: repeat(3, 1fr); }
+    .actions .btn { flex: 1 1 auto; }
+    .strip { height: 200px; }
+    th, td { padding: .3rem .25rem; }
+  }
+</style>
+</head>
+<body>
+<main class="toy">
+  <header class="toy-head">
+    <span class="tag">Toy</span>
+    <h1>Price the Lemonade</h1>
+    <p>Pick a price. The bot picks one too. After 30 days, see who learned faster.</p>
+    <p>A cup costs $1.20 to make. Neither of you knows how many people will buy at each price. You both get the same visitors each day.</p>
+  </header>
+
+  <section class="panel" id="play" aria-labelledby="play-title">
+    <div class="row play-top">
+      <span class="tag" id="day-label" aria-live="polite">Round 1 · Day 1 of 30</span>
+      <a class="seed" id="seed" href="?seed=" title="Link to replay this round">Seed</a>
+    </div>
+    <h2 id="play-title">Today's price</h2>
+    <div class="ladder" id="ladder" role="radiogroup" aria-labelledby="play-title"></div>
+    <div class="row actions">
+      <button class="btn btn--primary" id="sell" type="button">Pick a price first</button>
+      <button class="btn" id="five" type="button">Same price, 5 days</button>
+      <button class="btn" id="rest" type="button">Same price to day 30</button>
+    </div>
+    <p class="keys small muted">Keys: <kbd>1</kbd>–<kbd>9</kbd> or <kbd>←</kbd><kbd>→</kbd> pick a price, <kbd>Enter</kbd> sells one day, <kbd>R</kbd> five days, <kbd>F</kbd> the rest of the month.</p>
+  </section>
+
+  <section class="panel end" id="end" hidden aria-labelledby="end-title">
+    <span class="tag">Day 30</span>
+    <h2 id="end-title">How it went</h2>
+    <div class="summary" id="summary" aria-live="polite"></div>
+    <table>
+      <thead><tr><th scope="col">&nbsp;</th><th scope="col">Profit</th><th scope="col">Left on the table</th></tr></thead>
+      <tbody id="results"></tbody>
+    </table>
+    <h3 id="curve-name">The hidden curve</h3>
+    <p class="small muted" id="curve-blurb" style="margin:0"></p>
+    <canvas class="curve" id="curve" role="img" aria-label="Expected profit per day at each price, with the days each player spent at each price marked as circles."></canvas>
+    <p class="legend"><span>Line: expected profit per day at that price</span><span><span class="key key--you"></span>You</span><span><span class="key key--bot"></span>Bot</span><span>Bigger circle, more days</span></p>
+    <div class="row">
+      <button class="btn btn--primary" id="next" type="button">Next round</button>
+      <button class="btn" id="again" type="button">Play this round again</button>
+    </div>
+    <p class="small muted" style="margin:0">Each round uses a different hidden curve. <kbd>N</kbd> starts the next one.</p>
+  </section>
+
+  <div class="grid-2">
+    <section class="panel player" aria-label="You">
+      <div class="who"><span class="tag"><span class="key key--you"></span>You</span></div>
+      <div class="readout" id="you-total">$0</div>
+      <p class="small muted" id="you-last" aria-live="polite">No sales yet.</p>
+    </section>
+    <section class="panel player" aria-label="Bot">
+      <div class="who"><span class="tag"><span class="key key--bot"></span>Bot</span></div>
+      <div class="readout" id="bot-total">$0</div>
+      <p class="small muted" id="bot-last">No sales yet.</p>
+    </section>
+  </div>
+
+  <section class="panel" aria-labelledby="hist-title">
+    <h2 id="hist-title" style="font-size:1.15rem">Prices by day</h2>
+    <canvas class="strip" id="strip" role="img" aria-label="Each day's price for you and the bot. The table below has the same numbers."></canvas>
+    <p class="small muted" id="strip-note" style="margin:0">Empty for now. Each day adds a dot for you and a ring for the bot, so you can see who is still trying new prices.</p>
+    <div class="history" tabindex="0" aria-label="Daily results">
+      <table>
+        <thead><tr><th scope="col">Day</th><th scope="col">Visitors</th><th scope="col">You</th><th scope="col">Profit</th><th scope="col">Bot</th><th scope="col">Profit</th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <p class="credit">The bot uses Thompson sampling (William R. Thompson, 1933). Each day it guesses how likely a visitor is to buy at each price, picks the price that looks best under that guess, and updates.</p>
+</main>
+<script src="toy.js"></script>
+</body>
+</html>
