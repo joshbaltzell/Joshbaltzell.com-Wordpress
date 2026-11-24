@@ -11,8 +11,8 @@
    A block becomes special with data-rule="name"; rules live in JBStack.rules.
    play: a rule may leave out art(), so the block keeps its own cover, and may add over(g, scene): it draws on
    the canvas in front of the whole pile every frame, in screen coordinates, so it can reach past its own block.
-   scene = { t, dt, lit, self, blocks, W, H, U, C, state }: blocks[i] is { x, y, a, w, h } (centre, angle, size)
-   or null when that block is not in the well; dt is 0 while motion is paused; state is the rule's own object.
+   scene = { t, dt, lit, self, blocks, W, H, U, C, state }: blocks[i] is { x, y, a, w, h, c } (centre, angle,
+   size, and c the cover's { x, y, w, h } from the block's top-left corner) or null when that block is not in the well; dt is 0 while motion is paused; state is the rule's own object.
    A button with data-stack-motion, and an element with data-stack-status, beside the rack are wired if present.
 
    CHANGED FROM THE DESIGN SYSTEM'S COPY: the pile is also a toy. Once it has landed, a block can be picked up
@@ -283,8 +283,9 @@
 
     function draw(lit) {
       var i, j, p, b, P = [], lights = [], orbit = null;
-      /* play: with a long list in the well, only the first two special blocks in it light up and move */
-      var specials = allSpecials.filter(function (s) { return active[s.i] && !falling[s.i]; }).slice(0, 2);
+      /* play: up to four move at once; only the first two that cast light (sun, hole) light the pile, since lighting is the costly part */
+      var lamps = 0;
+      var specials = allSpecials.filter(function (s) { return active[s.i] && !falling[s.i]; }).slice(0, 4).filter(function (s) { if (!s.rule.light) return true; return ++lamps <= 2; });
       /* play: physics to screen, mirrored top to bottom (y flips, so the angle does too); a held block still lifts up */
       for (i = 0; i < N; i++) P[i] = pose[i] ? [pose[i][0], H - pose[i][1] - 3 * lift[i], -pose[i][2]] : null;
       /* pulls first, so the light falls on blocks where they have been dragged to */
@@ -358,7 +359,7 @@
       var boxes = null;
       specials.forEach(function (s) {
         if (!s.rule.over) return;
-        if (!boxes) { boxes = []; for (var q = 0; q < N; q++) boxes[q] = P[q] && L[q] && !falling[q] ? { x: P[q][0], y: P[q][1], a: P[q][2], w: L[q].w, h: L[q].h } : null; }
+        if (!boxes) { boxes = []; for (var q = 0; q < N; q++) boxes[q] = P[q] && L[q] && !falling[q] ? { x: P[q][0], y: P[q][1], a: P[q][2], w: L[q].w, h: L[q].h, c: cov[q] || null } : null; }
         var dt = s.at === null ? 0 : Math.min(.1, Math.max(0, clock - s.at)); s.at = clock;
         og.save(); s.rule.over(og, { t: clock, dt: dt, lit: lit, self: s.i, blocks: boxes, W: W, H: H, U: U, C: C, state: s.state }); og.restore();
       });

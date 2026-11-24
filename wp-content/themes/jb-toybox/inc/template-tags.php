@@ -249,7 +249,7 @@ function jb_stack( $posts, $args = array() ) {
 		<button class="btn btn--small" type="button" data-stack-sound aria-pressed="true" hidden><?php esc_html_e( 'Sound on', 'jb-toybox' ); ?></button>
 	</span>
 </div>
-<section class="rack" data-stack data-across="mix" data-seed="<?php echo esc_attr( $args['seed'] ); ?>" data-batch="<?php echo esc_attr( $args['batch'] ); ?>" data-batch-phone="<?php echo esc_attr( $args['batch_phone'] ); ?>" aria-label="<?php echo esc_attr( $args['label'] ); ?>">
+<section class="rack" data-stack data-across="2" data-seed="<?php echo esc_attr( $args['seed'] ); ?>" data-batch="<?php echo esc_attr( $args['batch'] ); ?>" data-batch-phone="<?php echo esc_attr( $args['batch_phone'] ); ?>" aria-label="<?php echo esc_attr( $args['label'] ); ?>">
 	<div class="rack__machine" hidden>
 		<div class="tilt" data-tilt role="slider" tabindex="0" aria-label="<?php esc_attr_e( 'Tilt the well. Hold the left or right arrow key.', 'jb-toybox' ); ?>" aria-valuemin="-1" aria-valuemax="1" aria-valuenow="0"><span class="tilt__track" aria-hidden="true"></span><span class="tilt__knob" aria-hidden="true"></span><span class="tilt__label" aria-hidden="true"><?php esc_html_e( 'Tilt', 'jb-toybox' ); ?></span></div>
 	</div>
@@ -442,14 +442,19 @@ function jb_list_spine( $kind ) {
 function jb_kind_list( $current = '' ) {
 	echo '<ul class="kind-list">';
 	foreach ( array_keys( jb_kinds() ) as $slug ) {
-		$kind = jb_kind_by_slug( $slug );
+		$kind  = jb_kind_by_slug( $slug );
+		$count = $kind['term'] ? (int) $kind['term']->count : 0;
+		// A kind with nothing in it yet stays out of the list, unless it is the list being shown.
+		if ( ! $count && $current !== $slug ) {
+			continue;
+		}
 		printf(
 			'<li><a href="%1$s"%2$s><span class="kind" data-kind="%3$s">%4$s</span><span class="t-readout">%5$s</span></a></li>',
 			esc_url( $kind['url'] ),
 			$current === $slug ? ' aria-current="page"' : '',
 			esc_attr( $kind['kind'] ),
 			esc_html( $kind['plural'] ),
-			esc_html( number_format_i18n( $kind['term'] ? $kind['term']->count : 0 ) )
+			esc_html( number_format_i18n( $count ) )
 		);
 	}
 	echo '</ul>';
