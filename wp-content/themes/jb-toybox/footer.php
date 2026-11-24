@@ -15,6 +15,10 @@ $jb_about = get_page_by_path( 'about' );
 				<?php
 				foreach ( array_keys( jb_kinds() ) as $jb_slug ) :
 					$jb_kind = jb_kind_by_slug( $jb_slug );
+					// Only kinds that have something in them yet.
+					if ( empty( $jb_kind['term'] ) || ! (int) $jb_kind['term']->count ) {
+						continue;
+					}
 					?>
 				<li><a class="link" href="<?php echo esc_url( $jb_kind['url'] ); ?>"><?php echo esc_html( $jb_kind['plural'] ); ?></a></li>
 				<?php endforeach; ?>
