@@ -21,7 +21,90 @@
 
   /* ---- pond: the frog from Pond Chorus croaks twice, then waits. Sprites are the game's own. ---- */
   var pond = { bg: load('pond/bg-pond.jpg'), idle: load('pond/frog-idle.png'), sing: load('pond/frog-sing.png') };
+  /* ---- a little water in the bottom of the Pond Chorus box ----
+     A few drops sit on the inner floor of the glass box, down by the date. They pull together into beads, merge
+     when they touch and break apart when the box moves: they feel the box's angle and how hard it speeds up or
+     stops, so dragging, throwing, tilting or shaking the pile sloshes them about. Drawn over the pile, clipped to
+     the inside of the box, in the box's own coordinates. */
+  var POND_WATER = { n: 16, g: 900, link: 11 };
+  function pondWater(g, S) {
+    var st = S.state, me = S.blocks[S.self];
+    if (!me) return;
+    var w = me.w, h = me.h, dt = S.dt;
+    /* the inside of the box: the walls are a fixed share of the block's width (see the box depth in wp.css) */
+    var x0 = -w / 2 + .064 * w, x1 = w / 2 - .034 * w, y0 = -h / 2 + .022 * w, y1 = h / 2 - .042 * w;
+    if (!st.drops) {
+      st.drops = [];
+      for (var k = 0; k < POND_WATER.n; k++) {
+        var clump = Math.floor(k / 4), cx = x0 + (x1 - x0) * (.15 + .23 * clump);
+        st.drops.push({ x: cx + (Math.random() - .5) * 10, y: y1 - 3 - Math.random() * 3, vx: 0, vy: 0, r: 2.6 + Math.random() * 1.6 });
+      }
+      st.bx = me.x; st.by = me.y; st.bvx = 0; st.bvy = 0;
+    }
+    var D = st.drops, i, j, a, b;
+    if (dt > 0) {
+      /* how the box itself is moving, smoothed: its acceleration pushes the water the other way */
+      var bvx = (me.x - st.bx) / dt, bvy = (me.y - st.by) / dt;
+      var ax = (bvx - st.bvx) / dt, ay = (bvy - st.bvy) / dt, am = Math.hypot(ax, ay);
+      if (am > 5000) { ax *= 5000 / am; ay *= 5000 / am; }
+      st.bx = me.x; st.by = me.y; st.bvx = bvx; st.bvy = bvy;
+      /* gravity and that push, turned into the box's own frame */
+      var c = Math.cos(-me.a), s = Math.sin(-me.a), fx = -ax, fy = POND_WATER.g - ay;
+      var gx = fx * c - fy * s, gy = fx * s + fy * c;
+      var steps = 3, h1 = dt / steps;
+      for (var n = 0; n < steps; n++) {
+        for (i = 0; i < D.length; i++) { a = D[i]; a.vx += gx * h1; a.vy += gy * h1; }
+        /* drops attract a little when near and push apart when overlapping, so they bead and merge */
+        for (i = 0; i < D.length; i++) for (j = i + 1; j < D.length; j++) {
+          a = D[i]; b = D[j];
+          var dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || .01, rest = (a.r + b.r) * .8;
+          if (d > POND_WATER.link) continue;
+          var pull = d < rest ? (d - rest) * 40 : (d - rest) * 9 * (1 - d / POND_WATER.link);
+          var ux = dx / d, uy = dy / d;
+          a.vx += ux * pull * h1 * 6; a.vy += uy * pull * h1 * 6; b.vx -= ux * pull * h1 * 6; b.vy -= uy * pull * h1 * 6;
+          /* and drag on each other, the way water holds together */
+          var mvx = (a.vx + b.vx) / 2, mvy = (a.vy + b.vy) / 2, k2 = Math.min(1, h1 * 6);
+          a.vx += (mvx - a.vx) * k2; a.vy += (mvy - a.vy) * k2; b.vx += (mvx - b.vx) * k2; b.vy += (mvy - b.vy) * k2;
+        }
+        for (i = 0; i < D.length; i++) {
+          a = D[i];
+          var damp = Math.pow(.2, h1); a.vx *= damp; a.vy *= damp;
+          a.x += a.vx * h1; a.y += a.vy * h1;
+          /* the inside of the glass box: the floor has a little friction, the walls give a small bounce */
+          if (a.y > y1 - a.r) { a.y = y1 - a.r; if (a.vy > 0) a.vy *= -.15; a.vx *= Math.pow(.05, h1); }
+          if (a.y < y0 + a.r) { a.y = y0 + a.r; if (a.vy < 0) a.vy *= -.2; }
+          if (a.x < x0 + a.r) { a.x = x0 + a.r; if (a.vx < 0) a.vx *= -.2; }
+          if (a.x > x1 - a.r) { a.x = x1 - a.r; if (a.vx > 0) a.vx *= -.2; }
+        }
+      }
+    }
+    /* draw: the drops and the necks between near ones as one shape, so beads that touch read as one */
+    var off = st.cv || (st.cv = document.createElement('canvas')), SC2 = 2;
+    var cw = Math.ceil(w * SC2), ch = Math.ceil(h * SC2);
+    if (off.width !== cw || off.height !== ch) { off.width = cw; off.height = ch; }
+    var o = off.getContext('2d');
+    o.setTransform(1, 0, 0, 1, 0, 0); o.clearRect(0, 0, cw, ch);
+    o.setTransform(SC2, 0, 0, SC2, w, h); /* origin at the box centre */
+    o.fillStyle = o.strokeStyle = '#8ccff0'; o.lineCap = 'round';
+    for (i = 0; i < D.length; i++) {
+      a = D[i]; o.beginPath(); o.ellipse(a.x, a.y + a.r * .2, a.r * 1.3, a.r * .8, 0, 0, Math.PI * 2); o.fill(); /* water spreads flat on a floor */
+      for (j = i + 1; j < D.length; j++) {
+        b = D[j]; var dd = Math.hypot(b.x - a.x, b.y - a.y);
+        if (dd < (a.r + b.r) * 1.35) { o.lineWidth = Math.min(a.r, b.r) * 1.6; o.beginPath(); o.moveTo(a.x, a.y); o.lineTo(b.x, b.y); o.stroke(); }
+      }
+    }
+    /* a thin bright edge on top of each bead, where the light catches it */
+    o.globalCompositeOperation = 'source-atop'; o.fillStyle = 'rgba(255,255,255,.75)';
+    for (i = 0; i < D.length; i++) { a = D[i]; o.beginPath(); o.ellipse(a.x - a.r * .3, a.y - a.r * .25, a.r * .6, a.r * .25, 0, 0, Math.PI * 2); o.fill(); }
+    o.globalCompositeOperation = 'source-over';
+    g.save(); g.translate(me.x, me.y); g.rotate(me.a);
+    g.beginPath(); g.rect(x0, y0, x1 - x0, y1 - y0); g.clip();
+    g.globalAlpha = .72 * S.lit; g.drawImage(off, -w / 2, -h / 2, w, h);
+    g.restore();
+  }
+
   JBStack.rules.pond = {
+    over: pondWater,
     art: function (g, w, h, t, heat, C) {
       g.fillStyle = C['part-night']; g.fillRect(0, 0, w, h);
       fill(g, pond.bg, w, h);
