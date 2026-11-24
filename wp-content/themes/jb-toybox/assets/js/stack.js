@@ -295,7 +295,7 @@
       var i, j, p, b, P = [], lights = [], orbit = null;
       /* play: up to four move at once; only the first two that cast light (sun, hole) light the pile, since lighting is the costly part */
       var lamps = 0;
-      var specials = allSpecials.filter(function (s) { return active[s.i] && !falling[s.i]; }).slice(0, 4).filter(function (s) { if (!s.rule.light) return true; return ++lamps <= 2; });
+      var specials = allSpecials.filter(function (s) { return active[s.i] && !falling[s.i]; }).filter(function (s) { if (!s.rule.light) return true; return ++lamps <= 2; }).slice(0, 4);
       /* play: physics to screen, mirrored top to bottom (y flips, so the angle does too); a held block still lifts up */
       for (i = 0; i < N; i++) P[i] = pose[i] ? [pose[i][0], H - pose[i][1] - 3 * lift[i], -pose[i][2]] : null;
       /* pulls first, so the light falls on blocks where they have been dragged to */
@@ -359,8 +359,8 @@
 
       /* the rails and the floor catch warm light too */
       var w0 = null; lights.forEach(function (l) { if (l.tone === 'warm' && !w0) w0 = l; });
-      strip(lits.l, 'to bottom', w0 ? w0.y : 0, w0 ? w0.R : 0, w0 ? w0.x : 1e9, 6, w0 ? w0.amt : 0);
-      strip(lits.r, 'to bottom', w0 ? w0.y : 0, w0 ? w0.R : 0, w0 ? W - w0.x : 1e9, 6, w0 ? w0.amt : 0);
+      strip(lits.l, 'to bottom', w0 ? w0.y : 0, w0 ? w0.R : 0, w0 ? w0.x : 1e9, 0, w0 ? w0.amt : 0); /* play: the rails hang from the ceiling now, so no offset */
+      strip(lits.r, 'to bottom', w0 ? w0.y : 0, w0 ? w0.R : 0, w0 ? W - w0.x : 1e9, 0, w0 ? w0.amt : 0);
       strip(lits.f, 'to right', w0 ? w0.x : 0, w0 ? w0.R : 0, w0 ? w0.y : 1e9, 14, w0 ? w0.amt : 0); /* play: the floor is the ceiling now */
 
       specials.forEach(function (s) { if (!s.g) return; var c = cov[s.i]; s.g.setTransform(dpr, 0, 0, dpr, 0, 0); s.rule.art(s.g, c.w, c.h, clock, s.heat, C); });
@@ -552,10 +552,13 @@
       if (!list.length || !startPlay()) return;
       var n = 0, wide = W < 520, area = 0;
       list.forEach(function (i) {
-        var units = wide ? 6 : (n++ % 5 < 3 ? 2 : 3);
+        var units = wide ? 6 : S.mode === '2' ? 3 : S.mode === '3' ? 2 : (n++ % 5 < 3 ? 2 : 3);
         L[i] = { units: units, w: units * U - GAP, x: 0, row: 0, col: 0, h: 0 };
         items[i].hidden = false; blks[i].style.width = L[i].w.toFixed(1) + 'px'; blks[i].setAttribute('data-u', units);
         L[i].h = blks[i].offsetHeight; area += L[i].h * units / 6;
+        /* it was hidden when build() measured covers, so measure this one now (special blocks draw on and over it) */
+        var cv0 = blks[i].querySelector('.cov'); cov[i] = cv0 ? { x: cv0.offsetLeft + blks[i].clientLeft, y: cv0.offsetTop + blks[i].clientTop, w: cv0.clientWidth, h: cv0.clientHeight } : { x: 0, y: 0, w: L[i].w, h: 0 };
+        allSpecials.forEach(function (s) { if (s.i === i && s.cv) { s.cv.width = Math.round(cov[i].w * dpr); s.cv.height = Math.round(cov[i].h * dpr); } });
         pose[i] = fin[i] = null; blks[i].style.transform = 'translate(-9999px,0)';
       });
       resize(H + area * 1.2 + 20);

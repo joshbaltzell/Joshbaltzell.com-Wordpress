@@ -76,7 +76,7 @@ function jb_content_fields() {
 		__( 'Stack', 'jb-toybox' )  => array(
 			'rule' => array(
 				'label'   => __( 'Special block', 'jb-toybox' ),
-				'hint'    => __( 'Gives this post\'s block its own animation and light in the stack. At most two in view.', 'jb-toybox' ),
+				'hint'    => __( 'Gives this post\'s block its own animation and light in the stack. Up to four move at once; Sun and Black hole light the pile, at most two of those.', 'jb-toybox' ),
 				'type'    => 'select',
 				'options' => array(
 					''     => __( 'None', 'jb-toybox' ),

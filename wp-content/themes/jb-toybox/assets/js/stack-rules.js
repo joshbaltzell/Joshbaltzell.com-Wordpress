@@ -332,7 +332,7 @@
       var m = st.march;
       if (m && dt) {
         var step = ANT.walk * dt, tb = S.blocks[m.to];
-        if (!tb && m.leg !== 'home' && m.leg !== 'back') { m.leg = 'back'; m.aim = nearestOnRim(me, m.x, m.y, inset); }
+        if (!tb && m.leg !== 'home' && m.leg !== 'back' && m.leg !== 'end') { m.leg = 'back'; m.aim = nearestOnRim(me, m.x, m.y, inset); }
         if (m.leg === 'out' || m.leg === 'back') {
           /* cross the gap in a straight line to the nearest point on the other block (or home) */
           var target = m.leg === 'out' ? tb : me;
