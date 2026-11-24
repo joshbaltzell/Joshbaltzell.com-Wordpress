@@ -548,6 +548,7 @@
     }
     /* add: blocks fall in from the top, one after another, into a well that has grown to hold them */
     function addLive(list) {
+      firstRise = false; /* play: once someone adds or removes, the well never shrinks back for a rise */
       if (!list.length || !startPlay()) return;
       var n = 0, wide = W < 520, area = 0;
       list.forEach(function (i) {
@@ -573,6 +574,7 @@
     }
     /* remove: the floor opens and the blocks drop out through it; nothing else is touched */
     function removeLive(list) {
+      firstRise = false; /* play: once someone adds or removes, the well never shrinks back for a rise */
       if (!list.length || !startPlay()) return;
       rack.classList.add('rack--open');
       list.forEach(function (i) {
