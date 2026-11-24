@@ -245,7 +245,7 @@
       var need = rows.reduce(function (a, b) { return a + b; }, 0);
       H = Math.max(mode === '1' ? 0 : S.minRows * tall, need) + HEAD;
       var mess = 1 - S.neat / 100;
-      var rising = !!(replay && firstRise && S.motion && M); hv = 0;
+      var rising = !!(replay && firstRise && S.motion && M); hv = 0; rack.style.minHeight = '';
       sim = M ? simulate(S.seed, mess, rising) : still();
       fin = sim.frames[sim.frames.length - 1];
       if (M && topOf(fin) < 16) { H = Math.ceil(H + 30 - topOf(fin)); sim = simulate(S.seed, mess, rising); fin = sim.frames[sim.frames.length - 1]; }
@@ -266,7 +266,7 @@
       [under, over].forEach(function (c) { c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); });
       blks.forEach(function (b, i) { var c = b.querySelector('.cov'); cov[i] = c ? { x: c.offsetLeft + b.clientLeft, y: c.offsetTop + b.clientTop, w: c.clientWidth, h: c.clientHeight } : { x: 0, y: 0, w: L[i].w, h: 0 }; });
       specials.forEach(function (s) { if (!s.cv) return; s.cv.width = Math.round(cov[s.i].w * dpr); s.cv.height = Math.round(cov[s.i].h * dpr); });
-      if (replay && S.motion && M && sim.frames.length > 1) { phase = 'drop'; t0 = performance.now(); if (sim.edges && sim.edges.length) { hv = sim.edges[0]; well.style.height = Math.round(hv) + 'px'; } }
+      if (replay && S.motion && M && sim.frames.length > 1) { phase = 'drop'; t0 = performance.now(); if (sim.edges && sim.edges.length) { rack.style.minHeight = rack.offsetHeight + 'px'; /* hold the page at its full length while the well grows, so nothing below moves and no scrollbar comes and goes */ hv = sim.edges[0]; well.style.height = Math.round(hv) + 'px'; } }
       else { phase = 'rest'; litAt = replay ? performance.now() : -1e9; }
       report(); last = 0; kick();
     }
@@ -418,7 +418,7 @@
       if (hv) {
         var want0 = phase === 'drop' && sim.edges ? sim.edges[Math.min(sim.edges.length - 1, Math.floor(Math.max(0, now - t0) * 60 / 1000))] : H;
         hv += (Math.max(want0, hv) - hv) * Math.min(1, dt / 120);
-        if (phase !== 'drop' && H - hv < .5) { hv = 0; well.style.height = H + 'px'; } else { well.style.height = Math.round(hv) + 'px'; busy = true; }
+        if (phase !== 'drop' && H - hv < .5) { hv = 0; well.style.height = H + 'px'; rack.style.minHeight = ''; } else { well.style.height = Math.round(hv) + 'px'; busy = true; }
       }
       if (phase === 'play') busy = stepPlay(dt) || busy; /* play: live physics */
       if (S.motion && feel(dt)) busy = true;
@@ -440,7 +440,7 @@
       if (live || !canPlay()) return !!live;
       /* a pile still settling counts as landed the moment someone reaches for it */
       if (phase === 'drop') { for (var k = 0; k < N; k++) pose[k] = fin[k]; litAt = performance.now(); }
-      if (hv) { hv = 0; well.style.height = H + 'px'; } firstRise = false;
+      if (hv) { hv = 0; well.style.height = H + 'px'; rack.style.minHeight = ''; } firstRise = false;
       var engine = M.Engine.create({ enableSleeping: true, positionIterations: 12, velocityIterations: 10 });
       engine.gravity.y = 1.7;
       var st = { isStatic: true, friction: 1 };
@@ -771,7 +771,7 @@
     if (savedView === 'shelf' || (!savedView && mq.matches)) { armed = false; setShelf(true, 'init'); } else build(false);
     /* play: a width change during the first drop (a scrollbar appearing as the page grows) restarts the drop
        instead of cancelling it */
-    if (window.ResizeObserver) new ResizeObserver(function () { if (Math.abs(well.clientWidth - W) > 1) build(phase === 'drop'); }).observe(well);
+    if (window.ResizeObserver) new ResizeObserver(function () { if (Math.abs(well.clientWidth - W) > 1) { firstRise = false; /* never restart a growing rise: a width change during it rebuilds at full height */ build(phase === 'drop'); } }).observe(well);
     else window.addEventListener('resize', function () { build(false); });
     if (window.IntersectionObserver) new IntersectionObserver(function (es) { seen = es[es.length - 1].isIntersecting; if (seen && armed && !shelf) { armed = false; build(true); } else if (seen) kick(); }, { rootMargin: '0px 0px -15% 0px' }).observe(rack);
     else { seen = true; armed = false; build(true); }
