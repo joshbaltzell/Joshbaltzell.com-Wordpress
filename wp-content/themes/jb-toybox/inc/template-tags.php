@@ -442,14 +442,19 @@ function jb_list_spine( $kind ) {
 function jb_kind_list( $current = '' ) {
 	echo '<ul class="kind-list">';
 	foreach ( array_keys( jb_kinds() ) as $slug ) {
-		$kind = jb_kind_by_slug( $slug );
+		$kind  = jb_kind_by_slug( $slug );
+		$count = $kind['term'] ? (int) $kind['term']->count : 0;
+		// A kind with nothing in it yet stays out of the list, unless it is the list being shown.
+		if ( ! $count && $current !== $slug ) {
+			continue;
+		}
 		printf(
 			'<li><a href="%1$s"%2$s><span class="kind" data-kind="%3$s">%4$s</span><span class="t-readout">%5$s</span></a></li>',
 			esc_url( $kind['url'] ),
 			$current === $slug ? ' aria-current="page"' : '',
 			esc_attr( $kind['kind'] ),
 			esc_html( $kind['plural'] ),
-			esc_html( number_format_i18n( $kind['term'] ? $kind['term']->count : 0 ) )
+			esc_html( number_format_i18n( $count ) )
 		);
 	}
 	echo '</ul>';
