@@ -236,3 +236,8 @@
 .prose.is-redacting .tt-w{cursor:pointer}
 .tt-w.is-gone,.tt-w.is-gone.is-noun{background:var(--ink);color:transparent;box-shadow:0 0 0 var(--space-half) var(--ink);text-decoration:none}
 @media (prefers-reduced-motion:reduce){.tt-w{transition:none}}
+
+/* The pile floats up. Blocks rise into the well and settle against its top, so the newest stay at the top of
+   the page. The floor bar is above the well as a ceiling, and the rails hang from it with their open ends at
+   the bottom, where blocks come in. */
+.rail{top:calc(-1 * var(--outline-part));bottom:calc(-1 * var(--space-2));border-radius:0 0 var(--radius-sm) var(--radius-sm)}

@@ -205,7 +205,7 @@ function jb_stack( $posts, $args = array() ) {
 
 	if ( ! $posts ) {
 		?>
-<section class="rack"><div class="shaft"><span class="rail rail--l"></span><div class="well well--empty"><div class="empty"><h2 class="t-heading"><?php esc_html_e( 'Nothing has landed here yet.', 'jb-toybox' ); ?></h2><p class="t-lead"><?php echo esc_html( $args['empty'] ); ?></p><a class="btn" href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php esc_html_e( 'See everything else', 'jb-toybox' ); ?></a></div></div><span class="rail rail--r"></span></div><div class="floor"></div></section>
+<section class="rack"><div class="floor"></div><div class="shaft"><span class="rail rail--l"></span><div class="well well--empty"><div class="empty"><h2 class="t-heading"><?php esc_html_e( 'Nothing has landed here yet.', 'jb-toybox' ); ?></h2><p class="t-lead"><?php echo esc_html( $args['empty'] ); ?></p><a class="btn" href="<?php echo esc_url( home_url( '/' ) ); ?>"><?php esc_html_e( 'See everything else', 'jb-toybox' ); ?></a></div></div><span class="rail rail--r"></span></div></section>
 		<?php
 		return;
 	}
@@ -228,6 +228,7 @@ function jb_stack( $posts, $args = array() ) {
 		<div class="tilt" data-tilt role="slider" tabindex="0" aria-label="<?php esc_attr_e( 'Tilt the well. Hold the left or right arrow key.', 'jb-toybox' ); ?>" aria-valuemin="-1" aria-valuemax="1" aria-valuenow="0"><span class="tilt__track" aria-hidden="true"></span><span class="tilt__knob" aria-hidden="true"></span><span class="tilt__label" aria-hidden="true"><?php esc_html_e( 'Tilt', 'jb-toybox' ); ?></span></div>
 		<button class="lever" type="button" data-lever><span class="lever__slot" aria-hidden="true"><span class="lever__arm"></span></span><span class="lever__label"></span></button>
 	</div>
+	<div class="floor"></div><?php // The pile floats up, so its floor is a ceiling above the well. ?>
 	<div class="shaft"><span class="rail rail--l"></span>
 		<div class="well"><ol class="pile" aria-label="<?php echo esc_attr( sprintf( /* translators: %s: name of the list. */ __( '%s, newest first', 'jb-toybox' ), $args['label'] ) ); ?>">
 			<?php foreach ( array_values( $posts ) as $i => $post ) : ?>
@@ -235,7 +236,6 @@ function jb_stack( $posts, $args = array() ) {
 			<?php endforeach; ?>
 		</ol></div>
 	<span class="rail rail--r"></span></div>
-	<div class="floor"></div>
 </section>
 <p class="rack__more"><button class="btn" type="button" data-stack-more hidden></button></p>
 	<?php
