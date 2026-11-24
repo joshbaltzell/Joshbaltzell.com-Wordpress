@@ -172,6 +172,32 @@ function jb_block_design( $post ) {
 		$out['cover'] = '<iframe class="cov__media" sandbox="allow-scripts" tabindex="-1" aria-hidden="true" title="" data-srcdoc="' . esc_attr( $m( 'cover_live' ) ) . '"></iframe>';
 		$class[]      = 'blk--moving';
 	}
+	if ( 'layers' === $kind ) {
+		// A layered picture: each line is "address depth [left top height]", back to front. site.js sets --look-x
+		// and --look-y on the block, stack.js sets --lean on the rack, and each layer moves by its depth.
+		$layers = '';
+		foreach ( preg_split( '/\R/', $m( 'cover_layers' ) ) as $line ) {
+			$bits = preg_split( '/\s+/', trim( $line ) );
+			$src  = isset( $bits[0] ) ? esc_url( $bits[0] ) : '';
+			if ( '' === $src ) {
+				continue;
+			}
+			$z     = isset( $bits[1] ) ? max( 0, min( 1, (float) $bits[1] ) ) : 0;
+			$style = '--z:' . round( $z, 3 );
+			$place = array_slice( $bits, 2, 3 );
+			if ( 3 === count( $place ) && count( array_filter( $place, 'is_numeric' ) ) === 3 ) {
+				$style .= ';left:' . (float) $place[0] . '%;top:' . (float) $place[1] . '%;height:' . (float) $place[2] . '%';
+				$class_name = 'cov__layer';
+			} else {
+				$class_name = 'cov__layer cov__layer--fill';
+			}
+			$layers .= '<img class="' . $class_name . '" src="' . $src . '" alt="" decoding="async" loading="lazy" style="' . esc_attr( $style ) . '">';
+		}
+		if ( $layers ) {
+			$out['cover'] = '<span class="cov__layers" aria-hidden="true">' . $layers . '</span>';
+			$class[]      = 'blk--layered';
+		}
+	}
 
 	$out['class'] = implode( ' ', $class );
 	return $out;
@@ -226,7 +252,6 @@ function jb_stack( $posts, $args = array() ) {
 <section class="rack" data-stack data-across="mix" data-seed="<?php echo esc_attr( $args['seed'] ); ?>" data-batch="<?php echo esc_attr( $args['batch'] ); ?>" data-batch-phone="<?php echo esc_attr( $args['batch_phone'] ); ?>" aria-label="<?php echo esc_attr( $args['label'] ); ?>">
 	<div class="rack__machine" hidden>
 		<div class="tilt" data-tilt role="slider" tabindex="0" aria-label="<?php esc_attr_e( 'Tilt the well. Hold the left or right arrow key.', 'jb-toybox' ); ?>" aria-valuemin="-1" aria-valuemax="1" aria-valuenow="0"><span class="tilt__track" aria-hidden="true"></span><span class="tilt__knob" aria-hidden="true"></span><span class="tilt__label" aria-hidden="true"><?php esc_html_e( 'Tilt', 'jb-toybox' ); ?></span></div>
-		<button class="lever" type="button" data-lever><span class="lever__slot" aria-hidden="true"><span class="lever__arm"></span></span><span class="lever__label"></span></button>
 	</div>
 	<div class="floor"></div><?php // The pile floats up, so its floor is a ceiling above the well. ?>
 	<div class="shaft"><span class="rail rail--l"></span>
@@ -235,7 +260,11 @@ function jb_stack( $posts, $args = array() ) {
 			<li><?php jb_card( $post, $args['toy_types'], $i / $last ); ?></li>
 			<?php endforeach; ?>
 		</ol></div>
-	<span class="rail rail--r"></span></div>
+	<span class="rail rail--r"></span>
+	<div class="lever-dock" hidden><?php // Sticks to the bottom of the screen while you scroll the well, and rests where new blocks come in. ?>
+		<button class="lever" type="button" data-lever><span class="lever__slot" aria-hidden="true"><span class="lever__arm"></span></span><span class="lever__label"></span></button>
+	</div>
+	</div>
 </section>
 <p class="rack__more"><button class="btn" type="button" data-stack-more hidden></button></p>
 	<?php

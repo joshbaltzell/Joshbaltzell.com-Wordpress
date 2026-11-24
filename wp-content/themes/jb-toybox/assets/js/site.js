@@ -61,6 +61,8 @@
         bs.setProperty('--wall-l', (SIDES * nl).toFixed(2) + 'cqw'); bs.setProperty('--wall-r', (SIDES * (1 - nl)).toFixed(2) + 'cqw');
         bs.setProperty('--wall-b', (UPDOWN * nb).toFixed(2) + 'cqw'); bs.setProperty('--wall-t', (UPDOWN * (1 - nb)).toFixed(2) + 'cqw');
         bs.setProperty('--glare-x', (70 - nl * 80).toFixed(1) + '%');
+        /* where the eye is, -1 to 1 across and up, for anything inside the box that sits at a depth (layered covers) */
+        bs.setProperty('--look-x', ((nl - .5) / SWING).toFixed(3)); bs.setProperty('--look-y', ((nb - .5) / SWING).toFixed(3));
       }
     }
     for (i = 0; i < wells.length; i++) {
