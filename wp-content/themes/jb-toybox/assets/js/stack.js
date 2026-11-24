@@ -98,7 +98,7 @@
     var prevY = [], vy = [], squash = [], dust = [], kickY = 0, shaftEl = rack.querySelector('.shaft');
     /* the machine: an optional lever for More and a handle that tilts the well */
     var machine = rack.querySelector('.rack__machine'), lever = rack.querySelector('[data-lever]'), dock = rack.querySelector('.lever-dock'), tiltEl = rack.querySelector('[data-tilt]'), tilt = 0;
-    var W = 0, H = 0, U = 0, L = [], sim = null, fin = [], endAt = 0, phase = 'rest', t0 = 0, litAt = -1e9, clock = 0, last = 0, raf = 0, seen = false, armed = true, dpr = 1, queued = 0;
+    var W = 0, H = 0, U = 0, L = [], sim = null, fin = [], endAt = 0, phase = 'rest', t0 = 0, litAt = -1e9, clock = 0, last = 0, raf = 0, seen = false, armed = true, dpr = 1, queued = 0, firstRise = true, hv = 0;
     var pose = [], lift = [], want = [], cov = [], face = [], shadow = [], own = [], C = {}, specials = [], allSpecials = specials;
 
     /* ---- sound ----
@@ -190,7 +190,10 @@
       rows.forEach(function (h, r) { base[r] = y; y -= h; });
       return { frames: [L.map(function (b) { return b ? [b.x, base[b.row] - b.h / 2, 0] : null; })], ms: 0 };
     }
-    function simulate(seed, mess) {
+    /* play: rising (the first rise only): the well starts short and grows downward as the pile builds, and each
+       block starts just beyond its bottom edge, so the top of the well is never an empty box. edges[] is the well's
+       visible height for each recorded frame. */
+    function simulate(seed, mess, rising) {
       var R = rng(seed), engine = M.Engine.create({ enableSleeping: true, positionIterations: 12, velocityIterations: 10 });
       engine.gravity.y = 1.7;
       var st = { isStatic: true, friction: 1 };
@@ -200,24 +203,30 @@
         var b = L[i], half = (b.units * U - b.w) / 2, s = { i: i, at: at, x: b.x + (R() - .5) * 2 * half * (.3 + mess), a: (R() - .5) * 2 * (.006 + mess * .06), av: (R() - .5) * 2 * mess * .012 };
         at += gapT * (.8 + R() * .4); return s;
       });
-      var bodies = [], frames = [], dt = 1000 / 120, t = 0, step = 0, next = 0, lastAt = sched[sched.length - 1].at, maxT = lastAt + 7000;
+      var bodies = [], frames = [], edges = rising ? [] : null, vis = 0, dt = 1000 / 120, t = 0, step = 0, next = 0, lastAt = sched[sched.length - 1].at, maxT = lastAt + 7000;
       while (t < maxT) {
         while (next < sched.length && sched[next].at <= t) {
-          var s = sched[next], b = L[s.i], clear = true;
-          /* never let a block appear inside one that has not yet fallen out of the way (a one-block-wide pile on a phone) */
-          for (var q = 0; q < N && clear; q++) { var o = bodies[q]; if (o && L[q] && Math.abs(o.position.x - s.x) < (L[q].w + b.w) / 2 + 4 && o.position.y - L[q].h / 2 < 4) clear = false; }
+          var s = sched[next], b = L[s.i], clear = true, sy = -b.h / 2 - 8, q, o;
+          if (rising) {
+            /* the pile so far: the rows already in, measured from the floor (the top of the well on screen) */
+            var top = H; for (q = 0; q < N; q++) { o = bodies[q]; if (o && L[q] && L[q].row < b.row) top = Math.min(top, o.bounds.min.y); }
+            var E = Math.min(H, (H - top) + b.h + 16); /* room for this block to land in view, never past the full well */
+            sy = H - E - b.h / 2; vis = Math.max(vis, E);
+          }
+          /* never let a block appear inside one that has not yet got out of the way (a one-block-wide pile on a phone) */
+          for (q = 0; q < N && clear; q++) { o = bodies[q]; if (o && L[q] && Math.abs(o.position.x - s.x) < (L[q].w + b.w) / 2 + 4 && (rising ? Math.abs(o.position.y - sy) < (L[q].h + b.h) / 2 + 4 : o.position.y - L[q].h / 2 < 4)) clear = false; }
           if (!clear) break;
           next++;
-          var body = M.Bodies.rectangle(s.x, -b.h / 2 - 8, b.w, b.h, { restitution: .06, friction: .35, frictionStatic: .6, frictionAir: .004, density: .002, slop: .02, sleepThreshold: 40 });
+          var body = M.Bodies.rectangle(s.x, sy, b.w, b.h, { restitution: .06, friction: .35, frictionStatic: .6, frictionAir: .004, density: .002, slop: .02, sleepThreshold: 40 });
           M.Body.setAngle(body, s.a); M.Body.setAngularVelocity(body, s.av); M.Body.setVelocity(body, { x: 0, y: 5 });
           bodies[s.i] = body; M.Composite.add(engine.world, body);
         }
         M.Engine.update(engine, dt); t += dt; step++;
-        if (step % 2 === 0) frames.push(L.map(function (b, i) { var bd = bodies[i]; return bd ? [bd.position.x, bd.position.y, bd.angle] : null; }));
+        if (step % 2 === 0) { frames.push(L.map(function (b, i) { var bd = bodies[i]; return bd ? [bd.position.x, bd.position.y, bd.angle] : null; })); if (edges) edges.push(vis); }
         if (next === sched.length && t > lastAt + 600 && bodies.every(function (b) { return !b || b.isSleeping; })) break;
       }
       M.Composite.clear(engine.world, false); M.Engine.clear(engine);
-      return { frames: frames, ms: t };
+      return { frames: frames, ms: t, edges: edges };
     }
     function topOf(f) { var top = Infinity; f.forEach(function (p, i) { if (!p || !L[i]) return; top = Math.min(top, p[1] - (Math.abs(Math.cos(p[2])) * L[i].h + Math.abs(Math.sin(p[2])) * L[i].w) / 2); }); return top; }
 
@@ -236,16 +245,17 @@
       var need = rows.reduce(function (a, b) { return a + b; }, 0);
       H = Math.max(mode === '1' ? 0 : S.minRows * tall, need) + HEAD;
       var mess = 1 - S.neat / 100;
-      sim = M ? simulate(S.seed, mess) : still();
+      var rising = !!(replay && firstRise && S.motion && M); hv = 0;
+      sim = M ? simulate(S.seed, mess, rising) : still();
       fin = sim.frames[sim.frames.length - 1];
-      if (M && topOf(fin) < 16) { H = Math.ceil(H + 30 - topOf(fin)); sim = simulate(S.seed, mess); fin = sim.frames[sim.frames.length - 1]; }
+      if (M && topOf(fin) < 16) { H = Math.ceil(H + 30 - topOf(fin)); sim = simulate(S.seed, mess, rising); fin = sim.frames[sim.frames.length - 1]; }
       /* play: a pile that topples is not a list. If a block ends up leaning past 8 degrees, try the next few
          seeds and keep the calmest pile that still fits the well. Still repeatable: the same list lands the same way. */
       if (M) {
         var best = sim, bestLean = leanOf(fin), sd = S.seed, tries = 0;
         while (bestLean > 8 && tries++ < 10) {
           sd = sd % 997 + 1;
-          var alt = simulate(sd, mess), af = alt.frames[alt.frames.length - 1], al = leanOf(af);
+          var alt = simulate(sd, mess, rising), af = alt.frames[alt.frames.length - 1], al = leanOf(af);
           if (topOf(af) >= 16 && al < bestLean) { best = alt; bestLean = al; }
         }
         sim = best; fin = sim.frames[sim.frames.length - 1];
@@ -256,7 +266,7 @@
       [under, over].forEach(function (c) { c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); });
       blks.forEach(function (b, i) { var c = b.querySelector('.cov'); cov[i] = c ? { x: c.offsetLeft + b.clientLeft, y: c.offsetTop + b.clientTop, w: c.clientWidth, h: c.clientHeight } : { x: 0, y: 0, w: L[i].w, h: 0 }; });
       specials.forEach(function (s) { if (!s.cv) return; s.cv.width = Math.round(cov[s.i].w * dpr); s.cv.height = Math.round(cov[s.i].h * dpr); });
-      if (replay && S.motion && M && sim.frames.length > 1) { phase = 'drop'; t0 = performance.now(); }
+      if (replay && S.motion && M && sim.frames.length > 1) { phase = 'drop'; t0 = performance.now(); if (sim.edges && sim.edges.length) { hv = sim.edges[0]; well.style.height = Math.round(hv) + 'px'; } }
       else { phase = 'rest'; litAt = replay ? performance.now() : -1e9; }
       report(); last = 0; kick();
     }
@@ -400,10 +410,16 @@
       if (S.motion) { clock += dt / 1000; specials.forEach(function (s) { if (s.rule.stars) s.rule.stars.forEach(function (au, k) { s.ph[k] += dt / 1000 * .9 * Math.pow(s.rule.stars[0] / au, 1.5) * (1 + .8 * s.heat); }); }); }
       if (phase === 'drop') {
         var t = Math.max(0, now - t0), fi = t * 60 / 1000, a = Math.floor(fi), u = fi - a, F = sim.frames;
-        if (t >= endAt || a >= F.length - 1) { phase = 'rest'; litAt = now; report(); }
+        if (t >= endAt || a >= F.length - 1) { phase = 'rest'; litAt = now; report(); firstRise = false; }
         else { for (i = 0; i < N; i++) { var p0 = F[a][i], p1 = F[a + 1][i]; pose[i] = p0 && p1 ? [p0[0] + (p1[0] - p0[0]) * u, p0[1] + (p1[1] - p0[1]) * u, p0[2] + (p1[2] - p0[2]) * u] : null; } busy = true; }
       }
       if (phase === 'rest') for (i = 0; i < N; i++) pose[i] = fin[i];
+      /* play: the first rise grows the well downward; afterwards it eases out to its full height */
+      if (hv) {
+        var want0 = phase === 'drop' && sim.edges ? sim.edges[Math.min(sim.edges.length - 1, Math.floor(Math.max(0, now - t0) * 60 / 1000))] : H;
+        hv += (Math.max(want0, hv) - hv) * Math.min(1, dt / 120);
+        if (phase !== 'drop' && H - hv < .5) { hv = 0; well.style.height = H + 'px'; } else { well.style.height = Math.round(hv) + 'px'; busy = true; }
+      }
       if (phase === 'play') busy = stepPlay(dt) || busy; /* play: live physics */
       if (S.motion && feel(dt)) busy = true;
       for (i = 0; i < N; i++) { var d = want[i] - lift[i]; if (S.motion && Math.abs(d) > .01) { lift[i] += d * Math.min(1, dt / 70); busy = true; } else lift[i] = want[i]; }
@@ -424,6 +440,7 @@
       if (live || !canPlay()) return !!live;
       /* a pile still settling counts as landed the moment someone reaches for it */
       if (phase === 'drop') { for (var k = 0; k < N; k++) pose[k] = fin[k]; litAt = performance.now(); }
+      if (hv) { hv = 0; well.style.height = H + 'px'; } firstRise = false;
       var engine = M.Engine.create({ enableSleeping: true, positionIterations: 12, velocityIterations: 10 });
       engine.gravity.y = 1.7;
       var st = { isStatic: true, friction: 1 };
@@ -709,8 +726,9 @@
     function syncMachine() {
       if (!machine) return;
       machine.hidden = !M || shelf || !S.motion;
-      if (dock) dock.hidden = machine.hidden; /* play: the lever lives on the well's edge now, and shows when the machine does */
-      if (lever) { var left = totalMatching() - count(); lever.disabled = left <= 0; var lb = lever.querySelector('.lever__label'); if (lb) lb.textContent = left > 0 ? 'Pull for ' + Math.min(batch, left) + ' more' : 'All in'; }
+      if (lever) { var left = totalMatching() - count(); lever.disabled = left <= 0; lever.setAttribute('data-left', left > 0 ? Math.min(batch, left) : 0); var lb = lever.querySelector('.lever__label'); if (lb) lb.textContent = left > 0 ? 'Pull for ' + Math.min(batch, left) + ' more' : 'All in'; }
+      /* play: the lever lives on the well's edge now; it shows with the machine, and only while there is more to bring in */
+      if (dock) dock.hidden = machine.hidden || !lever || lever.disabled;
     }
     if (lever) lever.addEventListener('click', function () {
       if (lever.disabled) return;

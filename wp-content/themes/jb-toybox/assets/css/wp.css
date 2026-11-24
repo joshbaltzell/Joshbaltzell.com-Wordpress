@@ -232,6 +232,8 @@
 .lever-dock[hidden]{display:none}
 .lever-dock .lever{position:absolute;right:calc(var(--size-rail) + var(--space-3));bottom:var(--space-3);pointer-events:auto;padding:var(--space-1) var(--space-3) var(--space-1) var(--space-2);border:var(--outline-part) solid var(--ink);border-radius:var(--radius-md);background:var(--ground-raised);box-shadow:var(--edge-rest)}
 .lever-dock .lever:disabled{box-shadow:none}
+/* on a phone the lever is compact, just the handle and a count, and sits at the left so it never covers a block's Play button (top right) */
+@media (max-width:599.98px){.lever-dock .lever{right:auto;left:calc(var(--size-rail) + var(--space-3));gap:var(--space-1);padding:var(--space-1) var(--space-2)}.lever-dock .lever__label{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}.lever-dock .lever::after{content:"+" attr(data-left);font-family:var(--font-mono);font-size:var(--text-small)}}
 
 /* Layered covers (Block design → Layered picture). Each layer sits at a depth --z between the back wall (0)
    and the glass (1). As the eye moves (--look-x, --look-y from site.js) a nearer layer shifts more against the
@@ -240,3 +242,6 @@
 .cov__layers{position:absolute;inset:0;overflow:hidden}
 .blk .cov .cov__layer{position:absolute;inset:auto;width:auto;object-fit:fill;transform:translate(calc((var(--look-x,0) * -6cqw + var(--lean,0) * 9cqw) * var(--z)),calc(var(--look-y,0) * 4cqw * var(--z)));will-change:transform}
 .blk .cov .cov__layer--fill{inset:0;width:100%;height:100%;object-fit:cover}
+
+/* the kind link at the top of a post is small type; give it a finger-sized target without moving anything */
+a.kind{padding-block:var(--space-1);margin-block:calc(-1 * var(--space-1))}
