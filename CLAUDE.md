@@ -68,7 +68,7 @@ The site runs in Local (by WP Engine), pulled from the production environment:
 - The Local site folder is not a git repo. This repo is the source of truth for custom code.
 
 Local setup details:
-- `themes/jb-toybox`, `mu-plugins/jb-toybox-content.php` and `mu-plugins/jb-comment-guard.php` are symlinked from this repo into the Local site, so repo edits show up immediately. `bin/local-links.sh copy|link|status` swaps them for real copies before a push and back after.
+- `themes/jb-toybox`, `mu-plugins/jb-toybox-content.php`, `mu-plugins/jb-comment-guard.php` and `mu-plugins/jb-search-visibility.php` are symlinked from this repo into the Local site, so repo edits show up immediately. `bin/local-links.sh copy|link|status` swaps them for real copies before a push and back after.
 - `jb-toybox` is the active theme in Local. Elementor, Elementor Pro, Astra Starter Sites and Genesis Blocks are deactivated there. To see the old site, activate Astra and those plugins again.
 - The six 2023 posts were migrated in Local only: all are in Writing, their old categories became tags, Elementor no longer controls three of them, and bold-paragraph headings became real headings.
 - Local uses pretty permalinks (`/%postname%/`); production still uses plain.
@@ -76,7 +76,7 @@ Local setup details:
 - Database backups in the Local site folder under `app/sql/`: `before-prep-2026-11-22.sql` (as pulled) and `before-theme-2026-11-22.sql` (before the theme switch and post migration).
 - Local is connected to WP Engine **production**. Don't push from Local while the symlinks are in place; run `bin/local-links.sh copy` first.
 - Git push to WP Engine (`staging` remote) is refused for this Mac's key, so Local's Push is the deploy route.
-- "Discourage search engines" (`blog_public`) is 0 in Local and was 0 in the copy pulled from production; a database push carries it over.
+- Search engines index production only: `mu-plugins/jb-search-visibility.php` forces `blog_public` to 1 on the joshbaltzell.com host and 0 everywhere else, so the Settings → Reading checkbox has no effect.
 - Backup before launch prep: `app/sql/before-launch-prep-2026-11-24.sql`. Since then the 567 held spam comments were deleted, pings closed on every post, and the Sample Page and the lorem-ipsum Home (ID 6) set to draft.
 
 ## Toys

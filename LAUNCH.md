@@ -26,9 +26,10 @@ Git push to WP Engine is not an option from this Mac: `git@git.wpengine.com` ref
 
 ## Decide before pushing
 
-1. **Search engines.** "Discourage search engines" is ON in Local, and it was already on
-   in the copy pulled from production. The push carries it over. To be found in search,
-   untick it in Local first (Settings → Reading) or on production straight after.
+1. **Search engines: decided, nothing to do.** Production only. `jb-search-visibility.php`
+   turns indexing on when the site's address is joshbaltzell.com and off everywhere else,
+   whatever the database says. Check after the push: view source on the live home page
+   should have no `noindex` meta tag.
 2. **Timezone.** The site is on UTC, so post dates can land a day off. Set a city in
    Settings → General if that matters.
 3. **Anything new on production since 2026-11-22?** The database push replaces
@@ -48,7 +49,8 @@ Git push to WP Engine is not an option from this Mac: `git@git.wpengine.com` ref
    ```
 4. **Push.** Local → Josh Baltzell Website → Connect → Push to production.
    - Tick **Include database**.
-   - Under files, push `wp-content/themes/jb-toybox`, `wp-content/mu-plugins` and
+   - Under files, push `wp-content/themes/jb-toybox`, `wp-content/mu-plugins` (three
+     files of ours: content, comment guard, search visibility) and
      `wp-content/uploads`. Plugins don't need pushing: their files are already on
      production, and the database decides which ones are on.
 5. **Put the links back:** `bin/local-links.sh link`. If it stops because a copy differs
