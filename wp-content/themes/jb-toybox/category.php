@@ -35,7 +35,6 @@ $jb_lead = $jb_term->description ? $jb_term->description : $jb_kind['lead'];
 				'empty'     => sprintf( /* translators: %s: a kind of post, lower case. */ __( 'When there is a %s post, it will fall in from the top.', 'jb-toybox' ), mb_strtolower( $jb_kind['singular'] ) ),
 			)
 		);
-		jb_pager();
 		?>
 	</div>
 </div>

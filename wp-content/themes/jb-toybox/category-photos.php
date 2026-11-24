@@ -25,7 +25,6 @@ $jb_lead = $jb_term->description ? $jb_term->description : $jb_kind['lead'];
 		} else {
 			jb_stack( array(), array( 'empty' => __( 'When there is a photograph, it will be shown here whole.', 'jb-toybox' ) ) );
 		}
-		jb_pager();
 		?>
 	</div>
 </div>

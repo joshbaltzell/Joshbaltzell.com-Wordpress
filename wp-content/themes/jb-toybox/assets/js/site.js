@@ -33,7 +33,8 @@
   var REACH = 700, SWING = .36;           /* px from the eye for a full swing, and how far a share may move */
   var hasMouse = matchMedia('(pointer: fine)').matches;
   var blocks = [], wells = [], state = [], wstate = [], pointer = null, raf = 0, idle = 0;
-  function collect() { blocks = [].slice.call(document.querySelectorAll('.blk')); wells = [].slice.call(document.querySelectorAll('.rack .well')); state = []; wstate = []; }
+  var age = [];
+  function collect() { blocks = [].slice.call(document.querySelectorAll('.blk')); wells = [].slice.call(document.querySelectorAll('.rack .well')); state = []; wstate = []; age = blocks.map(function (b) { return parseFloat(b.style.getPropertyValue('--age')) || 0; }); }
   collect();
   /* a list swapped in without a page load brings new blocks */
   document.addEventListener('jb:content', function () { collect(); kick(); });
@@ -47,9 +48,11 @@
     for (i = 0; i < blocks.length; i++) rects[i] = blocks[i].getBoundingClientRect();
     for (i = 0; i < wells.length; i++) wrects[i] = wells[i].getBoundingClientRect();
     for (i = 0; i < blocks.length; i++) {
-      r = rects[i]; if (r.bottom < -300 || r.top > innerHeight + 300) continue;
+      r = rects[i]; if (!r.width || r.bottom < -300 || r.top > innerHeight + 300) continue;
       var st = state[i] || (state[i] = { l: REST_L, b: REST_B }), wl = REST_L, wb = REST_B;
-      if (e) { wl = .5 + clamp((e.x - (r.left + r.width / 2)) / REACH) * SWING; wb = .5 + clamp(((r.top + r.height / 2) - e.y) / REACH) * SWING; }
+      /* older things sit further back, so they turn less as your eye moves */
+      var sw = SWING * (1 - .6 * age[i]);
+      if (e) { wl = .5 + clamp((e.x - (r.left + r.width / 2)) / REACH) * sw; wb = .5 + clamp(((r.top + r.height / 2) - e.y) / REACH) * sw; }
       var nl = ease(st.l, wl), nb = ease(st.b, wb);
       if (nl !== wl || nb !== wb) moving = true;
       if (nl !== st.l || nb !== st.b || !st.set) {
@@ -89,42 +92,40 @@
   kick();
 })();
 
-/* More of a list without loading a new page.
-   The buttons under a list ("11 older", "12 newer") and the filter chips beside it are ordinary links, and
-   without this script they work as ordinary links. With it, the next list is fetched, swapped in where the
-   old one was, and its pile drops in. The address bar and the Back button keep working. If anything about the
-   fetched page is not what is expected, the link is simply followed the usual way. */
+/* Moving covers: a post's looping video or live cover (set in its Block design).
+   Nothing loads until the block is on screen. A cover stops when it scrolls away, when its pile's motion is
+   paused, and never starts for visitors who have asked for less motion: the still picture stays instead.
+   A live cover runs in a sealed frame and is sent {jb: 'play'} and {jb: 'pause'} as well. */
 (function () {
   'use strict';
-  if (!window.fetch || !window.DOMParser || !history.pushState) return;
-  var busy = false;
-  function shell(doc) { return doc.querySelector('main .l-shell'); }
-  function isList(el) { return !!el && !!el.querySelector('.rack, .photo-grid') && !!el.querySelector('.l-head'); }
-  function load(url, push) {
-    if (busy) return; busy = true;
-    var old = shell(document);
-    document.documentElement.classList.add('jb-loading');
-    fetch(url, { credentials: 'same-origin' }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.text(); }).then(function (html) {
-      var doc = new DOMParser().parseFromString(html, 'text/html'), next = shell(doc);
-      if (!old || !isList(next) || (next.querySelector('.rack[data-stack]') && !window.JBStack)) throw new Error('not a list');
-      [].forEach.call(old.querySelectorAll('.rack'), function (r) { if (r.__stack && r.__stack.destroy) r.__stack.destroy(); });
-      next = document.importNode(next, true);
-      old.parentNode.replaceChild(next, old);
-      document.title = doc.title;
-      if (push) history.pushState({ jb: 1 }, '', url);
-      [].forEach.call(next.querySelectorAll('.rack[data-stack]'), function (r) { r.__stack = window.JBStack(r); });
-      document.dispatchEvent(new CustomEvent('jb:content'));
-      /* keep the top of the list in view, and tell keyboard and screen-reader users where they are */
-      var head = next.querySelector('.l-head h1');
-      if (next.getBoundingClientRect().top < 0) next.scrollIntoView({ block: 'start' });
-      if (head) { head.setAttribute('tabindex', '-1'); head.focus({ preventScroll: true }); }
-    }).catch(function () { location.href = url; }).then(function () { busy = false; document.documentElement.classList.remove('jb-loading'); });
+  var reduced = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var media = [].slice.call(document.querySelectorAll('.cov__media'));
+  if (!media.length || reduced || !window.IntersectionObserver) return;
+  var seen = new WeakMap(), paused = new WeakMap();
+  function rackOf(el) { return el.closest('.rack'); }
+  function allowed(el) { var r = rackOf(el); return seen.get(el) && !(r && paused.get(r)); }
+  function tell(el, what) { try { el.contentWindow.postMessage({ jb: what }, '*'); } catch (e) {} }
+  function start(el) {
+    if (el.tagName === 'VIDEO') {
+      el.onplaying = function () { el.classList.add('is-on'); };
+      if (!el.getAttribute('src')) el.setAttribute('src', el.getAttribute('data-src'));
+      var p = el.play(); if (p && p.catch) p.catch(function () {});
+    } else if (!el.hasAttribute('srcdoc')) {
+      el.onload = function () { el.classList.add('is-on'); tell(el, 'play'); };
+      el.setAttribute('srcdoc', el.getAttribute('data-srcdoc'));
+    } else tell(el, 'play');
   }
-  document.addEventListener('click', function (e) {
-    if (e.defaultPrevented || e.button || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-    var a = e.target.closest ? e.target.closest('main .l-shell .pager a[href], main .l-shell .l-spine .topics a[href]') : null;
-    if (!a || a.origin !== location.origin || !isList(shell(document))) return;
-    e.preventDefault(); load(a.href, true);
+  function stop(el) {
+    if (el.tagName === 'VIDEO') { el.pause(); return; }
+    /* a live cover that scrolls away is unloaded, so nothing keeps running off screen; paused in view, it is told to hold */
+    if (!seen.get(el)) { el.classList.remove('is-on'); el.removeAttribute('srcdoc'); }
+    else tell(el, 'pause');
+  }
+  function sync(el) { if (allowed(el)) start(el); else stop(el); }
+  var io = new IntersectionObserver(function (es) { es.forEach(function (e) { seen.set(e.target, e.isIntersecting); sync(e.target); }); }, { rootMargin: '120px 0px' });
+  media.forEach(function (el) { io.observe(el); });
+  document.addEventListener('jb:motion', function (e) {
+    var r = e.target; paused.set(r, !e.detail.on);
+    media.forEach(function (el) { if (rackOf(el) === r) sync(el); });
   });
-  window.addEventListener('popstate', function () { if (isList(shell(document))) load(location.href, false); else location.reload(); });
 })();

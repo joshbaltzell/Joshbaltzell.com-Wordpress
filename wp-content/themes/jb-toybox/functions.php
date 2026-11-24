@@ -116,14 +116,16 @@ function jb_toybox_block_styles() {
 add_action( 'init', 'jb_toybox_block_styles' );
 
 /**
- * Twelve blocks to a page on every list.
+ * Every list is one page. The whole list is in the page, and the stack shows a first batch with a More
+ * button for the rest, so there is no pager. Capped so a list can never get out of hand.
  */
 function jb_toybox_list_size( $query ) {
 	if ( is_admin() || ! $query->is_main_query() ) {
 		return;
 	}
 	if ( $query->is_home() || $query->is_archive() || $query->is_search() ) {
-		$query->set( 'posts_per_page', 12 );
+		$query->set( 'posts_per_page', 48 );
+		$query->set( 'no_found_rows', false );
 		$query->set( 'ignore_sticky_posts', true );
 	}
 	if ( $query->is_search() ) {

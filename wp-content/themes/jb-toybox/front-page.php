@@ -8,7 +8,7 @@ get_header();
 $jb_newest = get_posts(
 	array(
 		'post_type'           => 'post',
-		'posts_per_page'      => 9,
+		'posts_per_page'      => 36,
 		'ignore_sticky_posts' => true,
 		'no_found_rows'       => true,
 	)
@@ -39,13 +39,15 @@ $jb_intro = $jb_front && has_excerpt( $jb_front ) ? get_the_excerpt( $jb_front )
 		<?php jb_kind_list(); ?>
 	</aside>
 	<section aria-labelledby="latest">
-		<h2 class="sr-only" id="latest"><?php esc_html_e( 'The newest nine', 'jb-toybox' ); ?></h2>
+		<h2 class="sr-only" id="latest"><?php esc_html_e( 'The newest things', 'jb-toybox' ); ?></h2>
 		<?php
 		jb_stack(
 			$jb_newest,
 			array(
-				'label' => __( 'The newest things', 'jb-toybox' ),
-				'seed'  => 5,
+				'label'       => __( 'The newest things', 'jb-toybox' ),
+				'seed'        => 5,
+				'batch'       => 9,
+				'batch_phone' => 9,
 			)
 		);
 		?>

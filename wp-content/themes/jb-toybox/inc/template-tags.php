@@ -56,27 +56,125 @@ function jb_lead() {
 /**
  * One article as a block: the post card and the toy card.
  *
- * @param WP_Post $post       The post.
- * @param bool    $toy_types  Unused; kept so existing calls still work.
+ * The block is a box, not a link: the main link covers the cover and the words, and a second, smaller link
+ * (Play) sits over the cover, so the two never nest. The peek (the one-line pitch and Play) shows on hover
+ * and keyboard focus; on a touch screen only the Play corner shows.
+ *
+ * @param WP_Post    $post      The post.
+ * @param bool       $toy_types Unused; kept so existing calls still work.
+ * @param float|null $age       0 for the newest in a list, 1 for the oldest. Older blocks sit further back.
  */
-function jb_card( $post, $toy_types = false ) {
+function jb_card( $post, $toy_types = false, $age = null ) {
 	$kind  = jb_kind( $post );
 	$label = $kind['singular'];
+	$type  = '';
 	// A post in Toys says whether it is a toy or a game, wherever its block appears.
 	if ( 'toy' === $kind['kind'] ) {
 		$type  = get_post_meta( $post->ID, 'toy_type', true );
 		$label = $type ? $type : $label;
 	}
 
-	// A rule gives the block its own animated cover (data-rule) or only its own look (data-skin).
+	// A rule gives the block one of the built-in animated covers (data-rule).
 	$rule  = get_post_meta( $post->ID, 'rule', true );
 	$cover = get_the_post_thumbnail_url( $post, 'jb-cover' );
+	$play  = 'toy' === $kind['kind'] ? get_post_meta( $post->ID, 'toy_play_url', true ) : '';
+	$pitch = has_excerpt( $post ) ? get_the_excerpt( $post ) : '';
+	$tags  = wp_list_pluck( (array) get_the_tags( $post->ID ), 'slug' );
+
+	$design = jb_block_design( $post );
+
+	$attrs  = ' data-post="' . esc_attr( $post->ID ) . '" data-kind="' . esc_attr( $kind['kind'] ) . '"';
+	$attrs .= $tags ? ' data-tags="' . esc_attr( implode( ' ', $tags ) ) . '"' : '';
+	$attrs .= $rule ? ' data-rule="' . esc_attr( $rule ) . '"' : '';
+	$attrs .= $design['font'] ? ' data-font="' . esc_attr( $design['font'] ) . '"' : '';
+	$style  = $design['vars'];
+	if ( null !== $age ) {
+		$style .= '--age:' . number_format( (float) $age, 3, '.', '' ) . ';';
+	}
+	$attrs .= $style ? ' style="' . esc_attr( $style ) . '"' : '';
 	?>
-<a class="blk" href="<?php echo esc_url( get_permalink( $post ) ); ?>" data-kind="<?php echo esc_attr( $kind['kind'] ); ?>"<?php echo $rule && ! in_array( $rule, array( 'gyms' ), true ) ? ' data-rule="' . esc_attr( $rule ) . '"' : ''; ?><?php echo $rule ? ' data-skin="' . esc_attr( $rule ) . '"' : ''; ?>>
-	<span class="cov<?php echo 'toy' === $kind['kind'] ? ' cov--night' : ''; ?>"><?php if ( $cover ) : ?><img src="<?php echo esc_url( $cover ); ?>" alt="" width="480" height="270" loading="lazy"><?php endif; ?></span>
-	<span class="det"><span class="det__title"><?php echo esc_html( get_the_title( $post ) ); ?></span><span class="det__meta"><span><?php echo esc_html( $label ); ?></span><time datetime="<?php echo esc_attr( get_the_date( 'Y-m', $post ) ); ?>"><?php echo esc_html( get_the_date( 'M Y', $post ) ); ?></time></span></span>
-</a>
+<div class="blk<?php echo $design['class'] ? ' ' . esc_attr( $design['class'] ) : ''; ?>"<?php echo $attrs; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above. ?>>
+	<?php echo $design['style']; // phpcs:ignore WordPress.Security.EscapeOutput -- built by jb_block_design(). ?>
+	<a class="blk__link" href="<?php echo esc_url( get_permalink( $post ) ); ?>">
+		<span class="cov<?php echo 'toy' === $kind['kind'] ? ' cov--night' : ''; ?>"><?php if ( $cover ) : ?><img src="<?php echo esc_url( $cover ); ?>" alt="" width="480" height="270" loading="lazy"><?php endif; ?><?php echo $design['cover']; // phpcs:ignore WordPress.Security.EscapeOutput -- built by jb_block_design(). ?></span>
+		<span class="det"><span class="det__title"><?php echo esc_html( get_the_title( $post ) ); ?></span><span class="det__meta"><span><?php echo esc_html( $label ); ?></span><time datetime="<?php echo esc_attr( get_the_date( 'Y-m', $post ) ); ?>"><?php echo esc_html( get_the_date( 'M Y', $post ) ); ?></time></span></span>
+	</a>
+	<?php if ( $pitch || $play ) : ?>
+	<span class="blk__peek">
+		<?php if ( $pitch ) : ?><span class="blk__pitch"><?php echo esc_html( wp_trim_words( $pitch, 22 ) ); ?></span><?php endif; ?>
+		<?php if ( $play ) : ?><a class="btn btn--small btn--primary blk__play" href="<?php echo esc_url( $play ); ?>"><?php esc_html_e( 'Play', 'jb-toybox' ); ?><span class="sr-only"> <?php echo esc_html( get_the_title( $post ) ); ?></span></a><?php endif; ?>
+	</span>
+	<?php endif; ?>
+</div>
 	<?php
+}
+
+/**
+ * A block's own design, from the Block design fields on its post.
+ *
+ * Everything here is set in WordPress, per post, so a new design never needs a theme change. The returned
+ * pieces are already escaped: a class list, CSS custom properties for the style attribute, a data-font value,
+ * the extra cover markup (a video or a sealed live cover), and a <style> scoped to this post's block.
+ *
+ * @param WP_Post $post The post.
+ * @return array{class: string, vars: string, font: string, cover: string, style: string}
+ */
+function jb_block_design( $post ) {
+	static $seen = array();
+	$m = function ( $key ) use ( $post ) {
+		return (string) get_post_meta( $post->ID, $key, true );
+	};
+	$out   = array( 'class' => '', 'vars' => '', 'font' => '', 'cover' => '', 'style' => '' );
+	$class = array();
+
+	foreach ( array( 'look_face' => '--c', 'look_text' => '--on', 'look_title' => '--title-color' ) as $key => $var ) {
+		$color = sanitize_hex_color( $m( $key ) );
+		if ( $color ) {
+			$out['vars'] .= $var . ':' . $color . ';';
+		}
+	}
+	if ( 'upper' === $m( 'look_case' ) ) {
+		$class[] = 'blk--upper';
+	}
+	if ( 'worn' === $m( 'look_wear' ) ) {
+		$class[] = 'blk--worn';
+	}
+
+	$css  = '';
+	$font = $m( 'look_font' );
+	$file = esc_url_raw( $m( 'look_font_file' ) );
+	if ( 'custom' === $font && $file ) {
+		$family = 'jb-font-' . $post->ID;
+		$css   .= '@font-face{font-family:"' . $family . '";src:url("' . esc_url_raw( $file ) . '");font-display:swap}';
+		$out['vars'] .= '--title-font:"' . $family . '",var(--font-display);';
+		$out['font']  = 'custom';
+	} elseif ( in_array( $font, array( 'mono', 'text', 'dirt' ), true ) ) {
+		$out['font'] = $font;
+	}
+
+	// Custom CSS: & stands for this post's block. It cannot break out of its <style> element.
+	$own = $m( 'look_css' );
+	if ( '' !== trim( $own ) ) {
+		$css .= str_replace( '&', '.blk[data-post="' . $post->ID . '"]', str_ireplace( '</', '', $own ) );
+	}
+	// The same post can appear twice on a page (the pile and a card grid); its style is written once.
+	if ( $css && empty( $seen[ $post->ID ] ) ) {
+		$seen[ $post->ID ] = true;
+		$out['style']      = '<style>' . $css . '</style>';
+	}
+
+	$kind = $m( 'cover_kind' );
+	if ( 'video' === $kind && $m( 'cover_video' ) ) {
+		$out['cover'] = '<video class="cov__media" muted loop playsinline preload="none" aria-hidden="true" data-src="' . esc_url( $m( 'cover_video' ) ) . '"></video>';
+		$class[]      = 'blk--moving';
+	} elseif ( 'live' === $kind && '' !== trim( $m( 'cover_live' ) ) ) {
+		// sandbox="allow-scripts" without allow-same-origin: the code runs, but cannot reach the site, its cookies or its pages.
+		$out['cover'] = '<iframe class="cov__media" sandbox="allow-scripts" tabindex="-1" aria-hidden="true" title="" data-srcdoc="' . esc_attr( $m( 'cover_live' ) ) . '"></iframe>';
+		$class[]      = 'blk--moving';
+	}
+
+	$out['class'] = implode( ' ', $class );
+	return $out;
 }
 
 /**
@@ -88,6 +186,8 @@ function jb_card( $post, $toy_types = false ) {
  *     @type int    $seed       Which drop. The same number always lands the same way.
  *     @type bool   $toy_types  Passed to jb_card().
  *     @type string $empty      What will land here, for the empty state.
+ *     @type int    $batch      How many show at first, and how many each press of More adds.
+ *     @type int    $batch_phone The same, on a narrow screen.
  * }
  */
 function jb_stack( $posts, $args = array() ) {
@@ -96,8 +196,10 @@ function jb_stack( $posts, $args = array() ) {
 		array(
 			'label'     => __( 'Posts', 'jb-toybox' ),
 			'seed'      => 3,
-			'toy_types' => false,
-			'empty'     => __( 'When there is something, it will fall in from the top.', 'jb-toybox' ),
+			'toy_types'   => false,
+			'empty'       => __( 'When there is something, it will fall in from the top.', 'jb-toybox' ),
+			'batch'       => 12,
+			'batch_phone' => 9,
 		)
 	);
 
@@ -109,18 +211,33 @@ function jb_stack( $posts, $args = array() ) {
 	}
 
 	wp_enqueue_script( 'jb-stack' );
+	$last = max( 1, count( $posts ) - 1 );
 	?>
-<section class="rack" data-stack data-across="mix" data-seed="<?php echo esc_attr( $args['seed'] ); ?>" aria-label="<?php echo esc_attr( $args['label'] ); ?>">
+<div class="rack__bar">
+	<span class="t-readout" data-stack-status role="status"></span>
+	<span class="l-row">
+		<span class="rack__view" role="group" aria-label="<?php esc_attr_e( 'View', 'jb-toybox' ); ?>" data-stack-views hidden><button class="btn btn--small" type="button" data-stack-view="pile" aria-pressed="true"><?php esc_html_e( 'Pile', 'jb-toybox' ); ?></button><button class="btn btn--small" type="button" data-stack-view="shelf" aria-pressed="false"><?php esc_html_e( 'Shelf', 'jb-toybox' ); ?></button></span>
+		<button class="btn btn--small" type="button" data-stack-tidy hidden><?php esc_html_e( 'Tidy up', 'jb-toybox' ); ?></button>
+		<button class="btn btn--small" type="button" data-stack-shake hidden><?php esc_html_e( 'Shake', 'jb-toybox' ); ?></button>
+		<button class="btn btn--small" type="button" data-stack-motion hidden><?php esc_html_e( 'Pause motion', 'jb-toybox' ); ?></button>
+		<button class="btn btn--small" type="button" data-stack-sound aria-pressed="true" hidden><?php esc_html_e( 'Sound on', 'jb-toybox' ); ?></button>
+	</span>
+</div>
+<section class="rack" data-stack data-across="mix" data-seed="<?php echo esc_attr( $args['seed'] ); ?>" data-batch="<?php echo esc_attr( $args['batch'] ); ?>" data-batch-phone="<?php echo esc_attr( $args['batch_phone'] ); ?>" aria-label="<?php echo esc_attr( $args['label'] ); ?>">
+	<div class="rack__machine" hidden>
+		<div class="tilt" data-tilt role="slider" tabindex="0" aria-label="<?php esc_attr_e( 'Tilt the well. Hold the left or right arrow key.', 'jb-toybox' ); ?>" aria-valuemin="-1" aria-valuemax="1" aria-valuenow="0"><span class="tilt__track" aria-hidden="true"></span><span class="tilt__knob" aria-hidden="true"></span><span class="tilt__label" aria-hidden="true"><?php esc_html_e( 'Tilt', 'jb-toybox' ); ?></span></div>
+		<button class="lever" type="button" data-lever><span class="lever__slot" aria-hidden="true"><span class="lever__arm"></span></span><span class="lever__label"></span></button>
+	</div>
 	<div class="shaft"><span class="rail rail--l"></span>
-		<div class="well"><ol class="pile" aria-label="<?php echo esc_attr( sprintf( /* translators: %s: name of the list. */ __( '%s, newest first', 'jb-toybox' ), $args['label'] ) ); ?>">
-			<?php foreach ( $posts as $post ) : ?>
-			<li><?php jb_card( $post, $args['toy_types'] ); ?></li>
+		<div class="well"><div class="well__pad" data-idle="<?php esc_attr_e( 'Drop one here to play it', 'jb-toybox' ); ?>" aria-hidden="true" hidden><span class="well__pad-mark"></span><span class="well__pad-label"></span></div><ol class="pile" aria-label="<?php echo esc_attr( sprintf( /* translators: %s: name of the list. */ __( '%s, newest first', 'jb-toybox' ), $args['label'] ) ); ?>">
+			<?php foreach ( array_values( $posts ) as $i => $post ) : ?>
+			<li><?php jb_card( $post, $args['toy_types'], $i / $last ); ?></li>
 			<?php endforeach; ?>
 		</ol></div>
 	<span class="rail rail--r"></span></div>
 	<div class="floor"></div>
 </section>
-<div class="rack__bar"><span class="t-readout" data-stack-status role="status"></span><span class="l-row"><button class="btn btn--small" type="button" data-stack-tidy hidden><?php esc_html_e( 'Tidy up', 'jb-toybox' ); ?></button><button class="btn btn--small" type="button" data-stack-shake hidden><?php esc_html_e( 'Shake', 'jb-toybox' ); ?></button><button class="btn btn--small" type="button" data-stack-motion hidden><?php esc_html_e( 'Pause motion', 'jb-toybox' ); ?></button></span></div>
+<p class="rack__more"><button class="btn" type="button" data-stack-more hidden></button></p>
 	<?php
 }
 
@@ -206,40 +323,6 @@ function jb_photo_grid( $posts ) {
 }
 
 /**
- * Under a list that runs past one page: where you are in it, and a button each
- * way that says how many more there are. A button that would lead nowhere is
- * left out.
- */
-function jb_pager() {
-	global $wp_query;
-	$total   = (int) $wp_query->max_num_pages;
-	$current = max( 1, (int) get_query_var( 'paged' ) );
-	if ( $total < 2 ) {
-		return;
-	}
-
-	$found = (int) $wp_query->found_posts;
-	$per   = max( 1, (int) $wp_query->get( 'posts_per_page' ) );
-	$first = ( $current - 1 ) * $per + 1;
-	$last  = min( $found, $current * $per );
-	$newer = $first - 1;
-	$older = $found - $last;
-	?>
-<nav class="pager" aria-label="<?php esc_attr_e( 'More of this list', 'jb-toybox' ); ?>">
-	<span class="t-readout t-muted"><?php echo esc_html( sprintf( /* translators: 1: first item shown, 2: last item shown, 3: total. */ __( 'Showing %1$s to %2$s of %3$s, newest first', 'jb-toybox' ), number_format_i18n( $first ), number_format_i18n( $last ), number_format_i18n( $found ) ) ); ?></span>
-	<span class="l-row">
-		<?php if ( $newer > 0 ) : ?>
-		<a class="btn" href="<?php echo esc_url( get_pagenum_link( $current - 1 ) ); ?>">&larr; <?php echo esc_html( sprintf( /* translators: %s: number of items. */ __( '%s newer', 'jb-toybox' ), number_format_i18n( min( $per, $newer ) ) ) ); ?></a>
-		<?php endif; ?>
-		<?php if ( $older > 0 ) : ?>
-		<a class="btn" href="<?php echo esc_url( get_pagenum_link( $current + 1 ) ); ?>"><?php echo esc_html( sprintf( /* translators: %s: number of items. */ __( '%s older', 'jb-toybox' ), number_format_i18n( min( $per, $older ) ) ) ); ?> &rarr;</a>
-		<?php endif; ?>
-	</span>
-</nav>
-	<?php
-}
-
-/**
  * A post's topics (its tags) as chips.
  *
  * @param int|WP_Post|null $post Post, or the current one.
@@ -272,13 +355,7 @@ function jb_post_topics( $post = null ) {
 function jb_list_spine( $kind ) {
 	global $wp_query;
 	$found   = (int) $wp_query->found_posts;
-	$total   = max( 1, (int) $wp_query->max_num_pages );
-	$current = max( 1, (int) get_query_var( 'paged' ) );
 	$count   = sprintf( $found === 1 ? $kind['count'][0] : $kind['count'][1], number_format_i18n( $found ) );
-	if ( $total > 1 ) {
-		/* translators: 1: page number, 2: number of pages. */
-		$count .= ' &middot; ' . sprintf( __( 'page %1$s of %2$s', 'jb-toybox' ), number_format_i18n( $current ), number_format_i18n( $total ) );
-	}
 
 	// The topics used by posts of this kind, most used first.
 	$topics = array();
@@ -309,14 +386,17 @@ function jb_list_spine( $kind ) {
 	}
 
 	$chosen = (string) get_query_var( 'tag' );
+	// On the full list the chips filter in place (data-stack-filter). On a list the server already filtered,
+	// they are ordinary links, because the other items are not on the page.
+	$live   = '' === $chosen;
 	?>
 <aside class="l-spine l-spine--sticky" aria-label="<?php esc_attr_e( 'Narrow the list', 'jb-toybox' ); ?>">
 	<p class="t-readout t-muted jb-spine-count"><?php echo wp_kses( $count, array() ); ?></p>
 	<?php if ( $topics ) : ?>
 	<ul class="topics">
-		<li><a class="topic<?php echo '' === $chosen ? ' is-on' : ''; ?>" href="<?php echo esc_url( $kind['url'] ); ?>"<?php echo '' === $chosen ? ' aria-current="true"' : ''; ?>><?php esc_html_e( 'All', 'jb-toybox' ); ?></a></li>
+		<li><a class="topic<?php echo '' === $chosen ? ' is-on' : ''; ?>" href="<?php echo esc_url( $kind['url'] ); ?>"<?php echo '' === $chosen ? ' aria-current="true"' : ''; ?><?php echo $live ? ' data-stack-filter=""' : ''; ?>><?php esc_html_e( 'All', 'jb-toybox' ); ?></a></li>
 		<?php foreach ( $topics as $slug => $topic ) : ?>
-		<li><a class="topic<?php echo $chosen === $slug ? ' is-on' : ''; ?>" href="<?php echo esc_url( add_query_arg( 'tag', $slug, $kind['url'] ) ); ?>"<?php echo $chosen === $slug ? ' aria-current="true"' : ''; ?>><?php echo esc_html( $topic['name'] ); ?></a></li>
+		<li><a class="topic<?php echo $chosen === $slug ? ' is-on' : ''; ?>" href="<?php echo esc_url( add_query_arg( 'tag', $slug, $kind['url'] ) ); ?>"<?php echo $chosen === $slug ? ' aria-current="true"' : ''; ?><?php echo $live ? ' data-stack-filter="' . esc_attr( $slug ) . '"' : ''; ?>><?php echo esc_html( $topic['name'] ); ?></a></li>
 		<?php endforeach; ?>
 	</ul>
 	<?php endif; ?>

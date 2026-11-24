@@ -93,8 +93,8 @@
   --wall-ceiling:color-mix(in srgb,var(--c,var(--part-olive)) 58%,var(--part-night));
   padding:0}
 /* a box cannot size its own padding from its own width, so its two children carry the inset as margins */
-.blk>.cov{margin:var(--wall-t) var(--wall-r) 0 var(--wall-l)}
-.blk>.det{margin:0 var(--wall-r) var(--wall-b) var(--wall-l)}
+.blk__link>.cov{margin:var(--wall-t) var(--wall-r) 0 var(--wall-l)}
+.blk__link>.det{margin:0 var(--wall-r) var(--wall-b) var(--wall-l)}
 /* the four inner walls: one thick border, mitred at the corners, and an ink line where they meet the back wall */
 .blk::before{content:"";position:absolute;inset:0;z-index:1;box-sizing:border-box;border-style:solid;border-width:var(--wall-t) var(--wall-r) var(--wall-b) var(--wall-l);border-color:var(--wall-ceiling) var(--wall-right) var(--wall-floor) var(--wall-left);box-shadow:inset 0 0 0 var(--outline-fine) var(--ink);pointer-events:none}
 /* the glass: the glare falls across the picture, with only a faint band over the whole pane so the words stay easy to read */
@@ -123,19 +123,108 @@
 /* on a touch screen a block is picked up by pressing and holding, so holding must not select text or open a menu */
 .rack--live .blk{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 
-/* A block with its own look. data-skin="gyms": Gyms of War, in distressed lettering on a box that has been
-   knocked about. The colors and the typeface belong to that game, not to the site. The dents are an uneven
-   outline, and the scratches and scuffs are hard-edged streaks: still no gradients that fade and no blur. */
+/* A block's own design, set per post in WordPress (Block design in the post editor). These are the general
+   pieces; a post picks from them, and its custom CSS can go further. Colors come in as --c (face), --on (text)
+   and --title-color, and the box walls are worked out from --c as for any block. */
 @font-face{font-family:"Rubik Dirt";font-weight:400;font-style:normal;font-display:swap;src:url("../fonts/RubikDirt-latin.woff2") format("woff2")}
-.blk[data-skin="gyms"]{--c:#4b4f43;--on:#eef0e4;--wall-floor:#6d7262;--wall-right:#5b6052;--wall-left:#35382f;--wall-ceiling:#2a2d25;border-radius:var(--space-half) var(--space-3) var(--space-1) var(--space-2) / var(--space-2) var(--space-1) var(--space-3) var(--space-half)}
-.blk[data-skin="gyms"] .det{position:relative;background-image:
+.det__title{color:var(--title-color,inherit);font-family:var(--title-font,var(--font-display))}
+.blk[data-font="mono"]{--title-font:var(--font-mono)}
+.blk[data-font="text"]{--title-font:var(--font-text)}
+.blk[data-font="dirt"]{--title-font:"Rubik Dirt",var(--font-display)}
+.blk[data-font="dirt"] .det__title,.blk[data-font="custom"] .det__title{font-weight:400;font-size:calc(var(--text-tile) * 1.12);letter-spacing:.01em}
+.blk--upper .det__title{text-transform:uppercase}
+/* Knocked about: an uneven outline for dents, and hard-edged scratches and scuffs. Still no blur. */
+.blk--worn{border-radius:var(--space-half) var(--space-3) var(--space-1) var(--space-2) / var(--space-2) var(--space-1) var(--space-3) var(--space-half)}
+.blk--worn .det{position:relative;background-image:
   linear-gradient(118deg,transparent 0 21%,rgb(255 255 255 / .16) 21% 21.7%,transparent 21.7% 23.4%,rgb(255 255 255 / .1) 23.4% 23.8%,transparent 23.8%),
   linear-gradient(64deg,transparent 0 67%,rgb(0 0 0 / .28) 67% 68.2%,transparent 68.2% 71%,rgb(0 0 0 / .2) 71% 71.5%,transparent 71.5%),
   linear-gradient(171deg,transparent 0 78%,rgb(255 255 255 / .12) 78% 79%,transparent 79%),
   linear-gradient(to right,rgb(0 0 0 / .22) 0 var(--space-2),transparent var(--space-2)),
   linear-gradient(to top,rgb(0 0 0 / .18) 0 var(--space-1),transparent var(--space-1))}
-.blk[data-skin="gyms"] .det__title{font-family:"Rubik Dirt",var(--font-display);font-weight:400;font-size:calc(var(--text-tile) * 1.12);letter-spacing:.01em;text-transform:uppercase;color:#b6ff3c}
-.blk[data-skin="gyms"] .det__meta{color:#c9cdbd}
+/* A moving cover (a looping video, or a live cover) sits over the still picture and shows once it is running. */
+.cov__media{position:absolute;inset:0;width:100%;height:100%;border:0;object-fit:cover;pointer-events:none;opacity:0;transition:opacity var(--dur-settle) var(--ease-out)}
+.cov__media.is-on{opacity:1}
 
-/* while the next part of a list is being fetched, the old one dims so a press is seen to have landed */
-.jb-loading main .l-shell{opacity:.6}
+
+/* ───────── The block as a box with two links in it ─────────
+   The main link fills the box; Play sits on top of the cover. They never nest. */
+.blk__link{display:flex;flex-direction:column;flex:1;min-height:0;color:inherit;text-decoration:none;-webkit-user-drag:none}
+.blk__link:focus-visible{box-shadow:none}
+.blk:has(.blk__link:focus-visible){box-shadow:var(--focus-ring),var(--drop)}
+.rack--live .blk:has(.blk__link:focus-visible){box-shadow:var(--focus-ring),calc(var(--sx,var(--size-drop-x)) * 2.4) calc(var(--sy,var(--size-drop-y)) * 2.4) 0 rgb(0 0 0 / .34)}
+
+/* Look through the glass: on hover or keyboard focus, the cover shows the one-line pitch and Play.
+   On a touch screen there is no hover, so only a small Play corner shows, on toys, all the time. */
+.blk__peek{position:absolute;z-index:3;top:var(--wall-t);left:var(--wall-l);right:var(--wall-r);height:var(--cover,var(--size-cover-m));display:flex;flex-direction:column;justify-content:flex-end;align-items:flex-start;gap:var(--space-2);padding:var(--space-3);background:rgb(20 24 16 / .84);color:var(--on-night);opacity:0;pointer-events:none;transition:opacity var(--dur-quick) var(--ease-out)}
+.blk__pitch{font-size:var(--text-small);line-height:var(--leading-small);display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.blk__play{pointer-events:auto}
+@media (hover:hover){.blk:hover .blk__peek,.blk:focus-within .blk__peek{opacity:1}}
+.blk:focus-within .blk__peek{opacity:1}
+@media (hover:none){
+  .blk__peek{opacity:1;background:none;padding:var(--space-2);align-items:flex-end;justify-content:flex-start}
+  .blk__pitch{display:none}
+  .blk__peek:not(:has(.blk__play)){display:none}
+}
+.rack--held .blk__peek{opacity:0!important}
+
+/* Older things sit further back: their shadow on the back wall is shorter and they are a little dimmer.
+   Size does not change, so what you see always matches what the physics is doing. */
+.blk{filter:brightness(calc(1 - var(--age,0) * .16))}
+.rack--live .blk,.rack--live .blk:hover,.rack--live .blk:active{box-shadow:calc((var(--sx,var(--size-drop-x)) * 2.4 + var(--cast-x,0px)) * (1 - var(--age,0) * .55)) calc((var(--sy,var(--size-drop-y)) * 2.4 + var(--cast-y,0px)) * (1 - var(--age,0) * .55)) 0 rgb(0 0 0 / .34)}
+
+/* Filters open the floor: while blocks drop out, the floor shows a gap in the middle. */
+.rack--open .floor{background:linear-gradient(to right,var(--part-moss) 0 36%,var(--part-night) 36% 64%,var(--part-moss) 64%)}
+
+/* More, and Pile or shelf */
+.rack__more{display:flex;justify-content:center;margin:var(--space-5) 0 0}
+.rack__more:has(> [hidden]){display:none}
+.rack__view{display:inline-flex;gap:var(--space-1)}
+/* The controls sit above the well, where the blocks come in. */
+.rack__bar{margin:0 0 var(--space-3)}
+
+/* The shelf: the same blocks, square to the page, each row standing on a visible shelf. A board runs under
+   every block and reaches across the gap to the next, so a row reads as one shelf. Blocks slide down onto it
+   one after another; under reduced motion they are simply there. */
+.rack--shelf .pile{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,var(--size-card-min)),1fr));align-items:end;gap:var(--space-10) var(--space-4);padding:var(--space-8) var(--space-4) var(--space-6);overflow:hidden}
+.rack--shelf .pile>li,.rack--shelf .pile>li:nth-child(n){position:relative;grid-column:auto;--cover:var(--size-cover-m)}
+/* the block slides down onto its shelf; the shelf itself stays where it is */
+.rack--shelf .pile>li>.blk{animation:jb-shelve var(--dur-settle) var(--ease-spring) both;animation-delay:calc(var(--i,0) * 45ms)}
+.rack--shelf .pile>li::after{content:"";position:absolute;z-index:0;left:calc(-1 * var(--space-4));right:calc(-1 * var(--space-4));bottom:calc(-1 * var(--size-floor));height:var(--size-floor);background:var(--part-moss);border-block:var(--outline-part) solid var(--ink);box-shadow:0 var(--space-1) 0 var(--ink)}
+.rack--shelf .pile>li[hidden]{display:none}
+.rack--shelf .blk{height:100%;z-index:1}
+.rack--shelf .well__fx{display:none}
+@keyframes jb-shelve{from{opacity:0;transform:translateY(calc(-1 * var(--space-6)))}to{opacity:1;transform:none}}
+.btn:disabled[data-stack-shake],.btn:disabled[data-stack-motion]{display:none}
+
+/* ───────── The game parts: all optional ─────────
+   Clicking a block, Play, the filters and More are always there. These sit alongside them. */
+
+/* The launch pad: a target on the back wall in the top band of the well. Carry a block there and let go. */
+.well__pad{position:absolute;z-index:0;top:var(--space-4);right:var(--space-4);height:calc(var(--space-16) + var(--space-3));display:flex;align-items:center;gap:var(--space-3);padding:0 var(--space-4);border:var(--outline-part) dashed var(--edge);border-radius:var(--radius-md);color:var(--ink-muted);font-family:var(--font-mono);font-size:var(--text-tag);line-height:var(--leading-tag);letter-spacing:var(--track-tag);text-transform:uppercase;pointer-events:none;transition:background-color var(--dur-quick) var(--ease-out),border-color var(--dur-quick) var(--ease-out)}
+.well__pad-mark{flex:none;width:0;height:0;border-style:solid;border-width:var(--space-2) 0 var(--space-2) var(--space-3);border-color:transparent transparent transparent var(--primary)}
+.well__pad.is-hot{border-style:solid;border-color:var(--primary);background:color-mix(in srgb,var(--primary) 14%,transparent);color:var(--ink)}
+.well__pad.is-launching{background:var(--primary);color:var(--on-primary)}
+.well__pad.is-launching .well__pad-mark{border-left-color:var(--on-primary)}
+.rack--shelf .well__pad{display:none}
+
+/* The machine panel above the well: a tilt handle on the left, a lever for More on the right. */
+.rack__machine{display:flex;align-items:center;justify-content:space-between;gap:var(--space-4);margin:0 0 var(--space-3);padding:var(--space-2) var(--space-3);border:var(--outline-part) solid var(--ink);border-radius:var(--radius-md);background:var(--ground-raised);box-shadow:var(--edge-rest)}
+.tilt{--tilt:0;position:relative;flex:0 1 14rem;height:var(--size-tap);touch-action:none;cursor:grab;border-radius:var(--radius-md)}
+.tilt.is-held{cursor:grabbing}
+.tilt__track{position:absolute;left:var(--space-3);right:var(--space-3);top:50%;height:var(--space-2);translate:0 -50%;border:var(--outline-part) solid var(--ink);border-radius:var(--radius-full);background:var(--ground-sunk)}
+.tilt__knob{position:absolute;top:50%;left:50%;width:var(--size-check);height:var(--size-check);translate:calc(-50% + var(--tilt) * (7rem - var(--space-5))) -50%;border:var(--outline-part) solid var(--ink);border-radius:var(--radius-full);background:var(--part-olive);box-shadow:0 2px 0 var(--ink);transition:translate var(--dur-settle) var(--ease-spring)}
+.tilt.is-held .tilt__knob{transition:none}
+.tilt__label{position:absolute;left:50%;bottom:calc(-1 * var(--space-1));translate:-50% 0;font-family:var(--font-mono);font-size:var(--text-tag);letter-spacing:var(--track-tag);text-transform:uppercase;color:var(--ink-muted)}
+.lever{appearance:none;display:inline-flex;align-items:center;gap:var(--space-3);min-height:var(--size-tap);padding:0 var(--space-2);border:0;background:none;color:var(--ink);font-family:var(--font-display);font-size:var(--text-ui);font-weight:var(--weight-bold);cursor:pointer}
+.lever:disabled{color:var(--ink-muted);cursor:default}
+.lever__slot{position:relative;width:var(--space-3);height:calc(var(--size-tap) - var(--space-1));border:var(--outline-part) solid var(--ink);border-radius:var(--radius-full);background:var(--ground-sunk)}
+.lever__arm{position:absolute;left:50%;top:var(--space-half);width:var(--size-check);height:var(--size-check);translate:-50% 0;border:var(--outline-part) solid var(--ink);border-radius:var(--radius-full);background:var(--primary);box-shadow:0 2px 0 var(--ink)}
+.lever:disabled .lever__arm{top:auto;bottom:var(--space-half);background:var(--ground-sunk)}
+.lever:hover:not(:disabled) .lever__arm{translate:-50% var(--space-half)}
+.lever.is-pulled .lever__arm{animation:jb-lever var(--dur-light) var(--ease-out)}
+@keyframes jb-lever{0%{top:var(--space-half)}25%{top:calc(100% - var(--size-check) - var(--space-half))}100%{top:var(--space-half)}}
+.lever:focus-visible{box-shadow:var(--focus-ring);border-radius:var(--radius-md)}
+.tilt:focus-visible{box-shadow:var(--focus-ring)}
+.shaft{transition:rotate var(--dur-settle) var(--ease-out)}
+/* on a phone the well is one block wide, so the pad spans it */
+@media (max-width:599.98px){.well__pad{left:var(--space-4);width:auto!important}}
