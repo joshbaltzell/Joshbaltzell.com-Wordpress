@@ -131,3 +131,20 @@
     media.forEach(function (el) { if (rackOf(el) === r) sync(el); });
   });
 })();
+
+/* The pile's controls roll up on a phone: one Controls button opens the buttons and the tilt handle. The button
+   is hidden until this runs, so without script there is no button that does nothing. */
+(function () {
+  'use strict';
+  [].forEach.call(document.querySelectorAll('[data-stack-tools]'), function (b) {
+    var bar = b.closest('.rack__bar');
+    if (!bar) return;
+    b.hidden = false;
+    b.addEventListener('click', function () {
+      var open = !bar.classList.contains('is-open');
+      bar.classList.toggle('is-open', open);
+      b.setAttribute('aria-expanded', open ? 'true' : 'false');
+      b.textContent = open ? 'Hide controls' : 'Controls';
+    });
+  });
+})();

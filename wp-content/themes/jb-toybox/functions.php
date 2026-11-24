@@ -13,6 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 require get_theme_file_path( 'inc/kinds.php' );
 require get_theme_file_path( 'inc/template-tags.php' );
 require get_theme_file_path( 'inc/text-toys.php' );
+require get_theme_file_path( 'inc/social.php' );
 
 /**
  * Theme supports and image sizes.
