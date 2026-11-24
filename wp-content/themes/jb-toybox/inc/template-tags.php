@@ -229,7 +229,7 @@ function jb_stack( $posts, $args = array() ) {
 		<button class="lever" type="button" data-lever><span class="lever__slot" aria-hidden="true"><span class="lever__arm"></span></span><span class="lever__label"></span></button>
 	</div>
 	<div class="shaft"><span class="rail rail--l"></span>
-		<div class="well"><div class="well__pad" data-idle="<?php esc_attr_e( 'Drop one here to play it', 'jb-toybox' ); ?>" aria-hidden="true" hidden><span class="well__pad-mark"></span><span class="well__pad-label"></span></div><ol class="pile" aria-label="<?php echo esc_attr( sprintf( /* translators: %s: name of the list. */ __( '%s, newest first', 'jb-toybox' ), $args['label'] ) ); ?>">
+		<div class="well"><ol class="pile" aria-label="<?php echo esc_attr( sprintf( /* translators: %s: name of the list. */ __( '%s, newest first', 'jb-toybox' ), $args['label'] ) ); ?>">
 			<?php foreach ( array_values( $posts ) as $i => $post ) : ?>
 			<li><?php jb_card( $post, $args['toy_types'], $i / $last ); ?></li>
 			<?php endforeach; ?>
