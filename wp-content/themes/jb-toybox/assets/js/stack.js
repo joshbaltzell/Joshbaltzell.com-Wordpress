@@ -17,7 +17,13 @@
 
    It also shows only part of its list at a time (the "active set"). Everything else sits in the page, hidden,
    and comes and goes through three operations: add (falls in from the top), remove (falls out through the
-   floor) and tidy (drop the active set again from scratch). More, the filters, and Pile or shelf are all
+   floor) and tidy (drop the active set again from scratch).
+
+   play: THE PILE FLOATS UP. The physics below is the same falling pile it always was; it is shown mirrored
+   top to bottom. So the physics floor is the ceiling you see, blocks rise in from the bottom of the well and
+   settle against the top, and the newest arrive first, so they sit at the top and stay there while More adds
+   older ones underneath. Only three places know about the mirror: draw() (physics to screen), point()
+   (screen to physics) and the ceiling, rail and knock styling. Everything in between thinks in falling. More, the filters, and Pile or shelf are all
    built on those three. Without the script every item shows, as a plain grid. */
 (function () {
   'use strict';
@@ -160,17 +166,16 @@
 
     /* ---- the drop: worked out in full before anything moves, then played back ---- */
     function layout(mode) {
-      /* rows from the floor up; the oldest article (last in the list) lands first */
+      /* rows from the floor up; play: the newest article (first in the list) lands first, so mirrored it is at the top */
       var pat = mode === '2' ? [[3, 3]] : mode === '3' ? [[2, 2, 2]] : mode === '1' ? [[6]] : [[2, 2, 2], [3, 3]];
       var ids = [], out = [], r = 0, k;
       for (k = 0; k < N; k++) { out[k] = null; if (active[k]) ids.push(k); }
-      var left = ids.length, p = ids.length - 1;
+      var left = ids.length, p = 0;
       while (left > 0) {
         var row = pat[r % pat.length].slice(0, Math.min(left, pat[r % pat.length].length)), x = 0, idx = [];
-        for (k = 0; k < row.length; k++) idx.push(ids[p - k]);
-        idx.reverse();
+        for (k = 0; k < row.length; k++) idx.push(ids[p + k]);
         for (k = 0; k < row.length; k++) { out[idx[k]] = { units: row[k], w: row[k] * U - GAP, x: x + row[k] * U / 2, row: r, col: k, h: 0 }; x += row[k] * U; }
-        p -= row.length; left -= row.length; r++;
+        p += row.length; left -= row.length; r++;
       }
       return out;
     }
@@ -255,7 +260,7 @@
     function report() {
       var lean = leanOf(fin), n = count();
       var N = n; /* play: the line describes what is in the well, not the whole list */
-      var text = shelf ? N + ' on the shelf' : !M ? N + ' blocks · placed, not dropped (the physics did not load)' : phase === 'play' ? N + ' blocks · loose · drag one, or tidy up' : N + ' blocks · ' + (phase === 'drop' ? 'dropping' : 'landed in ' + (endAt / 1000).toFixed(1) + ' s') + ' · steepest lean ' + lean.toFixed(1) + '°' + (phase === 'rest' && canPlay() ? (fine ? ' · pick one up' : ' · press and hold one') : '');
+      var text = shelf ? N + ' on the shelf' : !M ? N + ' blocks · placed, not floated (the physics did not load)' : phase === 'play' ? N + ' blocks · loose · drag one, or tidy up' : N + ' blocks · ' + (phase === 'drop' ? 'rising' : 'settled in ' + (endAt / 1000).toFixed(1) + ' s') + ' · steepest lean ' + lean.toFixed(1) + '°' + (phase === 'rest' && canPlay() ? (fine ? ' · pick one up' : ' · press and hold one') : '');
       if (status) status.textContent = text;
       syncMore(); syncMachine();
       if (opts.onReport) opts.onReport({ blocks: N, phase: phase, landedMs: endAt, lean: lean, physics: !!M });
@@ -275,7 +280,8 @@
       var i, j, p, b, P = [], lights = [], orbit = null;
       /* play: with a long list in the well, only the first two special blocks in it light up and move */
       var specials = allSpecials.filter(function (s) { return active[s.i] && !falling[s.i]; }).slice(0, 2);
-      for (i = 0; i < N; i++) P[i] = pose[i] ? [pose[i][0], pose[i][1] - 3 * lift[i], pose[i][2]] : null;
+      /* play: physics to screen, mirrored top to bottom (y flips, so the angle does too); a held block still lifts up */
+      for (i = 0; i < N; i++) P[i] = pose[i] ? [pose[i][0], H - pose[i][1] - 3 * lift[i], -pose[i][2]] : null;
       /* pulls first, so the light falls on blocks where they have been dragged to */
       if (lit > 0) specials.forEach(function (s) {
         var r = s.rule; p = P[s.i]; if (!p || !r.pull || !r.light) return;
@@ -293,7 +299,7 @@
         if (!p) { if (b.style.visibility !== 'hidden') b.style.visibility = 'hidden'; continue; }
         if (b.style.visibility) b.style.visibility = '';
         var sq = squash[i] || 0;
-        b.style.transform = 'translate(' + (p[0] - L[i].w / 2).toFixed(2) + 'px,' + (p[1] - L[i].h / 2).toFixed(2) + 'px) rotate(' + p[2].toFixed(4) + 'rad)' + (sq ? ' translateY(' + (L[i].h * sq / 2).toFixed(2) + 'px) scale(' + (1 + sq * .6).toFixed(4) + ',' + (1 - sq).toFixed(4) + ')' : '');
+        b.style.transform = 'translate(' + (p[0] - L[i].w / 2).toFixed(2) + 'px,' + (p[1] - L[i].h / 2).toFixed(2) + 'px) rotate(' + p[2].toFixed(4) + 'rad)' + (sq ? ' translateY(' + (-L[i].h * sq / 2).toFixed(2) + 'px) scale(' + (1 + sq * .6).toFixed(4) + ',' + (1 - sq).toFixed(4) + ')' : '');
       }
 
       /* light on the paper of the well, under the blocks */
@@ -302,7 +308,7 @@
 
       /* light on the blocks: cover art, the edges that face the lamp, and which way the shadow falls */
       og.setTransform(dpr, 0, 0, dpr, 0, 0); og.clearRect(0, 0, W, H); og.lineCap = 'butt';
-      if (dust.length) { og.fillStyle = C.ink; dust.forEach(function (d) { var k = d.life / d.max; og.globalAlpha = k > .66 ? .22 : k > .33 ? .14 : .07; og.beginPath(); og.arc(d.x, d.y, d.r * (.6 + .4 * k), 0, TAU); og.fill(); }); og.globalAlpha = 1; }
+      if (dust.length) { og.fillStyle = C.ink; dust.forEach(function (d) { var k = d.life / d.max; og.globalAlpha = k > .66 ? .22 : k > .33 ? .14 : .07; og.beginPath(); og.arc(d.x, H - d.y, d.r * (.6 + .4 * k), 0, TAU); og.fill(); }); og.globalAlpha = 1; }
       for (j = 0; j < N; j++) {
         p = P[j]; if (!p) continue; b = L[j];
         var sh = [SH[0], SH[1]], cs = Math.cos(p[2]), sn = Math.sin(p[2]);
@@ -339,7 +345,7 @@
       var w0 = null; lights.forEach(function (l) { if (l.tone === 'warm' && !w0) w0 = l; });
       strip(lits.l, 'to bottom', w0 ? w0.y : 0, w0 ? w0.R : 0, w0 ? w0.x : 1e9, 6, w0 ? w0.amt : 0);
       strip(lits.r, 'to bottom', w0 ? w0.y : 0, w0 ? w0.R : 0, w0 ? W - w0.x : 1e9, 6, w0 ? w0.amt : 0);
-      strip(lits.f, 'to right', w0 ? w0.x : 0, w0 ? w0.R : 0, w0 ? H - w0.y : 1e9, 14, w0 ? w0.amt : 0);
+      strip(lits.f, 'to right', w0 ? w0.x : 0, w0 ? w0.R : 0, w0 ? w0.y : 1e9, 14, w0 ? w0.amt : 0); /* play: the floor is the ceiling now */
 
       specials.forEach(function (s) { var c = cov[s.i]; s.g.setTransform(dpr, 0, 0, dpr, 0, 0); s.rule.art(s.g, c.w, c.h, clock, s.heat, C); });
     }
@@ -359,7 +365,7 @@
       }
       if (dust.length) { busy = true; dust = dust.filter(function (d) { d.x += d.vx * dt / 16; d.y += d.vy * dt / 16; d.vx *= .9; d.vy *= .9; d.life -= dt; return d.life > 0; }); }
       if (kickY > .05) { kickY *= Math.pow(.75, dt / 16); busy = true; } else kickY = 0;
-      if (shaftEl) shaftEl.style.transform = kickY ? 'translateY(' + kickY.toFixed(2) + 'px)' : '';
+      if (shaftEl) shaftEl.style.transform = kickY ? 'translateY(' + (-kickY).toFixed(2) + 'px)' : ''; /* play: landings knock the well up */
       return busy;
     }
     function landed(i, s) {
@@ -545,7 +551,8 @@
       });
       last = 0; kick();
     }
-    function point(e) { var r = well.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
+    /* play: screen to physics, the other half of the mirror in draw() */
+    function point(e) { var r = well.getBoundingClientRect(); return { x: e.clientX - r.left, y: H - (e.clientY - r.top) }; }
     function takeGrab(i, pt) {
       var bd = live.bodies[i];
       M.Sleeping.set(bd, false);

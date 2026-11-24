@@ -219,3 +219,8 @@
 .lever:focus-visible{box-shadow:var(--focus-ring);border-radius:var(--radius-md)}
 .tilt:focus-visible{box-shadow:var(--focus-ring)}
 .shaft{transition:rotate var(--dur-settle) var(--ease-out)}
+
+/* The pile floats up. Blocks rise into the well and settle against its top, so the newest stay at the top of
+   the page. The floor bar is above the well as a ceiling, and the rails hang from it with their open ends at
+   the bottom, where blocks come in. */
+.rail{top:calc(-1 * var(--outline-part));bottom:calc(-1 * var(--space-2));border-radius:0 0 var(--radius-sm) var(--radius-sm)}
