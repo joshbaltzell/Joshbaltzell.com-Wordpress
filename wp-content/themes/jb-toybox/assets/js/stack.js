@@ -86,9 +86,6 @@
     var GAP = 14, HEAD = 64;
     /* feel: how each block was moving last frame, how squashed it is, dust in the air, and how far the well is knocked */
     var prevY = [], vy = [], squash = [], dust = [], kickY = 0, shaftEl = rack.querySelector('.shaft');
-    /* the launch pad sits in the top band of the well, so that band is taller when there is one */
-    var padEl = well.querySelector('.well__pad'), padHot = -1, launching = false;
-    if (padEl) HEAD = 128;
     /* the machine: an optional lever for More and a handle that tilts the well */
     var machine = rack.querySelector('.rack__machine'), lever = rack.querySelector('[data-lever]'), tiltEl = rack.querySelector('[data-tilt]'), tilt = 0;
     var W = 0, H = 0, U = 0, L = [], sim = null, fin = [], endAt = 0, phase = 'rest', t0 = 0, litAt = -1e9, clock = 0, last = 0, raf = 0, seen = false, armed = true, dpr = 1, queued = 0;
@@ -131,7 +128,6 @@
       });
     }
     function clack() { tone(function (a, t) { var o = a.createOscillator(), g = a.createGain(); o.type = 'triangle'; o.frequency.setValueAtTime(520, t); o.frequency.exponentialRampToValueAtTime(260, t + .05); g.gain.setValueAtTime(.025, t); g.gain.exponentialRampToValueAtTime(.001, t + .07); o.connect(g); g.connect(a.destination); o.start(t); o.stop(t + .08); }); }
-    function chime() { tone(function (a, t) { [523, 784].forEach(function (f, k) { var o = a.createOscillator(), g = a.createGain(); o.type = 'sine'; o.frequency.value = f; g.gain.setValueAtTime(.0001, t + k * .09); g.gain.exponentialRampToValueAtTime(.03, t + k * .09 + .01); g.gain.exponentialRampToValueAtTime(.001, t + k * .09 + .25); o.connect(g); g.connect(a.destination); o.start(t + k * .09); o.stop(t + k * .09 + .26); }); }); }
     function syncSound() { if (soundBtn) { soundBtn.hidden = false; soundBtn.setAttribute('aria-pressed', String(soundOn)); soundBtn.textContent = soundOn ? 'Sound on' : 'Sound off'; } }
     if (soundBtn) soundBtn.addEventListener('click', function () { soundOn = !soundOn; try { localStorage.setItem('jb-sound', soundOn ? 'on' : 'off'); } catch (e) {} if (soundOn) { arm(); clack(); } syncSound(); });
     /* touching the pile, or any of its controls, is what lets it make sound */
@@ -222,7 +218,6 @@
       blks.forEach(function (b, i) { items[i].hidden = !active[i]; });
       W = well.clientWidth; if (!W) return;
       U = W / 6; dpr = Math.min(2, window.devicePixelRatio || 1);
-      placePad();
       var mode = W < 520 ? '1' : S.mode, i;
       L = layout(mode);
       blks.forEach(function (b, i) { if (!L[i]) return; b.style.width = L[i].w.toFixed(1) + 'px'; b.setAttribute('data-u', L[i].units); b.style.zIndex = 1 + L[i].row * 4 + L[i].col; });
@@ -486,7 +481,6 @@
       }
       for (var i = 0; i < N; i++) { if (fin[i]) { fin[i] = [fin[i][0], fin[i][1] + d, fin[i][2]]; pose[i] = fin[i]; } if (prevY[i] != null) prevY[i] += d; }
       dust.forEach(function (q) { q.y += d; });
-      if (padEl) placePad();
       last = 0; kick();
     }
     /* shrink the well to the pile, once things have settled */
@@ -561,7 +555,6 @@
       rack.classList.add('rack--held');
     }
     function dropGrab() {
-      if (padEl && padHot >= 0 && !launching) padIdle();
       if (grab && grab.c && live) M.Composite.remove(live.engine.world, grab.c);
       grab = null; rack.classList.remove('rack--held');
     }
@@ -608,38 +601,11 @@
         dragged = true; takeGrab(grab.i, grab.from);
       }
       grab.c.pointA = pt; M.Sleeping.set(live.bodies[grab.i], false);
-      if (padEl && !launching) { var on = overPad(pt); if (on && padHot !== grab.i) { padHot = grab.i; padEl.classList.add('is-hot'); padLabel('Let go to ' + (blks[grab.i].querySelector('.blk__play') ? 'play ' : 'open ') + titleOf(grab.i), true); } else if (!on && padHot >= 0) padIdle(); }
       last = 0; kick(); e.preventDefault();
     });
     function letGo(e) {
       if (hold && (!e || e.pointerId === hold.id)) { clearTimeout(hold.timer); hold = null; }
-      if (grab && (!e || e.pointerId === grab.id)) { var gi = grab.i, over = e && padEl && overPad(point(e)); dropGrab(); if (over) launch(gi); kick(); }
-    }
-    /* ---- the launch pad ----
-       Optional: clicking a block still opens it, and Play still plays. This is a third way in, for when you are
-       already holding one: carry it to the pad and let go, and its game starts (or, for a post, it opens). */
-    function placePad() { if (!padEl) return; padEl.style.width = Math.max(120, Math.min(2 * U - GAP, 260)) + 'px'; }
-    function overPad(pt) { var r = padEl.getBoundingClientRect(), w = well.getBoundingClientRect(); return pt.x >= r.left - w.left && pt.x <= r.right - w.left && pt.y >= r.top - w.top && pt.y <= r.bottom - w.top; }
-    function titleOf(i) { var t = blks[i].querySelector('.det__title'); return t ? t.textContent.trim() : ''; }
-    function hrefOf(i) { var a = blks[i].querySelector('.blk__play') || blks[i].querySelector('.blk__link'); return a ? a.href : ''; }
-    function padLabel(text, say) {
-      var l = padEl.querySelector('.well__pad-label'); if (l) l.textContent = text;
-      /* a block held over the pad hides its label, so the status line above the well says it too */
-      if (status) { if (say) status.textContent = text; else if (say === false) report(); }
-    }
-    function padIdle() { var was = padHot >= 0; padHot = -1; padEl.classList.remove('is-hot'); padLabel(padEl.getAttribute('data-idle') || '', was ? false : undefined); }
-    function launch(i) {
-      var href = hrefOf(i); if (!href || launching) return;
-      launching = true; padEl.classList.add('is-hot', 'is-launching');
-      padLabel((blks[i].querySelector('.blk__play') ? 'Starting ' : 'Opening ') + titleOf(i), true);
-      if (live && live.bodies[i]) {
-        var r = padEl.getBoundingClientRect(), w = well.getBoundingClientRect(), bd = live.bodies[i];
-        M.Body.setAngle(bd, 0); M.Body.setVelocity(bd, { x: 0, y: 0 }); M.Body.setAngularVelocity(bd, 0);
-        M.Body.setPosition(bd, { x: r.left - w.left + r.width / 2, y: r.top - w.top + r.height / 2 + off[i] }); M.Body.setStatic(bd, true);
-      }
-      chime(); last = 0; kick();
-      setTimeout(function () { window.location.href = href; }, 520);
-      setTimeout(function () { launching = false; if (padEl) { padEl.classList.remove('is-launching'); padIdle(); } }, 3000);
+      if (grab && (!e || e.pointerId === grab.id)) { dropGrab(); kick(); }
     }
     window.addEventListener('pointerup', letGo); window.addEventListener('pointercancel', letGo);
     /* a drag is not a click: the block only opens if it barely moved */
@@ -754,8 +720,7 @@
     /* ---- start ---- */
     for (var a0 = 0; a0 < N; a0++) active[a0] = a0 < batch;
     var savedView = null; try { savedView = localStorage.getItem('jb-view'); } catch (e) {}
-    rack.classList.add('rack--live'); colors(); setMotion(S.motion); syncSound(); placePad();
-    if (padEl) { padEl.hidden = !M; padIdle(); }
+    rack.classList.add('rack--live'); colors(); setMotion(S.motion); syncSound();
     if (savedView === 'shelf' || (!savedView && mq.matches)) { armed = false; setShelf(true, 'init'); } else build(false);
     /* play: a width change during the first drop (a scrollbar appearing as the page grows) restarts the drop
        instead of cancelling it */
