@@ -19,7 +19,7 @@ $jb_about  = get_page_by_path( 'about' );
 
 // The introduction is the front page's Excerpt when one is written, so it can be changed in the editor.
 $jb_front = (int) get_option( 'page_on_front' );
-$jb_intro = $jb_front && has_excerpt( $jb_front ) ? get_the_excerpt( $jb_front ) : __( 'This is where I try ideas out. Some turn into small games you can play in the browser, some into notes on how a thing works. Most of them start with something clever that someone else made, and I will point you to it.', 'jb-toybox' );
+$jb_intro = $jb_front && has_excerpt( $jb_front ) ? get_the_excerpt( $jb_front ) : __( 'I\'m Josh Baltzell. This is my blog, and a place where I mess around with small ideas: games and toys you can play right here, plus notes on design, code and AI. Most of them start with something clever someone else made, and I\'ll point you to it.', 'jb-toybox' );
 ?>
 <section class="home-hero">
 	<h1 class="t-shout"><?php esc_html_e( 'I like complicated problems.', 'jb-toybox' ); ?></h1>
@@ -28,9 +28,17 @@ $jb_intro = $jb_front && has_excerpt( $jb_front ) ? get_the_excerpt( $jb_front )
 		<p class="home-hero__ways">
 			<a class="link link--more" href="<?php echo esc_url( $jb_toys['url'] ); ?>"><?php esc_html_e( 'Start with a toy', 'jb-toybox' ); ?></a>
 			<?php if ( $jb_about && 'publish' === $jb_about->post_status ) : ?>
-			<a class="link link--more" href="<?php echo esc_url( get_permalink( $jb_about ) ); ?>"><?php esc_html_e( 'About', 'jb-toybox' ); ?></a>
+			<a class="link link--more" href="<?php echo esc_url( get_permalink( $jb_about ) ); ?>"><?php esc_html_e( 'More about me', 'jb-toybox' ); ?></a>
 			<?php endif; ?>
 		</p>
+		<?php
+		$jb_social = jb_social_links();
+		if ( $jb_social ) :
+			?>
+		<p class="t-small home-hero__elsewhere"><?php esc_html_e( 'Also on', 'jb-toybox' ); ?>
+			<?php echo implode( ' &middot; ', array_map( 'jb_social_link', $jb_social ) ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in jb_social_link(). ?>
+		</p>
+		<?php endif; ?>
 	</div>
 </section>
 <div class="l-shell">

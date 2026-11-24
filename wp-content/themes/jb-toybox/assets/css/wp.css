@@ -225,10 +225,11 @@
    the bottom, where blocks come in. */
 .rail{top:calc(-1 * var(--outline-part));bottom:calc(-1 * var(--space-2));border-radius:0 0 var(--radius-sm) var(--radius-sm)}
 
-/* The lever docks on the well's right edge instead of in the machine panel. The dock has no height and sticks
+/* The lever docks on the well's right edge instead of in the machine panel. The dock is the lever's height, laid over
+   the bottom of the well (so it never rides up past the top of the well onto the panel above), and sticks
    to the bottom of the screen while the well scrolls past, so the lever stays in reach and ends up at the
    bottom of the well, where the blocks it brings come in. */
-.lever-dock{position:sticky;z-index:3;bottom:var(--space-4);height:0;pointer-events:none}
+.lever-dock{position:sticky;z-index:3;bottom:var(--space-4);height:calc(var(--size-tap) + var(--space-6));margin-top:calc(-1 * (var(--size-tap) + var(--space-6)));pointer-events:none}
 .lever-dock[hidden]{display:none}
 .lever-dock .lever{position:absolute;right:calc(var(--size-rail) + var(--space-3));bottom:var(--space-3);pointer-events:auto;padding:var(--space-1) var(--space-3) var(--space-1) var(--space-2);border:var(--outline-part) solid var(--ink);border-radius:var(--radius-md);background:var(--ground-raised);box-shadow:var(--edge-rest)}
 .lever-dock .lever:disabled{box-shadow:none}
@@ -252,3 +253,20 @@ a.kind{padding-block:var(--space-1);margin-block:calc(-1 * var(--space-1))}
    doesn't fit is trimmed, and the whole line is in its tooltip. */
 .rack__bar>[data-stack-status]{flex:1 1 14rem;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rack__bar>.l-row{margin-left:auto}
+
+/* Phones: the pile should be on the first screen. The view and motion buttons and the tilt handle roll up behind one
+   Controls button, the status line is kept for screen readers only, the home page's kind list (the Menu has the
+   same links) steps aside, and the opening line is a size smaller. */
+.rack__tools{display:none}
+@media (max-width:599.98px){
+  .rack__tools{display:inline-flex;order:-1}
+  .rack__tools[hidden]{display:none}
+  .rack__bar>[data-stack-status]{position:absolute;flex:none;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+  .rack__bar:not(.is-open)>.l-row{display:none}
+  .rack__bar:not(.is-open)+.rack .rack__machine{display:none}
+  .home .l-shell>.l-spine{display:none}
+  .home-hero .t-shout{font-size:var(--text-title)}
+  .home-hero{padding-block:0 var(--space-8)}
+}
+/* the lever stays out of sight until the pile has risen into place */
+.rack--rising .lever-dock{visibility:hidden}

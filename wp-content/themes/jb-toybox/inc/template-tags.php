@@ -248,6 +248,8 @@ function jb_stack( $posts, $args = array() ) {
 		<button class="btn btn--small" type="button" data-stack-motion hidden><?php esc_html_e( 'Pause motion', 'jb-toybox' ); ?></button>
 		<button class="btn btn--small" type="button" data-stack-sound aria-pressed="true" hidden><?php esc_html_e( 'Sound on', 'jb-toybox' ); ?></button>
 	</span>
+	<?php // On a phone the buttons and the tilt handle roll up behind this, so the pile is on the first screen. ?>
+	<button class="btn btn--small rack__tools" type="button" aria-expanded="false" data-stack-tools hidden><?php esc_html_e( 'Controls', 'jb-toybox' ); ?></button>
 </div>
 <section class="rack" data-stack data-across="2" data-seed="<?php echo esc_attr( $args['seed'] ); ?>" data-batch="<?php echo esc_attr( $args['batch'] ); ?>" data-batch-phone="<?php echo esc_attr( $args['batch_phone'] ); ?>" aria-label="<?php echo esc_attr( $args['label'] ); ?>">
 	<div class="rack__machine" hidden>

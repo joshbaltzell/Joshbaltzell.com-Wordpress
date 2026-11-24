@@ -266,6 +266,7 @@
       [under, over].forEach(function (c) { c.width = Math.round(W * dpr); c.height = Math.round(H * dpr); });
       blks.forEach(function (b, i) { var c = b.querySelector('.cov'); cov[i] = c ? { x: c.offsetLeft + b.clientLeft, y: c.offsetTop + b.clientTop, w: c.clientWidth, h: c.clientHeight } : { x: 0, y: 0, w: L[i].w, h: 0 }; });
       specials.forEach(function (s) { if (!s.cv) return; s.cv.width = Math.round(cov[s.i].w * dpr); s.cv.height = Math.round(cov[s.i].h * dpr); });
+      rack.classList.toggle('rack--rising', !!(replay && S.motion && M && sim.frames.length > 1)); /* play: the lever waits until the pile is in */
       if (replay && S.motion && M && sim.frames.length > 1) { phase = 'drop'; t0 = performance.now(); if (sim.edges && sim.edges.length) { rack.style.minHeight = rack.offsetHeight + 'px'; /* hold the page at its full length while the well grows, so nothing below moves and no scrollbar comes and goes */ hv = sim.edges[0]; well.style.height = Math.round(hv) + 'px'; } }
       else { phase = 'rest'; litAt = replay ? performance.now() : -1e9; }
       report(); last = 0; kick();
@@ -410,7 +411,7 @@
       if (S.motion) { clock += dt / 1000; specials.forEach(function (s) { if (s.rule.stars) s.rule.stars.forEach(function (au, k) { s.ph[k] += dt / 1000 * .9 * Math.pow(s.rule.stars[0] / au, 1.5) * (1 + .8 * s.heat); }); }); }
       if (phase === 'drop') {
         var t = Math.max(0, now - t0), fi = t * 60 / 1000, a = Math.floor(fi), u = fi - a, F = sim.frames;
-        if (t >= endAt || a >= F.length - 1) { phase = 'rest'; litAt = now; report(); firstRise = false; }
+        if (t >= endAt || a >= F.length - 1) { phase = 'rest'; litAt = now; report(); firstRise = false; rack.classList.remove('rack--rising'); }
         else { for (i = 0; i < N; i++) { var p0 = F[a][i], p1 = F[a + 1][i]; pose[i] = p0 && p1 ? [p0[0] + (p1[0] - p0[0]) * u, p0[1] + (p1[1] - p0[1]) * u, p0[2] + (p1[2] - p0[2]) * u] : null; } busy = true; }
       }
       if (phase === 'rest') for (i = 0; i < N; i++) pose[i] = fin[i];
@@ -440,7 +441,7 @@
       if (live || !canPlay()) return !!live;
       /* a pile still settling counts as landed the moment someone reaches for it */
       if (phase === 'drop') { for (var k = 0; k < N; k++) pose[k] = fin[k]; litAt = performance.now(); }
-      if (hv) { hv = 0; well.style.height = H + 'px'; rack.style.minHeight = ''; } firstRise = false;
+      if (hv) { hv = 0; well.style.height = H + 'px'; rack.style.minHeight = ''; } firstRise = false; rack.classList.remove('rack--rising');
       var engine = M.Engine.create({ enableSleeping: true, positionIterations: 12, velocityIterations: 10 });
       engine.gravity.y = 1.7;
       var st = { isStatic: true, friction: 1 };

@@ -25,6 +25,9 @@ $jb_about = get_page_by_path( 'about' );
 				<?php if ( $jb_about && 'publish' === $jb_about->post_status ) : ?>
 				<li><a class="link" href="<?php echo esc_url( get_permalink( $jb_about ) ); ?>"><?php echo esc_html( get_the_title( $jb_about ) ); ?></a></li>
 				<?php endif; ?>
+				<?php foreach ( jb_social_links() as $jb_link ) : ?>
+				<li><?php echo jb_social_link( $jb_link ); // phpcs:ignore WordPress.Security.EscapeOutput -- escaped in jb_social_link(). ?></li>
+				<?php endforeach; ?>
 				<li><a class="link" href="<?php echo esc_url( get_feed_link() ); ?>"><?php esc_html_e( 'RSS', 'jb-toybox' ); ?></a></li>
 			</ul>
 			<p class="site-footer__meta t-readout"><?php bloginfo( 'name' ); ?> &middot; <?php echo esc_html( wp_date( 'Y' ) ); ?> &middot; <?php esc_html_e( 'Set in Bricolage Grotesque, Atkinson Hyperlegible Next and JetBrains Mono', 'jb-toybox' ); ?></p>
