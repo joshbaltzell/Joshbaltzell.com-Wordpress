@@ -232,3 +232,11 @@
 .lever-dock[hidden]{display:none}
 .lever-dock .lever{position:absolute;right:calc(var(--size-rail) + var(--space-3));bottom:var(--space-3);pointer-events:auto;padding:var(--space-1) var(--space-3) var(--space-1) var(--space-2);border:var(--outline-part) solid var(--ink);border-radius:var(--radius-md);background:var(--ground-raised);box-shadow:var(--edge-rest)}
 .lever-dock .lever:disabled{box-shadow:none}
+
+/* Layered covers (Block design → Layered picture). Each layer sits at a depth --z between the back wall (0)
+   and the glass (1). As the eye moves (--look-x, --look-y from site.js) a nearer layer shifts more against the
+   ones behind it, the opposite way to the eye; when the well is tilted (--lean from stack.js) the near layers
+   slide toward the low side. With reduced motion none of those are set and the picture sits still. */
+.cov__layers{position:absolute;inset:0;overflow:hidden}
+.blk .cov .cov__layer{position:absolute;inset:auto;width:auto;object-fit:fill;transform:translate(calc((var(--look-x,0) * -6cqw + var(--lean,0) * 9cqw) * var(--z)),calc(var(--look-y,0) * 4cqw * var(--z)));will-change:transform}
+.blk .cov .cov__layer--fill{inset:0;width:100%;height:100%;object-fit:cover}

@@ -172,6 +172,32 @@ function jb_block_design( $post ) {
 		$out['cover'] = '<iframe class="cov__media" sandbox="allow-scripts" tabindex="-1" aria-hidden="true" title="" data-srcdoc="' . esc_attr( $m( 'cover_live' ) ) . '"></iframe>';
 		$class[]      = 'blk--moving';
 	}
+	if ( 'layers' === $kind ) {
+		// A layered picture: each line is "address depth [left top height]", back to front. site.js sets --look-x
+		// and --look-y on the block, stack.js sets --lean on the rack, and each layer moves by its depth.
+		$layers = '';
+		foreach ( preg_split( '/\R/', $m( 'cover_layers' ) ) as $line ) {
+			$bits = preg_split( '/\s+/', trim( $line ) );
+			$src  = isset( $bits[0] ) ? esc_url( $bits[0] ) : '';
+			if ( '' === $src ) {
+				continue;
+			}
+			$z     = isset( $bits[1] ) ? max( 0, min( 1, (float) $bits[1] ) ) : 0;
+			$style = '--z:' . round( $z, 3 );
+			$place = array_slice( $bits, 2, 3 );
+			if ( 3 === count( $place ) && count( array_filter( $place, 'is_numeric' ) ) === 3 ) {
+				$style .= ';left:' . (float) $place[0] . '%;top:' . (float) $place[1] . '%;height:' . (float) $place[2] . '%';
+				$class_name = 'cov__layer';
+			} else {
+				$class_name = 'cov__layer cov__layer--fill';
+			}
+			$layers .= '<img class="' . $class_name . '" src="' . $src . '" alt="" decoding="async" loading="lazy" style="' . esc_attr( $style ) . '">';
+		}
+		if ( $layers ) {
+			$out['cover'] = '<span class="cov__layers" aria-hidden="true">' . $layers . '</span>';
+			$class[]      = 'blk--layered';
+		}
+	}
 
 	$out['class'] = implode( ' ', $class );
 	return $out;

@@ -96,7 +96,13 @@ function jb_content_fields() {
 					''      => __( 'Featured image', 'jb-toybox' ),
 					'video' => __( 'Looping video', 'jb-toybox' ),
 					'live'  => __( 'Live cover (code)', 'jb-toybox' ),
+					'layers' => __( 'Layered picture (depth)', 'jb-toybox' ),
 				),
+			),
+			'cover_layers'   => array(
+				'label' => __( 'Picture layers', 'jb-toybox' ),
+				'hint'  => __( 'One image per line, back to front: its address, then how far forward it sits (0 is the back wall, 1 is the glass), then optionally where it sits: left and top in % of the cover, and height in % of the cover\'s height (the width follows). "https://…/meadow.jpg 0" fills the cover; "https://…/wolf.png 0.9 34 -4 108" places a cut-out. Nearer layers move more as you look around the box or tilt the well. Use the same picture flattened as the featured image.', 'jb-toybox' ),
+				'type'  => 'code',
 			),
 			'cover_video'    => array(
 				'label' => __( 'Video', 'jb-toybox' ),

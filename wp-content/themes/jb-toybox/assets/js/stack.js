@@ -721,6 +721,7 @@
       tilt = Math.max(-1, Math.min(1, v));
       if (tiltEl) { tiltEl.style.setProperty('--tilt', tilt.toFixed(3)); tiltEl.setAttribute('aria-valuenow', tilt.toFixed(2)); }
       if (shaftEl) shaftEl.style.rotate = (tilt * 1.6).toFixed(2) + 'deg';
+      rack.style.setProperty('--lean', tilt.toFixed(3)); /* play: layered covers slide their near layers with the lean */
       if (tilt && !live) startPlay();
       if (live) { live.engine.gravity.x = tilt * 2.2; live.bodies.forEach(function (bd, i) { if (bd && !falling[i] && !bd.isStatic) M.Sleeping.set(bd, false); }); }
       last = 0; kick();
