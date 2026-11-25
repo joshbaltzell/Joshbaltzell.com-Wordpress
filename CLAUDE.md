@@ -23,7 +23,7 @@ Still to do:
 - Launch: push Local (theme, content, database) to WP Engine production. The steps are in `LAUNCH.md`.
 - Games repo side: the `play` subdomain, frozen versions, and a game list file.
 - Make the 404 page more fun. Today it is a tilted "Not found" block on a ledge, then a row of real blocks under "Things that did land" (`404.php`).
-- Bring the workshop-ideas toys onto the site: Price the Lemonade (with its rule mode and pricing psychology), The Repricer Spiral and Twelve Reviews are uploaded through Toy files in Local (v1 each). Each still needs a toy post (drafts are the `POST.md` files in `toys/` on `claude/workshop-ideas`). The pricing article ("Three small toys about prices", draft, ID 1012) embeds all three. `[text_toys]` goes on the About page once that branch is merged.
+- Bring the workshop-ideas toys onto the site: Price the Lemonade (v2: rule mode, pricing psychology, and a compact layout with folding sections when embedded), The Repricer Spiral (v1) and Twelve Reviews (v1) are uploaded through Toy files in Local. The article embeds Lemonade at height="720" with light and dark posters. Each still needs a toy post (drafts are the `POST.md` files in `toys/` on `claude/workshop-ideas`). The pricing article ("Three small toys about prices", draft, ID 1012) embeds all three. `[text_toys]` goes on the About page once that branch is merged.
 
 Comment spam is handled by `wp-content/mu-plugins/jb-comment-guard.php` (a signed stamp and a decoy field on the comment form, no outside service). It reaches production with the launch.
 
