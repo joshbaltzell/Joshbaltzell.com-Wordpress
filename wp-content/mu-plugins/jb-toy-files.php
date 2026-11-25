@@ -34,7 +34,9 @@ function jb_toys_base() {
 	$up = wp_upload_dir( null, false );
 	return array(
 		'dir' => trailingslashit( $up['basedir'] ) . JB_TOYS_FOLDER,
-		'url' => trailingslashit( $up['baseurl'] ) . JB_TOYS_FOLDER,
+		// The page's own scheme, so a site whose WordPress Address still says http:// doesn't embed toys as
+		// http:// inside an https:// page, which browsers block.
+		'url' => set_url_scheme( trailingslashit( $up['baseurl'] ) . JB_TOYS_FOLDER ),
 	);
 }
 
