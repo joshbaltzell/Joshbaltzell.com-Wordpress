@@ -165,6 +165,8 @@ function jb_toybox_game_shortcode( $atts ) {
 			'url'     => '',
 			'toy'     => '',
 			'poster'  => '',
+			'poster_dark' => '',
+			'height'  => '',
 			'alt'     => '',
 			'keys'    => '',
 		),
@@ -195,8 +197,8 @@ function jb_toybox_game_shortcode( $atts ) {
 <figure class="game alignwide">
 	<div class="game__bar"><span class="game__name"><?php echo esc_html( $a['name'] ); ?> <span class="t-tag"><?php echo $label; // phpcs:ignore WordPress.Security.EscapeOutput -- escaped above. ?></span></span><a class="link game__open" href="<?php echo esc_url( $a['url'] ); ?>"><?php esc_html_e( 'Open full page', 'jb-toybox' ); ?> &nearr;</a></div>
 	<details class="game__stage">
-		<summary><?php if ( '' !== $a['poster'] ) : ?><img class="game__poster" src="<?php echo esc_url( $a['poster'] ); ?>" alt="<?php echo esc_attr( $a['alt'] ); ?>" loading="lazy"><?php endif; ?><span class="btn btn--play"><?php esc_html_e( 'Play', 'jb-toybox' ); ?></span><span class="btn btn--small game__stop"><?php esc_html_e( 'Stop', 'jb-toybox' ); ?></span></summary>
-		<iframe class="game__screen" src="<?php echo esc_url( $a['url'] ); ?>" loading="lazy" title="<?php echo esc_attr( $a['name'] ); ?>" allow="fullscreen; gamepad; autoplay"></iframe>
+		<summary><?php if ( '' !== $a['poster'] ) : ?><picture><?php if ( '' !== $a['poster_dark'] ) : // a second still for dark mode, so a light screenshot doesn't glare on a dark page ?><source media="(prefers-color-scheme: dark)" srcset="<?php echo esc_url( $a['poster_dark'] ); ?>"><?php endif; ?><img class="game__poster" src="<?php echo esc_url( $a['poster'] ); ?>" alt="<?php echo esc_attr( $a['alt'] ); ?>" loading="lazy"></picture><?php endif; ?><span class="btn btn--play"><?php esc_html_e( 'Play', 'jb-toybox' ); ?></span><span class="btn btn--small game__stop"><?php esc_html_e( 'Stop', 'jb-toybox' ); ?></span></summary>
+		<iframe class="game__screen" src="<?php echo esc_url( $a['url'] ); ?>"<?php echo (int) $a['height'] > 0 ? ' style="aspect-ratio:auto;height:' . (int) min( 2000, (int) $a['height'] ) . 'px"' : ''; /* a toy that needs more room than 16:9 asks for it */ ?> loading="lazy" title="<?php echo esc_attr( $a['name'] ); ?>" allow="fullscreen; gamepad; autoplay"></iframe>
 	</details>
 	<?php if ( '' !== $keys ) : ?><figcaption class="game__keys"><?php echo $keys; // phpcs:ignore WordPress.Security.EscapeOutput -- built by jb_keys(). ?></figcaption><?php endif; ?>
 </figure>
