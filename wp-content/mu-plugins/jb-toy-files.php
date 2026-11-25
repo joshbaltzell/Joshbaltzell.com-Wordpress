@@ -6,6 +6,8 @@
  *
  * In a post: [game name="Price the Lemonade" toy="price-the-lemonade" version="1"] (the theme turns toy and
  * version into the address). Leave version out to get the newest.
+ *
+ * /play/<name>/ always redirects to the newest version; game posts' Play links use it.
  */
 
 defined( 'ABSPATH' ) || exit;
@@ -115,6 +117,45 @@ function jb_toy_url( $slug, $version = 0 ) {
 	$entry = jb_toy_entry( $slug, $version );
 	return $entry ? jb_toys_base()['url'] . "/$slug/v$version/$entry" : '';
 }
+
+/**
+ * The address that always opens a toy's newest version: /play/<name>/. A game post's Play link uses it, so a
+ * new upload reaches the post without editing it, while an article keeps embedding the version it names.
+ *
+ * @param string $slug The toy's name.
+ * @return string
+ */
+function jb_toy_play_url( $slug ) {
+	return home_url( '/play/' . sanitize_title( $slug ) . '/' );
+}
+
+/**
+ * Answers /play/<name>/ with a short-lived redirect to the newest version (or a 404 for a toy that doesn't
+ * exist). It reads the address itself, so it needs no rewrite rules and works with any permalink setting.
+ * The redirect is never cached, so the next upload takes over at once.
+ *
+ * @param WP $wp The request.
+ */
+function jb_toys_play_redirect( $wp ) {
+	$path = (string) wp_parse_url( isset( $_SERVER['REQUEST_URI'] ) ? wp_unslash( $_SERVER['REQUEST_URI'] ) : '', PHP_URL_PATH ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- only matched against a pattern.
+	$base = untrailingslashit( (string) wp_parse_url( home_url(), PHP_URL_PATH ) );
+	if ( ! preg_match( '#^' . preg_quote( $base, '#' ) . '/play/([a-z0-9-]+)/?$#', $path, $m ) ) {
+		return;
+	}
+	$url = jb_toy_url( $m[1] );
+	if ( '' === $url ) {
+		return; // WordPress carries on and shows its 404 page
+	}
+	$query = (string) wp_parse_url( isset( $_SERVER['REQUEST_URI'] ) ? wp_unslash( $_SERVER['REQUEST_URI'] ) : '', PHP_URL_QUERY ); // phpcs:ignore WordPress.Security.ValidatedSanitizedInput -- passed on to the game as is, inside a URL.
+	if ( '' !== $query ) {
+		$url .= '?' . $query; // a game that reads options from its address still gets them
+	}
+	nocache_headers();
+	header( 'X-Robots-Tag: noindex' );
+	wp_redirect( $url, 302, 'JB Toy Files' ); // phpcs:ignore WordPress.Security.SafeRedirect -- our own uploads folder.
+	exit;
+}
+add_action( 'parse_request', 'jb_toys_play_redirect', 0 );
 
 /**
  * Removes a folder and everything in it (used to undo a failed upload).
@@ -292,7 +333,7 @@ function jb_toys_handle_upload() {
 	if ( $play ) {
 		$post = get_page_by_path( $slug, OBJECT, 'post' );
 		if ( $post ) {
-			update_post_meta( $post->ID, 'toy_play_url', esc_url_raw( $url ) );
+			update_post_meta( $post->ID, 'toy_play_url', esc_url_raw( jb_toy_play_url( $slug ) ) );
 			/* translators: %s: post title. */
 			$text .= ' ' . sprintf( __( 'It is now the Play link of "%s".', 'jb-toybox' ), get_the_title( $post ) );
 		} else {
@@ -360,7 +401,7 @@ function jb_toys_page() {
 			</tr>
 			<tr>
 				<th scope="row"><?php esc_html_e( 'Play link', 'jb-toybox' ); ?></th>
-				<td><label><input type="checkbox" name="jb_toy_play" value="1" checked> <?php esc_html_e( 'Make this version the Play link of the post with the same name', 'jb-toybox' ); ?></label></td>
+				<td><label><input type="checkbox" name="jb_toy_play" value="1" checked> <?php esc_html_e( 'Point the Play link of the post with the same name at /play/<name>/, which always opens the newest version', 'jb-toybox' ); ?></label></td>
 			</tr>
 		</table>
 		<?php submit_button( __( 'Upload as a new version', 'jb-toybox' ) ); ?>

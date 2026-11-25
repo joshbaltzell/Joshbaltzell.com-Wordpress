@@ -23,7 +23,8 @@ Still to do:
 - Launch: push Local (theme, content, database) to WP Engine production. The steps are in `LAUNCH.md`.
 - Games repo side: the `play` subdomain, frozen versions, and a game list file.
 - Make the 404 page more fun. Today it is a tilted "Not found" block on a ledge, then a row of real blocks under "Things that did land" (`404.php`).
-- Bring the workshop-ideas toys onto the site: Price the Lemonade (v2: rule mode, pricing psychology, and a compact layout with folding sections when embedded), The Repricer Spiral (v1) and Twelve Reviews (v1) are uploaded through Toy files in Local. The article embeds Lemonade at height="720" with light and dark posters. Each still needs a toy post (drafts are the `POST.md` files in `toys/` on `claude/workshop-ideas`). The pricing article ("Three small toys about prices", draft, ID 1012) embeds all three. `[text_toys]` goes on the About page once that branch is merged.
+- Bring the workshop-ideas toys onto the site: the pricing article ("Three small toys about prices", ID 1012, published in Local) embeds the four Lemonade lessons (`lemonade-1-find-your-price` v1, `lemonade-2-customers-are-human` v1, `lemonade-3-a-stand-across-the-street` v2, `lemonade-4-two-competitors` v2; they share `toys/lemonade-engine/` on `claude/workshop-ideas`, and a ZIP gets copies of `kit/` and `lemonade-engine/` with the `../` paths rewritten), then The Repricer Spiral v2 and Twelve Reviews v2, all at height 720 with light and dark posters. The original Price the Lemonade (v2) is still uploaded but no longer embedded. Each toy still needs a toy post (drafts are the `POST.md` files). `[text_toys]` goes on the About page once that branch is merged.
+- After launch: a GitHub Action in Browser-Games that runs `tools/pack.js` for games changed on `main` and uploads them to production as new versions. It needs an upload endpoint in `jb-toy-files.php` signed in with an application password (a GitHub secret). Don't turn it on before launch: a Local push with the database and uploads would wipe what it uploaded, so later pushes should leave those out.
 
 Comment spam is handled by `wp-content/mu-plugins/jb-comment-guard.php` (a signed stamp and a decoy field on the comment form, no outside service). It reaches production with the launch.
 
@@ -86,7 +87,9 @@ Local setup details:
 
 ## Toys
 
-Small toys can live in WordPress: **Posts → Toy files** (`mu-plugins/jb-toy-files.php`, administrators only) takes a ZIP of a toy's folder or a pasted one-page toy and serves it from `/wp-content/uploads/toys/<name>/v<n>/`. Every upload is a new version and old ones never change. `[game name="…" toy="<name>" version="1"]` embeds one; a ZIP must carry everything it needs (the workshop toys get a copy of `toys/kit/` with `../kit/` rewritten to `kit/`). Only web file types are unpacked. Bigger games stay in the Browser-Games repo.
+Small toys can live in WordPress: **Posts → Toy files** (`mu-plugins/jb-toy-files.php`, administrators only) takes a ZIP of a toy's folder or a pasted one-page toy and serves it from `/wp-content/uploads/toys/<name>/v<n>/`. Every upload is a new version and old ones never change. `[game name="…" toy="<name>" version="1"]` embeds one; a ZIP must carry everything it needs (the workshop toys get a copy of `toys/kit/` with `../kit/` rewritten to `kit/`). Only web file types are unpacked. `/play/<name>/` always redirects (302, never cached) to a toy's newest version; with the upload form's Play box ticked, the post with the same slug gets that address as its Play link.
+
+The 20 Browser-Games games are uploaded this way (v1 each, made by `node tools/pack.js` in that repo, which writes `dist/<game>.zip`), and every game post's Play link is `/play/<game>/`. To update a game: `node tools/pack.js <game>` and upload the zip under the same name. The games are still live on GitHub Pages too (`joshbaltzell.github.io/Browser-Games/games/<game>/`), which is where Play pointed before.
 
 
 Toys are static builds hosted outside WordPress. The first set is the games in `github.com/joshbaltzell/Browser-Games`, live on GitHub Pages. Agreed approach:
