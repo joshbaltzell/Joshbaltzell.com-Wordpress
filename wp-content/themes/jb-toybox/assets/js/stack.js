@@ -218,7 +218,7 @@
           if (!clear) break;
           next++;
           var body = M.Bodies.rectangle(s.x, sy, b.w, b.h, { restitution: .06, friction: .35, frictionStatic: .6, frictionAir: .004, density: .002, slop: .02, sleepThreshold: 40 });
-          M.Body.setAngle(body, s.a); M.Body.setAngularVelocity(body, s.av); M.Body.setVelocity(body, { x: 0, y: 5 });
+          M.Body.setAngle(body, s.a); M.Body.setAngularVelocity(body, s.av); M.Body.setVelocity(body, { x: 0, y: rising ? 1.5 : 5 }); /* play: a rising block only has a short way to go, so it starts gently */
           bodies[s.i] = body; M.Composite.add(engine.world, body);
         }
         M.Engine.update(engine, dt); t += dt; step++;
@@ -397,13 +397,13 @@
     function landed(i, s) {
       if (s < .12) return;
       var p = pose[i], b = L[i];
-      squash[i] = Math.max(squash[i] || 0, .02 + .05 * s);
+      squash[i] = Math.max(squash[i] || 0, .012 + .03 * s); /* play: kept small */
       [[4, b.h - 2, -1], [b.w - 4, b.h - 2, 1]].forEach(function (c) {
         var at = world(p, c[0], c[1], b.w, b.h);
         for (var k = 0; k < 3; k++) dust.push({ x: at[0], y: at[1], vx: c[2] * (1 + Math.random() * 2.2) * s, vy: -(.3 + Math.random() * 1.2) * s, r: 2 + Math.random() * 3 * s, life: 260 + Math.random() * 160, max: 420 });
       });
       if (dust.length > 120) dust.splice(0, dust.length - 120);
-      if (s > .55 && b.units >= 3) kickY = Math.max(kickY, 2.5 * s);
+      if (s > .8 && b.units >= 3) kickY = Math.max(kickY, 1.4 * s); /* play: only a hard landing knocks the well, and gently (every block is wide now) */
       knock(b.units, s);
     }
     function frame(now) {
@@ -772,7 +772,7 @@
     if (savedView === 'shelf' || (!savedView && mq.matches)) { armed = false; setShelf(true, 'init'); } else build(false);
     /* play: a width change during the first drop (a scrollbar appearing as the page grows) restarts the drop
        instead of cancelling it */
-    if (window.ResizeObserver) new ResizeObserver(function () { if (Math.abs(well.clientWidth - W) > 1) { firstRise = false; /* never restart a growing rise: a width change during it rebuilds at full height */ build(phase === 'drop'); } }).observe(well);
+    if (window.ResizeObserver) new ResizeObserver(function () { if (Math.abs(well.clientWidth - W) > 1) { if (phase === 'drop') firstRise = false; /* never restart a growing rise: a width change during one rebuilds at full height (a scrollbar settling before it starts is fine) */ build(phase === 'drop'); } }).observe(well);
     else window.addEventListener('resize', function () { build(false); });
     if (window.IntersectionObserver) new IntersectionObserver(function (es) { seen = es[es.length - 1].isIntersecting; if (seen && armed && !shelf) { armed = false; build(true); } else if (seen) kick(); }, { rootMargin: '0px 0px -15% 0px' }).observe(rack);
     else { seen = true; armed = false; build(true); }
