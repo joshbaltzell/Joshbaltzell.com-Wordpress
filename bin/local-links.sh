@@ -14,7 +14,7 @@ REPO=$(cd "$(dirname "$0")/.." && pwd)
 SITE="${LOCAL_SITE:-$HOME/Local Sites/joshbaltzell.com/app/public}"
 
 # Paths relative to wp-content that live in this repo.
-ITEMS="themes/jb-toybox mu-plugins/jb-toybox-content.php mu-plugins/jb-comment-guard.php mu-plugins/jb-search-visibility.php"
+ITEMS="themes/jb-toybox mu-plugins/jb-toybox-content.php mu-plugins/jb-comment-guard.php mu-plugins/jb-search-visibility.php mu-plugins/jb-toy-files.php"
 
 [ -d "$SITE/wp-content" ] || { echo "No Local site at $SITE" >&2; exit 1; }
 

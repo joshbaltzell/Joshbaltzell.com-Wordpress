@@ -162,6 +162,7 @@ function jb_toybox_game_shortcode( $atts ) {
 			'version' => '',
 			'status'  => __( 'Playable', 'jb-toybox' ),
 			'url'     => '',
+			'toy'     => '',
 			'poster'  => '',
 			'alt'     => '',
 			'keys'    => '',
@@ -170,6 +171,10 @@ function jb_toybox_game_shortcode( $atts ) {
 		'game'
 	);
 
+	// A toy added under Posts → Toy files can be named instead of given an address: toy="price-the-lemonade".
+	if ( '' === $a['url'] && '' !== $a['toy'] && function_exists( 'jb_toy_url' ) ) {
+		$a['url'] = jb_toy_url( $a['toy'], (int) ltrim( (string) $a['version'], 'vV' ) );
+	}
 	if ( '' === $a['url'] ) {
 		return '';
 	}

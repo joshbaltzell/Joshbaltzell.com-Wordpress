@@ -23,7 +23,7 @@ Still to do:
 - Launch: push Local (theme, content, database) to WP Engine production. The steps are in `LAUNCH.md`.
 - Games repo side: the `play` subdomain, frozen versions, and a game list file.
 - Make the 404 page more fun. Today it is a tilted "Not found" block on a ledge, then a row of real blocks under "Things that did land" (`404.php`).
-- Bring the workshop-ideas toys onto the site: Price the Lemonade, The Repricer Spiral and Twelve Reviews (in `toys/` on `claude/workshop-ideas`, each with a `POST.md` draft) move to the games repo and get toy posts; `[text_toys]` goes on the About page once that branch is merged.
+- Bring the workshop-ideas toys onto the site: The Repricer Spiral and Twelve Reviews are uploaded through Toy files in Local (v1); Price the Lemonade goes up once its rules-and-psychology update is done. Each still needs a toy post (drafts are the `POST.md` files in `toys/` on `claude/workshop-ideas`). The pricing article ("Three small toys about prices", draft, ID 1012) embeds all three. `[text_toys]` goes on the About page once that branch is merged.
 
 Comment spam is handled by `wp-content/mu-plugins/jb-comment-guard.php` (a signed stamp and a decoy field on the comment form, no outside service). It reaches production with the launch.
 
@@ -85,6 +85,9 @@ Local setup details:
 - Backup before launch prep: `app/sql/before-launch-prep-2026-11-24.sql`. Since then the 567 held spam comments were deleted, pings closed on every post, and the Sample Page and the lorem-ipsum Home (ID 6) set to draft.
 
 ## Toys
+
+Small toys can live in WordPress: **Posts → Toy files** (`mu-plugins/jb-toy-files.php`, administrators only) takes a ZIP of a toy's folder or a pasted one-page toy and serves it from `/wp-content/uploads/toys/<name>/v<n>/`. Every upload is a new version and old ones never change. `[game name="…" toy="<name>" version="1"]` embeds one; a ZIP must carry everything it needs (the workshop toys get a copy of `toys/kit/` with `../kit/` rewritten to `kit/`). Only web file types are unpacked. Bigger games stay in the Browser-Games repo.
+
 
 Toys are static builds hosted outside WordPress. The first set is the games in `github.com/joshbaltzell/Browser-Games`, live on GitHub Pages. Agreed approach:
 - Games stay in their own repo, served from a subdomain (planned: `play.joshbaltzell.com`).
