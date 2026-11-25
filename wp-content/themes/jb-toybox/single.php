@@ -74,7 +74,7 @@ while ( have_posts() ) :
 			<div class="art-stage"><?php the_post_thumbnail( 'large' ); ?></div>
 				<?php endif; ?>
 				<?php if ( $jb_play ) : ?>
-			<div class="toy-hero__go"><a class="btn btn--play" href="<?php echo esc_url( $jb_play ); ?>"><?php esc_html_e( 'Play', 'jb-toybox' ); ?></a><span class="t-small"><?php esc_html_e( 'Opens the game on its own page.', 'jb-toybox' ); ?></span></div>
+			<div class="toy-hero__go"><a class="btn btn--play" href="<?php echo esc_url( $jb_play ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'Play', 'jb-toybox' ); ?></a><span class="t-small"><?php esc_html_e( 'Opens the game in a new tab.', 'jb-toybox' ); ?></span></div>
 				<?php endif; ?>
 		</div>
 				<?php

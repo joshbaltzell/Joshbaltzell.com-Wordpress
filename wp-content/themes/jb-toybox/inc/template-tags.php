@@ -102,7 +102,7 @@ function jb_card( $post, $toy_types = false, $age = null ) {
 	<?php if ( $pitch || $play ) : ?>
 	<span class="blk__peek">
 		<?php if ( $pitch ) : ?><span class="blk__pitch"><?php echo esc_html( wp_trim_words( $pitch, 22 ) ); ?></span><?php endif; ?>
-		<?php if ( $play ) : ?><a class="btn btn--small btn--primary blk__play" href="<?php echo esc_url( $play ); ?>"><?php esc_html_e( 'Play', 'jb-toybox' ); ?><span class="sr-only"> <?php echo esc_html( get_the_title( $post ) ); ?></span></a><?php endif; ?>
+		<?php if ( $play ) : ?><a class="btn btn--small btn--primary blk__play" href="<?php echo esc_url( $play ); ?>" target="_blank" rel="noopener"><?php esc_html_e( 'Play', 'jb-toybox' ); ?><span class="sr-only"> <?php echo esc_html( get_the_title( $post ) ); ?> (opens in a new tab)</span></a><?php endif; ?>
 	</span>
 	<?php endif; ?>
 </div>

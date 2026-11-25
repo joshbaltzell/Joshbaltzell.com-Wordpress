@@ -289,3 +289,8 @@ a.kind{padding-block:var(--space-1);margin-block:calc(-1 * var(--space-1))}
   .game-sheet{width:100vw;height:100dvh;border:0;border-radius:0}
   .game-sheet__tab{display:none}
 }
+
+/* A toy post's cover takes the shape of its own picture (covers are 9:4), instead of sitting letterboxed in the
+   design system's 16:9 stage with bands above and below. Other stages keep 16:9. */
+.toy-hero .art-stage{aspect-ratio:auto}
+.toy-hero .art-stage>img{height:auto}
