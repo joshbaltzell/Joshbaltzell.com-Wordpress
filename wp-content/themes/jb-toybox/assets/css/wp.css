@@ -86,7 +86,7 @@
    tenth of the block's width between them, split unevenly because you are looking in from above and right.
    The widths are in cqw (hundredths of the block's own width), so a wide block is deeper in pixels than a
    narrow one and every block keeps the same shape. */
-.blk{container-type:inline-size;--wall-t:2.2cqw;--wall-r:3.4cqw;--wall-b:4.2cqw;--wall-l:6.4cqw;
+.blk{container-type:inline-size;--wall-t:1.4cqw;--wall-r:2.2cqw;--wall-b:2.7cqw;--wall-l:4.2cqw;
   --wall-floor:color-mix(in srgb,var(--c,var(--part-olive)) 70%,var(--part-paper));
   --wall-right:color-mix(in srgb,var(--c,var(--part-olive)) 86%,var(--part-paper));
   --wall-left:color-mix(in srgb,var(--c,var(--part-olive)) 74%,var(--part-night));
@@ -111,11 +111,11 @@
    walls and a floor slope back to the dotted back wall, and each block casts a hard-edged shadow onto that
    back wall, offset further than before because the wall is further away. The side walls, the dots and the
    shadows all shift a little with where you are looking from (set by site.js), and stay put without it. */
-.well{--well-l:var(--space-5);--well-r:var(--space-3);background-position:calc(var(--space-3) + var(--bgx,0px)) calc(var(--space-3) + var(--bgy,0px)),var(--bgx,0px) 0}
+.well{--well-l:var(--space-3);--well-r:var(--space-2);background-position:calc(var(--space-3) + var(--bgx,0px)) calc(var(--space-3) + var(--bgy,0px)),var(--bgx,0px) 0}
 .well::before{content:"";position:absolute;inset:0;z-index:0;box-sizing:border-box;border-style:solid;border-width:0 var(--well-r) var(--space-3) var(--well-l);border-color:transparent color-mix(in srgb,var(--ground-raised) 55%,var(--line)) color-mix(in srgb,var(--ground-raised) 30%,var(--line)) color-mix(in srgb,var(--ground-raised) 10%,var(--line));box-shadow:inset 0 0 0 var(--outline-hair) var(--line);pointer-events:none}
 .well--empty::before{display:none}
-.rack--live .blk,.rack--live .blk:hover,.rack--live .blk:active{box-shadow:calc(var(--sx,var(--size-drop-x)) * 2.4 + var(--cast-x,0px)) calc(var(--sy,var(--size-drop-y)) * 2.4 + var(--cast-y,0px)) 0 rgb(0 0 0 / .34)}
-.rack--live .blk:focus-visible{box-shadow:var(--focus-ring),calc(var(--sx,var(--size-drop-x)) * 2.4 + var(--cast-x,0px)) calc(var(--sy,var(--size-drop-y)) * 2.4 + var(--cast-y,0px)) 0 rgb(0 0 0 / .34)}
+.rack--live .blk,.rack--live .blk:hover,.rack--live .blk:active{box-shadow:calc(var(--sx,var(--size-drop-x)) * 1.8 + var(--cast-x,0px)) calc(var(--sy,var(--size-drop-y)) * 1.8 + var(--cast-y,0px)) 0 rgb(0 0 0 / .34)}
+.rack--live .blk:focus-visible{box-shadow:var(--focus-ring),calc(var(--sx,var(--size-drop-x)) * 1.8 + var(--cast-x,0px)) calc(var(--sy,var(--size-drop-y)) * 1.8 + var(--cast-y,0px)) 0 rgb(0 0 0 / .34)}
 
 /* The pile as a toy: a landed block can be picked up and thrown. */
 @media (pointer:fine){.rack--live .blk{cursor:grab}}
@@ -170,7 +170,7 @@
 /* Older things sit further back: their shadow on the back wall is shorter and they are a little dimmer.
    Size does not change, so what you see always matches what the physics is doing. */
 .blk{filter:brightness(calc(1 - var(--age,0) * .16))}
-.rack--live .blk,.rack--live .blk:hover,.rack--live .blk:active{box-shadow:calc((var(--sx,var(--size-drop-x)) * 2.4 + var(--cast-x,0px)) * (1 - var(--age,0) * .55)) calc((var(--sy,var(--size-drop-y)) * 2.4 + var(--cast-y,0px)) * (1 - var(--age,0) * .55)) 0 rgb(0 0 0 / .34)}
+.rack--live .blk,.rack--live .blk:hover,.rack--live .blk:active{box-shadow:calc((var(--sx,var(--size-drop-x)) * 1.8 + var(--cast-x,0px)) * (1 - var(--age,0) * .55)) calc((var(--sy,var(--size-drop-y)) * 1.8 + var(--cast-y,0px)) * (1 - var(--age,0) * .55)) 0 rgb(0 0 0 / .34)}
 
 /* Filters open the floor: while blocks drop out, the floor shows a gap in the middle. */
 .rack--open .floor{background:linear-gradient(to right,var(--part-moss) 0 36%,var(--part-night) 36% 64%,var(--part-moss) 64%)}
@@ -259,7 +259,7 @@
    ones behind it, the opposite way to the eye; when the well is tilted (--lean from stack.js) the near layers
    slide toward the low side. With reduced motion none of those are set and the picture sits still. */
 .cov__layers{position:absolute;inset:0;overflow:hidden}
-.blk .cov .cov__layer{position:absolute;inset:auto;width:auto;object-fit:fill;transform:translate(calc((var(--look-x,0) * -6cqw + var(--lean,0) * 9cqw) * var(--z)),calc(var(--look-y,0) * 4cqw * var(--z)));will-change:transform}
+.blk .cov .cov__layer{position:absolute;inset:auto;width:auto;object-fit:fill;transform:translate(calc((var(--look-x,0) * -4cqw + var(--lean,0) * 6cqw) * var(--z)),calc(var(--look-y,0) * 2.6cqw * var(--z)));will-change:transform}
 .blk .cov .cov__layer--fill{inset:0;width:100%;height:100%;object-fit:cover}
 
 /* the kind link at the top of a post is small type; give it a finger-sized target without moving anything */

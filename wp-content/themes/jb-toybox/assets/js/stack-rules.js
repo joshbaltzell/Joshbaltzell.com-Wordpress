@@ -32,7 +32,7 @@
     if (!me) return;
     var w = me.w, h = me.h, dt = S.dt;
     /* the inside of the box: the walls are a fixed share of the block's width (see the box depth in wp.css) */
-    var x0 = -w / 2 + .064 * w, x1 = w / 2 - .034 * w, y0 = -h / 2 + .022 * w, y1 = h / 2 - .042 * w;
+    var x0 = -w / 2 + .042 * w, x1 = w / 2 - .022 * w, y0 = -h / 2 + .014 * w, y1 = h / 2 - .027 * w;
     if (!st.drops) {
       st.drops = [];
       for (var k = 0; k < POND_WATER.n; k++) {

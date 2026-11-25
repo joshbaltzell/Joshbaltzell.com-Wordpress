@@ -28,9 +28,9 @@
 (function () {
   'use strict';
   if (!window.matchMedia || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  var SIDES = 9.8, UPDOWN = 6.4;          /* left + right walls, and ceiling + floor, in cqw */
+  var SIDES = 6.4, UPDOWN = 4.2;          /* left + right walls, and ceiling + floor, in cqw (kept shallow on purpose) */
   var REST_L = .653, REST_B = .656;       /* shares at rest: looking in from above and to the right */
-  var REACH = 700, SWING = .36;           /* px from the eye for a full swing, and how far a share may move */
+  var REACH = 700, SWING = .28;           /* px from the eye for a full swing, and how far a share may move */
   var hasMouse = matchMedia('(pointer: fine)').matches;
   var blocks = [], wells = [], state = [], wstate = [], pointer = null, raf = 0, idle = 0;
   var age = [];
@@ -74,9 +74,9 @@
       if (nx !== ws.x || ny !== ws.y || !ws.set) {
         ws.x = nx; ws.y = ny; ws.set = true;
         var s = wells[i].style;
-        s.setProperty('--well-l', (16 + nx * 11).toFixed(1) + 'px'); s.setProperty('--well-r', (16 - nx * 11).toFixed(1) + 'px');
-        s.setProperty('--bgx', (nx * 9).toFixed(1) + 'px'); s.setProperty('--bgy', (ny * 9).toFixed(1) + 'px');
-        s.setProperty('--cast-x', (nx * 7).toFixed(1) + 'px'); s.setProperty('--cast-y', (ny * 5).toFixed(1) + 'px');
+        s.setProperty('--well-l', (12 + nx * 7).toFixed(1) + 'px'); s.setProperty('--well-r', (12 - nx * 7).toFixed(1) + 'px');
+        s.setProperty('--bgx', (nx * 6).toFixed(1) + 'px'); s.setProperty('--bgy', (ny * 6).toFixed(1) + 'px');
+        s.setProperty('--cast-x', (nx * 4.5).toFixed(1) + 'px'); s.setProperty('--cast-y', (ny * 3).toFixed(1) + 'px');
       }
     }
     if (moving) idle = 0; else idle++;

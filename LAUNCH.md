@@ -29,7 +29,10 @@ Git push to WP Engine is not an option from this Mac: `git@git.wpengine.com` ref
 0. **Look Alive's post describes the new version of the game** (seventeen dishes, three waters, the ending).
    That version is only on the Browser-Games branch `look-alive-wave-2`; the live game (`main`, GitHub Pages)
    is still the ten-dish one. Merge that branch first, or put the old text back (a WordPress revision of the
-   post has it).
+   post has it). The same goes for the Browser-Games branch `mobile-pass`: every game's "Plays on" now says
+   whether it works on a phone, needs turning sideways or needs a computer, and Mabel and Launch Window describe
+   their touch controls. Merge it to `main` so the live games match.
+00. **Your X, Instagram and LinkedIn addresses**: Settings → General. Each link appears once it has one.
 
 1. **Search engines: decided, nothing to do.** Production only. `jb-search-visibility.php`
    turns indexing on when the site's address is joshbaltzell.com and off everywhere else,
