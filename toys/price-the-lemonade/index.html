@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Price the Lemonade</title>
-<meta name="description" content="You don't know the demand curve. Pick a lemonade price each day for 30 days, beside a bot that is learning too.">
+<meta name="description" content="You don't know the demand curve. Pick a lemonade price each day for 30 days, or write a pricing rule, beside a bot that is learning too.">
 <link rel="stylesheet" href="../kit/toy.css">
 <style>
   [hidden] { display: none !important; }
@@ -12,14 +12,37 @@
   .seed { font: .75rem/1 var(--font-mono); color: var(--muted); text-decoration: none; }
   .seed:hover { text-decoration: underline; }
 
+  .modes { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+  .modes .chip { min-height: 44px; padding: .55rem 1rem; font-weight: 600; }
+
   .ladder { display: grid; grid-template-columns: repeat(auto-fill, minmax(5.2rem, 1fr)); gap: var(--space-2); }
   .price { font: 600 .95rem/1 var(--font-mono); font-variant-numeric: tabular-nums; border-radius: var(--radius-sm); min-height: 44px; position: relative; padding: .45rem .3rem; }
   .price__key { position: absolute; top: 3px; left: 5px; font-size: .62rem; font-weight: 400; color: var(--muted); }
+  .price--nine { border-style: dashed; border-color: var(--edge); }
   .price[aria-pressed="true"] .price__key { color: inherit; opacity: .7; }
   .price:disabled { opacity: .45; cursor: default; }
+  .board { margin: 0; font-size: .9rem; color: var(--muted); }
 
   .actions .btn--primary { min-width: 11rem; }
-  .keys kbd { font: .75rem var(--font-mono); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: var(--radius-sm); padding: 0 .3rem; background: var(--ground); }
+  kbd { font: .75rem var(--font-mono); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: var(--radius-sm); padding: 0 .3rem; background: var(--ground); }
+
+  /* Rule editor */
+  .presets { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+  .field { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin: 0; }
+  .rule > * { min-width: 0; }
+  .rule select, .rule input[type="number"] { min-height: 40px; max-width: 100%; min-width: 0; }
+  .rule select { text-overflow: ellipsis; }
+  .rlines { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); counter-reset: rline; }
+  .rline { min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--ground); counter-increment: rline; }
+  .rline::before { content: counter(rline); font: 600 .72rem/1 var(--font-mono); color: var(--muted); min-width: 1ch; }
+  .rline__word { font-weight: 700; }
+  .rline__num { display: inline-flex; align-items: center; gap: .2rem; }
+  .rline__num input { width: 5.5rem; }
+  .btn--small { min-height: 40px; padding: .4rem .7rem; font-size: .85rem; border-width: 1px; margin-left: auto; }
+  .otherwise { margin: 0; font-weight: 700; }
+  .check { display: flex; gap: var(--space-2); align-items: flex-start; margin: 0; }
+  .check input { width: 1.15rem; height: 1.15rem; margin: .2rem 0 0; accent-color: var(--ember); flex: none; }
+  .last { margin: 0; font: 600 .9rem/1.3 var(--font-mono); }
 
   .who { display: flex; align-items: center; gap: var(--space-2); }
   .key { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: .4rem; vertical-align: -1px; }
@@ -40,28 +63,50 @@
   @keyframes fresh { from { background: var(--sunk); } to { background: transparent; } }
 
   .end h2 { font-size: 1.5rem; }
+  .end h2:focus { outline: none; }
   .summary p { margin: 0 0 var(--space-2); max-width: var(--measure); }
   .summary p:last-child { margin-bottom: 0; }
   .results th[scope="row"] { font-family: var(--font-text); font-weight: 600; }
   .curve { height: 260px; }
   .legend { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); font-size: .85rem; color: var(--muted); margin: 0; }
 
+  .why-list { margin: 0; padding: 0; list-style: none; max-height: 18rem; overflow: auto; border-top: 1px solid var(--line); font-size: .9rem; }
+  .why-list li { padding: .35rem 0; border-bottom: 1px solid var(--line); }
+  .why__day { font: 600 .82rem var(--font-mono); font-variant-numeric: tabular-nums; }
+
+  /* How the customers think */
+  .psy-list { display: grid; gap: var(--space-4); }
+  .effect { display: grid; gap: var(--space-2); border-top: 1px solid var(--line); padding-top: var(--space-3); }
+  .effect .check { font-weight: 700; font-size: 1rem; }
+  .effect p { margin: 0; max-width: var(--measure); }
+  .effect .sub { font-weight: 400; font-size: .9rem; margin-left: 1.65rem; }
+  .sources { margin: 0; padding-left: 1.2rem; font-size: .8rem; color: var(--muted); display: grid; gap: var(--space-1); }
+  .caveat { margin: 0; max-width: var(--measure); }
+
   @media (max-width: 30rem) {
-    .ladder { grid-template-columns: repeat(3, 1fr); }
+    .ladder { grid-template-columns: repeat(4, 1fr); }
+    .price { font-size: .85rem; }
     .actions .btn { flex: 1 1 auto; }
     .strip { height: 200px; }
     th, td { padding: .3rem .25rem; }
+    .rline select { flex: 1 1 100%; }
+    .btn--small { margin-left: 0; }
   }
 </style>
 </head>
 <body>
 <main class="toy">
   <header class="toy-head">
-    <span class="tag">Toy</span>
+    <span class="tag">Game</span>
     <h1>Price the Lemonade</h1>
-    <p>Pick a price. The bot picks one too. After 30 days, see who learned faster.</p>
-    <p>A cup costs $1.20 to make. Neither of you knows how many people will buy at each price. You both get the same visitors each day.</p>
+    <p>Pick a price each day, or write a rule and let it run. A bot plays the same 30 days. At the end, see who learned faster.</p>
+    <p>A cup costs $1.20 to make. Neither of you knows how many people will buy at each price. You both get the same visitors each day. The customers are a little human, too. See “How the customers think” below.</p>
   </header>
+
+  <div class="modes" role="group" aria-label="How to play">
+    <button class="chip" id="mode-pick" type="button" aria-pressed="true">Pick each day</button>
+    <button class="chip" id="mode-rule" type="button" aria-pressed="false">Write a rule</button>
+  </div>
 
   <section class="panel" id="play" aria-labelledby="play-title">
     <div class="row play-top">
@@ -70,36 +115,65 @@
     </div>
     <h2 id="play-title">Today's price</h2>
     <div class="ladder" id="ladder" role="radiogroup" aria-labelledby="play-title"></div>
+    <p class="board" id="board" hidden></p>
     <div class="row actions">
       <button class="btn btn--primary" id="sell" type="button">Pick a price first</button>
       <button class="btn" id="five" type="button">Same price, 5 days</button>
       <button class="btn" id="rest" type="button">Same price to day 30</button>
     </div>
-    <p class="keys small muted">Keys: <kbd>1</kbd>–<kbd>9</kbd> or <kbd>←</kbd><kbd>→</kbd> pick a price, <kbd>Enter</kbd> sells one day, <kbd>R</kbd> five days, <kbd>F</kbd> the rest of the month.</p>
+    <p class="keys small muted" id="keys"></p>
+  </section>
+
+  <section class="panel rule" id="rule" hidden aria-labelledby="rule-title">
+    <div class="row play-top">
+      <span class="tag" id="rule-day" aria-live="polite">Round 1 · Not run yet</span>
+      <a class="seed" id="rule-seed" href="?seed=" title="Link to replay this round">Seed</a>
+    </div>
+    <h2 id="rule-title">Your pricing rule</h2>
+    <p class="small muted" style="margin:0">Each morning the rule looks at yesterday and picks a price. Lines are checked in order, and the first one that matches wins. Prices snap to the menu, and can’t go below $2.00 or above $6.00.</p>
+    <div>
+      <p class="small muted" style="margin:0 0 var(--space-2)">Start from an example, then change it:</p>
+      <div class="presets" id="presets">
+        <button class="chip" type="button" data-preset="hold">Hold one price</button>
+        <button class="chip" type="button" data-preset="crowd">Follow the crowd</button>
+        <button class="chip" type="button" data-preset="climb">Climb until it hurts</button>
+        <button class="chip" type="button" data-preset="cheap">Cheap and cheerful</button>
+      </div>
+    </div>
+    <p class="field"><label for="rule-start"><strong>Start at</strong></label> <select id="rule-start"></select></p>
+    <ol class="rlines" id="rule-lines" aria-label="If … then … lines"></ol>
+    <div><button class="btn btn--small" id="add-line" type="button" style="margin-left:0">Add an “If … then …” line</button></div>
+    <p class="otherwise">Otherwise, keep the price.</p>
+    <label class="check"><input type="checkbox" id="rule-explore"> <span>Try every price once first. The rule charges each menu price once, lowest first, then goes to the best one so far and takes over from there.</span></label>
+    <p class="board" id="rule-board" hidden></p>
+    <div class="row">
+      <button class="btn btn--primary" id="run-rule" type="button">Run the rule for 30 days</button>
+      <p class="last" id="rule-last" aria-live="polite" hidden></p>
+    </div>
   </section>
 
   <section class="panel end" id="end" hidden aria-labelledby="end-title">
     <span class="tag">Day 30</span>
-    <h2 id="end-title">How it went</h2>
+    <h2 id="end-title" tabindex="-1">How it went</h2>
     <div class="summary" id="summary" aria-live="polite"></div>
-    <table>
+    <table class="results">
       <thead><tr><th scope="col">&nbsp;</th><th scope="col">Profit</th><th scope="col">Left on the table</th></tr></thead>
       <tbody id="results"></tbody>
     </table>
     <h3 id="curve-name">The hidden curve</h3>
     <p class="small muted" id="curve-blurb" style="margin:0"></p>
-    <canvas class="curve" id="curve" role="img" aria-label="Expected profit per day at each price, with the days each player spent at each price marked as circles."></canvas>
-    <p class="legend"><span>Line: expected profit per day at that price</span><span><span class="key key--you"></span>You</span><span><span class="key key--bot"></span>Bot</span><span>Bigger circle, more days</span></p>
+    <canvas class="curve" id="curve" role="img" aria-label="Expected profit per day at each price held steady, with the days each player spent at each price marked as circles."></canvas>
+    <p class="legend"><span>Line: expected profit per day at a price held steady</span><span><span class="key key--you"></span><span id="legend-you">You</span></span><span><span class="key key--bot"></span>Bot</span><span>Bigger circle, more days</span><span id="legend-nines" hidden>Small dots: .99 prices</span></p>
     <div class="row">
       <button class="btn btn--primary" id="next" type="button">Next round</button>
       <button class="btn" id="again" type="button">Play this round again</button>
     </div>
-    <p class="small muted" style="margin:0">Each round uses a different hidden curve. <kbd>N</kbd> starts the next one.</p>
+    <p class="small muted" id="end-hint" style="margin:0">Each round uses a different hidden curve. N starts the next one.</p>
   </section>
 
   <div class="grid-2">
     <section class="panel player" aria-label="You">
-      <div class="who"><span class="tag"><span class="key key--you"></span>You</span></div>
+      <div class="who"><span class="tag"><span class="key key--you"></span><span id="you-tag">You</span></span></div>
       <div class="readout" id="you-total">$0</div>
       <p class="small muted" id="you-last" aria-live="polite">No sales yet.</p>
     </section>
@@ -110,15 +184,53 @@
     </section>
   </div>
 
+  <section class="panel" id="why" hidden aria-labelledby="why-title">
+    <h2 id="why-title" style="font-size:1.15rem">What the rule did</h2>
+    <ol class="why-list" id="why-list" tabindex="0" aria-label="One line per day"></ol>
+  </section>
+
   <section class="panel" aria-labelledby="hist-title">
     <h2 id="hist-title" style="font-size:1.15rem">Prices by day</h2>
     <canvas class="strip" id="strip" role="img" aria-label="Each day's price for you and the bot. The table below has the same numbers."></canvas>
-    <p class="small muted" id="strip-note" style="margin:0">Empty for now. Each day adds a dot for you and a ring for the bot, so you can see who is still trying new prices.</p>
+    <p class="small muted" id="strip-note" style="margin:0">Empty for now.</p>
     <div class="history" tabindex="0" aria-label="Daily results">
       <table>
-        <thead><tr><th scope="col">Day</th><th scope="col">Visitors</th><th scope="col">You</th><th scope="col">Profit</th><th scope="col">Bot</th><th scope="col">Profit</th></tr></thead>
+        <thead><tr><th scope="col">Day</th><th scope="col">Visitors</th><th scope="col" id="you-col">You</th><th scope="col">Profit</th><th scope="col">Bot</th><th scope="col">Profit</th></tr></thead>
         <tbody id="rows"></tbody>
       </table>
+    </div>
+  </section>
+
+  <section class="panel" id="psy" aria-labelledby="psy-title">
+    <h2 id="psy-title" style="font-size:1.15rem">How the customers think</h2>
+    <p class="caveat">Three findings from pricing research are built into the customers. You and the bot face the same customers. The bot doesn’t know about any of this. It only learns from what sold.</p>
+    <p class="caveat small muted">The sizes in this model are illustrative, not measured. The studies found these effects in specific settings, such as a clothing catalog and a magazine subscription offer, and they won’t hold the same way everywhere. Changing a setting starts the round again on the same days.</p>
+    <div class="psy-list">
+      <div class="effect">
+        <label class="check"><input type="checkbox" data-setting="charm" checked> <span>Charm prices (the left-digit effect)</span></label>
+        <p>People read prices from the left. $2.99 starts with a 2, so it feels nearer $2 than $3, even though it’s a penny short of $3. Here a price ending in .99 feels about 8 cents cheaper than it is.</p>
+        <label class="check sub"><input type="checkbox" data-setting="nines" checked> <span>Put $2.99, $3.99, $4.99 and $5.99 on the menu</span></label>
+        <ul class="sources">
+          <li>Manoj Thomas and Vicki Morwitz, “Penny Wise and Pound Foolish: The Left-Digit Effect in Price Cognition,” <cite>Journal of Consumer Research</cite> 32, no. 1 (2005): 54–64.</li>
+          <li>Eric T. Anderson and Duncan I. Simester, “Effects of $9 Price Endings on Retail Sales: Evidence from Field Experiments,” <cite>Quantitative Marketing and Economics</cite> 1, no. 1 (2003): 93–110. In a clothing catalog test, a $39 price outsold both $34 and $44.</li>
+        </ul>
+      </div>
+      <div class="effect">
+        <label class="check"><input type="checkbox" data-setting="ref" checked> <span>Reference prices and loss aversion</span></label>
+        <p>Customers remember what they paid on recent days. A price above that feels like a loss, and losses weigh more than gains, so a raise costs more buyers than an equal cut wins back. Here customers remember the last three days, and a raise counts two and a half times as much as a cut.</p>
+        <ul class="sources">
+          <li>Daniel Kahneman and Amos Tversky, “Prospect Theory: An Analysis of Decision under Risk,” <cite>Econometrica</cite> 47, no. 2 (1979): 263–291.</li>
+          <li>Gurumurthy Kalyanaram and Russell S. Winer, “Empirical Generalizations from Reference Price Research,” <cite>Marketing Science</cite> 14, no. 3 (1995): G161–G169.</li>
+        </ul>
+      </div>
+      <div class="effect">
+        <label class="check"><input type="checkbox" data-setting="anchor" checked> <span>Anchoring and the decoy</span></label>
+        <p>The menu board shows a Grand cup at $9.00. Almost nobody buys it, and here nobody does. Seen next to it, a regular cup looks modest, so people will pay about 5 cents more for one.</p>
+        <ul class="sources">
+          <li>Joel Huber, John W. Payne and Christopher Puto, “Adding Asymmetrically Dominated Alternatives: Violations of Regularity and the Similarity Hypothesis,” <cite>Journal of Consumer Research</cite> 9, no. 1 (1982): 90–98.</li>
+          <li>Dan Ariely, <cite>Predictably Irrational</cite> (HarperCollins, 2008), chapter 1, the Economist subscription example.</li>
+        </ul>
+      </div>
     </div>
   </section>
 

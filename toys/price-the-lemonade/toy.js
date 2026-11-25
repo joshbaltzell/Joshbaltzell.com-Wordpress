@@ -6,10 +6,37 @@
 
   /* ---------- Logic ---------- */
 
-  const PRICES = [2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6];
+  const BASE = [2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6];
+  const NINES = [2.99, 3.99, 4.99, 5.99];
+  const PRICES = BASE; // the plain ladder, kept for older callers
   const COST = 1.2;
   const DAYS = 30;
   const HOT = [13, 19]; // the hot week in the seasonal round
+  const DECOY = 9; // the Grand cup's price on the menu
+
+  // How the customers think. Each is on by default. nines puts .99 prices on the menu.
+  const DEFAULTS = { charm: true, ref: true, anchor: true, nines: true };
+  // Sizes are illustrative, not measured. Each one shifts the price a visitor
+  // feels, in dollars, before the hidden curve turns it into a chance of buying.
+  const SIZES = {
+    charm: 0.08,   // a .99 price feels this much lower
+    anchor: 0.05,  // the Grand cup makes a regular cup feel this much cheaper
+    refUp: 0.20,   // a raise above the remembered price feels 20% bigger
+    refDown: 0.08, // a cut below it feels only 8% bigger
+    memory: 3      // customers remember the last three days' prices
+  };
+
+  function normSettings(s) {
+    const out = {};
+    Object.keys(DEFAULTS).forEach((k) => { out[k] = s && k in s ? !!s[k] : DEFAULTS[k]; });
+    return out;
+  }
+
+  function ladder(nines) {
+    return nines ? BASE.concat(NINES).sort((a, b) => a - b) : BASE.slice();
+  }
+
+  const isCharm = (x) => Math.round(x * 100) % 100 === 99;
 
   function mulberry32(a) {
     return function () {
@@ -108,20 +135,23 @@
     return (1 + Math.floor(r() * 249999)) * CURVES.length + kind;
   }
 
-  function makeBot(seed) {
+  function makeBot(seed, prices) {
+    const ps = prices || BASE;
     const rng = mulberry32(mix(seed, 0xB07));
-    const arms = PRICES.map(() => ({ a: 1, b: 1 }));
+    const arms = ps.map(() => ({ a: 1, b: 1 }));
     return {
       arms,
       pick() {
-        const v = arms.map((arm, i) => betaSample(arm.a, arm.b, rng) * (PRICES[i] - COST));
+        const v = arms.map((arm, i) => betaSample(arm.a, arm.b, rng) * (ps[i] - COST));
         return v.indexOf(Math.max(...v));
       },
       observe(i, visitors, buyers) { arms[i].a += buyers; arms[i].b += visitors - buyers; }
     };
   }
 
-  function createRound(seed) {
+  function createRound(seed, settings) {
+    const s = normSettings(settings);
+    const prices = ladder(s.nines);
     const kind = kindOf(seed);
     const jr = mulberry32(mix(seed, 777));
     const curve = CURVES[kind].make((jr() - 0.5) * 0.5);
@@ -136,39 +166,67 @@
       for (let k = 0; k < n; k++) u[k] = r();
       draws.push({ n, u });
     }
-    return { seed, kind, def: CURVES[kind], curve, draws, bot: makeBot(seed) };
+    return { seed, kind, def: CURVES[kind], curve, draws, s, prices, bot: makeBot(seed, prices) };
   }
 
-  function sell(round, d, i) {
+  // What customers remember: the average price over the last few days.
+  function refPrice(prev) {
+    if (!prev || !prev.length) return null;
+    const r = prev.slice(-SIZES.memory);
+    return r.reduce((a, b) => a + b, 0) / r.length;
+  }
+
+  // The price a visitor feels, given what's on the menu and what they remember.
+  function feel(s, x, ref) {
+    let p = x;
+    if (s.charm && isCharm(x)) p -= SIZES.charm;
+    if (s.anchor) p -= SIZES.anchor;
+    if (s.ref && ref !== null && ref !== undefined) {
+      const g = x - ref;
+      p += g > 0 ? SIZES.refUp * g : SIZES.refDown * g;
+    }
+    return p;
+  }
+
+  function buyChance(round, x, d, ref) {
+    return round.curve.buy(feel(round.s, x, ref), d);
+  }
+
+  // prev: the prices this stand charged before day d, oldest first.
+  function sell(round, d, i, prev) {
     const { n, u } = round.draws[d - 1];
-    const p = round.curve.buy(PRICES[i], d);
+    const x = round.prices[i];
+    const p = buyChance(round, x, d, refPrice(prev));
     let cups = 0;
     for (let k = 0; k < n; k++) if (u[k] < p) cups++;
-    return { i, visitors: n, cups, profit: cups * (PRICES[i] - COST) };
+    return { i, price: x, visitors: n, cups, profit: cups * (x - COST) };
   }
 
   // What each fixed price would have made over the whole month, on the same visitors.
   function hindsight(round) {
-    const totals = PRICES.map((_, i) => {
+    const totals = round.prices.map((x, i) => {
       let s = 0;
-      for (let d = 1; d <= DAYS; d++) s += sell(round, d, i).profit;
+      const prev = [];
+      for (let d = 1; d <= DAYS; d++) { s += sell(round, d, i, prev).profit; prev.push(x); }
       return s;
     });
     const best = totals.indexOf(Math.max(...totals));
     return { totals, best, bestTotal: totals[best] };
   }
 
-  // Expected profit per day at each price, for drawing the revealed curve.
-  function expectedProfit(round, x, d) {
-    return round.curve.visitors(d) * round.curve.buy(x, d) * (x - COST);
+  // Expected profit per day at a price held steady, for drawing the revealed curve.
+  function expectedProfit(round, x, d, noCharm) {
+    const s = noCharm ? Object.assign({}, round.s, { charm: false }) : round.s;
+    return round.curve.visitors(d) * round.curve.buy(feel(s, x, x), d) * (x - COST);
   }
 
   // When a player settled: the price they used most in the last week, and the
   // earliest day from which at least 80% of their picks were that price.
-  function settle(picks) {
+  function settle(picks, n0) {
     const n = picks.length, tail = picks.slice(-7);
     const count = (arr, i) => arr.filter((p) => p === i).length;
-    const ranked = PRICES.map((_, i) => i).filter((i) => count(tail, i))
+    const size = n0 || Math.max(...picks) + 1;
+    const ranked = Array.from({ length: size }, (_, i) => i).filter((i) => count(tail, i))
       .sort((a, b) => count(tail, b) - count(tail, a) || (b === tail[tail.length - 1]) - (a === tail[tail.length - 1]));
     const main = ranked[0];
     for (let s = 1; s <= n; s++) {
@@ -179,26 +237,212 @@
     return { day: n, price: main, exact: true, ranked, distinct: new Set(picks).size };
   }
 
-  // Play a whole round with a policy (for checks in node).
-  function simulate(seed, policy) {
-    const round = createRound(seed);
-    const rr = mulberry32(mix(seed, 0x5EED));
-    let you = 0, bot = 0;
-    for (let d = 1; d <= DAYS; d++) {
-      const yi = policy === 'random' ? Math.floor(rr() * PRICES.length) : 0;
-      you += sell(round, d, yi).profit;
-      const bi = round.bot.pick();
-      const b = sell(round, d, bi);
-      round.bot.observe(bi, b.visitors, b.cups);
-      bot += b.profit;
+  /* ---------- Rules ---------- */
+
+  const SUBJECTS = {
+    cups: 'cups sold yesterday',
+    profit: 'profit yesterday',
+    change: 'cups sold yesterday compared with the day before'
+  };
+  const OPS = { gt: 'is more than', lt: 'is less than', up: 'went up', down: 'went down' };
+  const ACTS = { raise: 'raise the price', lower: 'lower the price', keep: 'keep the price', best: 'go back to the best price so far' };
+  const STEPS = [0.5, 0.25];
+  const MAX_LINES = 3;
+
+  const PRESETS = {
+    hold: {
+      name: 'Hold one price',
+      rule: { start: 3.5, explore: false, lines: [] }
+    },
+    crowd: {
+      name: 'Follow the crowd',
+      rule: {
+        start: 3, explore: false, lines: [
+          { subj: 'cups', op: 'gt', value: 35, act: 'raise', step: 0.5 },
+          { subj: 'cups', op: 'lt', value: 25, act: 'lower', step: 0.5 }
+        ]
+      }
+    },
+    climb: {
+      name: 'Climb until it hurts',
+      rule: {
+        start: 2.5, explore: false, lines: [
+          { subj: 'profit', op: 'up', value: 0, act: 'raise', step: 0.5 },
+          { subj: 'profit', op: 'down', value: 0, act: 'lower', step: 0.5 }
+        ]
+      }
+    },
+    cheap: {
+      name: 'Cheap and cheerful',
+      rule: {
+        start: 2.5, explore: false, lines: [
+          { subj: 'cups', op: 'lt', value: 30, act: 'lower', step: 0.5 }
+        ]
+      }
     }
+  };
+
+  const clone = (o) => JSON.parse(JSON.stringify(o));
+
+  // Make any rule safe to run: known words only, at most three lines, numbers finite.
+  function normRule(r) {
+    const src = r || {};
+    const lines = (Array.isArray(src.lines) ? src.lines : []).slice(0, MAX_LINES).map((l) => ({
+      subj: l && l.subj in SUBJECTS ? l.subj : 'cups',
+      op: l && l.op in OPS ? l.op : 'gt',
+      value: l && Number.isFinite(+l.value) ? +l.value : 0,
+      act: l && l.act in ACTS ? l.act : 'keep',
+      step: l && STEPS.indexOf(+l.step) >= 0 ? +l.step : 0.5
+    }));
+    const start = Number.isFinite(+src.start) ? +src.start : 3;
+    return { start, explore: !!src.explore, lines };
+  }
+
+  // The menu price nearest to x.
+  function nearest(prices, x) {
+    let best = 0;
+    prices.forEach((p, j) => { if (Math.abs(p - x) < Math.abs(prices[best] - x) - 1e-9) best = j; });
+    return best;
+  }
+
+  // Move from price index i by step dollars in direction dir, landing on a menu
+  // price. Always moves at least one rung unless already at the end of the menu.
+  function move(prices, i, dir, step) {
+    const cur = prices[i], target = cur + dir * step;
+    let best = -1;
+    prices.forEach((p, j) => {
+      if (dir > 0 ? p <= cur + 1e-9 : p >= cur - 1e-9) return;
+      if (best < 0) { best = j; return; }
+      const dj = Math.abs(p - target), db = Math.abs(prices[best] - target);
+      if (dj < db - 1e-9 || (Math.abs(dj - db) < 1e-9 && Math.abs(p - cur) < Math.abs(prices[best] - cur))) best = j;
+    });
+    return best < 0 ? { i, clamped: true } : { i: best, clamped: false };
+  }
+
+  // The price with the best average profit per day among those charged so far.
+  function bestSoFar(hist) {
+    const sum = {}, cnt = {};
+    hist.forEach((h) => { sum[h.i] = (sum[h.i] || 0) + h.profit; cnt[h.i] = (cnt[h.i] || 0) + 1; });
+    let best = -1, bestAvg = -Infinity;
+    Object.keys(sum).forEach((k) => {
+      const avg = sum[k] / cnt[k];
+      if (avg > bestAvg + 1e-9) { bestAvg = avg; best = +k; }
+    });
+    return best;
+  }
+
+  const dollars = (v) => (v < 0 ? '-$' : '$') + Math.round(Math.abs(v)).toLocaleString('en-US');
+  const fmt = (p) => '$' + p.toFixed(2);
+
+  // Does line l match, given the history? Returns a short description or null.
+  function check(l, hist) {
+    const n = hist.length;
+    if (!n) return null;
+    const y = hist[n - 1], b = n > 1 ? hist[n - 2] : null;
+    if (l.subj === 'cups' || l.subj === 'profit') {
+      const cups = l.subj === 'cups';
+      const v = cups ? y.cups : y.profit;
+      const show = cups ? String : dollars;
+      const said = cups ? 'sold ' : 'profit ';
+      if (l.op === 'gt') return v > l.value ? said + show(v) + ' > ' + show(l.value) : null;
+      if (l.op === 'lt') return v < l.value ? said + show(v) + ' < ' + show(l.value) : null;
+      if (!b) return null;
+      const w = cups ? b.cups : b.profit;
+      if (l.op === 'up') return v > w + 1e-9 ? said + show(v) + ', up from ' + show(w) : null;
+      return v < w - 1e-9 ? said + show(v) + ', down from ' + show(w) : null;
+    }
+    // change: cups yesterday minus cups the day before
+    if (!b) return null;
+    const c = y.cups - b.cups, sc = (c > 0 ? '+' : '') + c;
+    const said = 'sold ' + y.cups + ' after ' + b.cups;
+    if (l.op === 'gt') return c > l.value ? said + ' (' + sc + ' > ' + l.value + ')' : null;
+    if (l.op === 'lt') return c < l.value ? said + ' (' + sc + ' < ' + l.value + ')' : null;
+    if (l.op === 'up') return c > 0 ? said + ', up' : null;
+    return c < 0 ? said + ', down' : null;
+  }
+
+  // Decide today's price from the rule and this stand's own history.
+  // hist: [{ i, cups, profit }], oldest first. Returns { i, line, why }.
+  function decide(ruleIn, prices, hist) {
+    const rule = normRule(ruleIn);
+    const n = hist.length;
+    const startI = nearest(prices, rule.start);
+    if (rule.explore && n < prices.length) {
+      return { i: n, line: 'tour', why: 'trying every price once, ' + fmt(prices[n]) };
+    }
+    if (rule.explore && n === prices.length) {
+      const b = bestSoFar(hist);
+      return { i: b, line: 'tour-end', why: 'tried every price, went to the best so far, ' + fmt(prices[b]) };
+    }
+    if (!n) return { i: startI, line: 'start', why: 'started at ' + fmt(prices[startI]) };
+    const cur = hist[n - 1].i;
+    for (let k = 0; k < rule.lines.length; k++) {
+      const l = rule.lines[k];
+      const said = check(l, hist);
+      if (!said) continue;
+      const tag = 'line ' + (k + 1) + ', ' + said + ', ';
+      if (l.act === 'keep') return { i: cur, line: k, why: tag + 'kept ' + fmt(prices[cur]) };
+      if (l.act === 'best') {
+        const b = bestSoFar(hist);
+        return { i: b, line: k, why: tag + (b === cur ? 'stayed at ' : 'went back to ') + fmt(prices[b]) + ', the best so far' };
+      }
+      const dir = l.act === 'raise' ? 1 : -1;
+      const m = move(prices, cur, dir, l.step);
+      if (m.clamped) {
+        return { i: cur, line: k, why: tag + 'already at ' + fmt(prices[cur]) + (dir > 0 ? ', the top price' : ', the lowest price') + ', so kept it' };
+      }
+      return { i: m.i, line: k, why: tag + (dir > 0 ? 'raised to ' : 'lowered to ') + fmt(prices[m.i]) };
+    }
+    return { i: cur, line: 'otherwise', why: 'no line matched, kept ' + fmt(prices[cur]) };
+  }
+
+  // One day for both stands. youI is the player's (or rule's) price index.
+  function playDay(round, days, youI) {
+    const d = days.length + 1;
+    const youPrev = days.map((x) => x.you.price), botPrev = days.map((x) => x.bot.price);
+    const you = sell(round, d, youI, youPrev);
+    const bi = round.bot.pick();
+    const bot = sell(round, d, bi, botPrev);
+    round.bot.observe(bi, bot.visitors, bot.cups);
+    return { d, visitors: you.visitors, you, bot };
+  }
+
+  // Run a rule for the whole month beside the bot, on a fresh round.
+  function runRule(round, ruleIn) {
+    const rule = normRule(ruleIn);
+    const days = [];
+    for (let d = 1; d <= DAYS; d++) {
+      const dec = decide(rule, round.prices, days.map((x) => x.you));
+      const day = playDay(round, days, dec.i);
+      day.why = dec.why;
+      day.line = dec.line;
+      days.push(day);
+    }
+    let you = 0, bot = 0;
+    days.forEach((x) => { you += x.you.profit; bot += x.bot.profit; });
+    return { days, you, bot, h: hindsight(round) };
+  }
+
+  // Play a whole round with a policy (for checks in node).
+  function simulate(seed, policy, settings) {
+    const round = createRound(seed, settings);
+    const rr = mulberry32(mix(seed, 0x5EED));
+    const days = [];
+    for (let d = 1; d <= DAYS; d++) {
+      const yi = policy === 'random' ? Math.floor(rr() * round.prices.length) : 0;
+      days.push(playDay(round, days, yi));
+    }
+    let you = 0, bot = 0;
+    days.forEach((x) => { you += x.you.profit; bot += x.bot.profit; });
     const h = hindsight(round);
-    return { kind: CURVES[round.kind].key, best: PRICES[h.best], bestTotal: h.bestTotal, randomRegret: h.bestTotal - you, botRegret: h.bestTotal - bot };
+    return { kind: CURVES[round.kind].key, best: round.prices[h.best], bestTotal: h.bestTotal, randomRegret: h.bestTotal - you, botRegret: h.bestTotal - bot };
   }
 
   const Logic = {
-    PRICES, COST, DAYS, CURVES, mulberry32, mix, gammaSample, betaSample,
-    kindOf, newSeed, makeBot, createRound, sell, hindsight, expectedProfit, settle, simulate
+    BASE, NINES, PRICES, COST, DAYS, DECOY, CURVES, DEFAULTS, SIZES, SUBJECTS, OPS, ACTS, STEPS, MAX_LINES, PRESETS,
+    mulberry32, mix, gammaSample, betaSample, normSettings, ladder, isCharm, refPrice, feel, buyChance,
+    kindOf, newSeed, makeBot, createRound, sell, hindsight, expectedProfit, settle,
+    normRule, nearest, move, bestSoFar, check, decide, playDay, runRule, simulate, clone
   };
 
   if (typeof module !== 'undefined' && module.exports) module.exports = Logic;
@@ -208,62 +452,120 @@
 
   const $ = (s) => document.querySelector(s);
   const money = (v) => (v < 0 ? '-' : '') + '$' + Math.round(Math.abs(v)).toLocaleString('en-US');
-  const price = (i) => '$' + PRICES[i].toFixed(2);
   const reduce = matchMedia('(prefers-reduced-motion: reduce)');
+  const esc = (t) => String(t).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
   const el = {
-    play: $('#play'), end: $('#end'), day: $('#day-label'), seed: $('#seed'),
-    ladder: $('#ladder'), sellBtn: $('#sell'), five: $('#five'), rest: $('#rest'),
-    youTotal: $('#you-total'), youLast: $('#you-last'), botTotal: $('#bot-total'), botLast: $('#bot-last'),
-    strip: $('#strip'), stripNote: $('#strip-note'), rows: $('#rows'),
+    modePick: $('#mode-pick'), modeRule: $('#mode-rule'),
+    play: $('#play'), rulePanel: $('#rule'), end: $('#end'), day: $('#day-label'), seed: $('#seed'),
+    ruleDay: $('#rule-day'), ruleSeed: $('#rule-seed'),
+    ladder: $('#ladder'), sellBtn: $('#sell'), five: $('#five'), rest: $('#rest'), board: $('#board'), ruleBoard: $('#rule-board'),
+    youTag: $('#you-tag'), youTotal: $('#you-total'), youLast: $('#you-last'), botTotal: $('#bot-total'), botLast: $('#bot-last'),
+    strip: $('#strip'), stripNote: $('#strip-note'), rows: $('#rows'), youCol: $('#you-col'),
     summary: $('#summary'), results: $('#results'), curve: $('#curve'), curveName: $('#curve-name'),
-    curveBlurb: $('#curve-blurb'), again: $('#again'), next: $('#next')
+    curveBlurb: $('#curve-blurb'), again: $('#again'), next: $('#next'), legendYou: $('#legend-you'), legendNines: $('#legend-nines'),
+    endTitle: $('#end-title'), endHint: $('#end-hint'),
+    presets: $('#presets'), start: $('#rule-start'), lines: $('#rule-lines'), addLine: $('#add-line'),
+    explore: $('#rule-explore'), runBtn: $('#run-rule'), last: $('#rule-last'),
+    why: $('#why'), whyList: $('#why-list'),
+    psy: $('#psy'), keys: $('#keys')
   };
 
+  let settings = normSettings();
+  let mode = 'pick';
+  let rule = clone(PRESETS.crowd.rule);
+  let lastRun = null; // { key, total } from the previous rule run on this seed and settings
   let state;
   let roundNo = 1;
   let busy = false;
+  let timer = null;
+
+  const fmtI = (i) => fmt(state.round.prices[i]);
+  const settingsKey = () => Object.keys(DEFAULTS).map((k) => (settings[k] ? 1 : 0)).join('');
+
+  function query(seed) {
+    const q = new URLSearchParams();
+    q.set('seed', seed);
+    if (mode === 'rule') q.set('mode', 'rule');
+    const off = Object.keys(DEFAULTS).filter((k) => !settings[k]);
+    if (off.length) q.set('off', off.join(','));
+    return '?' + q.toString();
+  }
 
   function start(seed) {
-    state = { round: createRound(seed), days: [], sel: null, result: null };
-    try { history.replaceState(null, '', '?seed=' + seed); } catch (e) { /* file:// may refuse */ }
-    el.play.hidden = false;
+    clearTimeout(timer);
+    if (busy) setEditorDisabled(false);
+    busy = false;
+    state = { round: createRound(seed, settings), days: [], sel: null, result: null, run: null };
+    try { history.replaceState(null, '', query(seed)); } catch (e) { /* file:// may refuse */ }
     el.end.hidden = true;
+    buildLadder();
+    fillStart();
+    renderMode();
     render();
   }
 
-  // Price ladder
-  PRICES.forEach((p, i) => {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'chip price';
-    b.setAttribute('role', 'radio');
-    b.dataset.i = i;
-    b.innerHTML = '<span class="price__key" aria-hidden="true">' + (i + 1) + '</span>$' + p.toFixed(2);
-    b.addEventListener('click', () => choose(i));
-    el.ladder.appendChild(b);
-  });
+  /* ---------- Mode ---------- */
+
+  function renderMode() {
+    const rm = mode === 'rule';
+    el.modePick.setAttribute('aria-pressed', rm ? 'false' : 'true');
+    el.modeRule.setAttribute('aria-pressed', rm ? 'true' : 'false');
+    el.play.hidden = rm || !!state.result;
+    el.rulePanel.hidden = !rm;
+    el.why.hidden = !rm || !state.days.length;
+    el.youTag.textContent = rm ? 'Your rule' : 'You';
+    el.youCol.textContent = rm ? 'Rule' : 'You';
+    el.legendYou.textContent = rm ? 'Your rule' : 'You';
+    el.again.textContent = rm ? 'Edit the rule' : 'Play this round again';
+    el.endHint.textContent = rm
+      ? 'Change a line and run it again on the same days, or press N for the next round.'
+      : 'Each round uses a different hidden curve. N starts the next one.';
+    const board = settings.anchor ? 'On the menu board: Grand cup ' + fmt(DECOY) + ', and a regular cup at your price.' : '';
+    [el.board, el.ruleBoard].forEach((b) => { b.textContent = board; b.hidden = !board; });
+  }
+
+  function setMode(m) {
+    if (busy || m === mode) return;
+    mode = m;
+    start(state.round.seed);
+  }
+
+  /* ---------- Price ladder (pick mode) ---------- */
+
+  function buildLadder() {
+    el.ladder.innerHTML = '';
+    state.round.prices.forEach((p, i) => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'chip price' + (isCharm(p) ? ' price--nine' : '');
+      b.setAttribute('role', 'radio');
+      b.dataset.i = i;
+      const k = BASE.indexOf(p);
+      b.innerHTML = (k >= 0 ? '<span class="price__key" aria-hidden="true">' + (k + 1) + '</span>' : '') + fmt(p);
+      b.addEventListener('click', () => choose(i));
+      el.ladder.appendChild(b);
+    });
+    el.keys.innerHTML = settings.nines
+      ? 'Keys: <kbd>1</kbd>–<kbd>9</kbd> pick a round price, <kbd>←</kbd><kbd>→</kbd> step through every price, <kbd>Enter</kbd> sells one day, <kbd>R</kbd> five days, <kbd>F</kbd> the rest of the month.'
+      : 'Keys: <kbd>1</kbd>–<kbd>9</kbd> or <kbd>←</kbd><kbd>→</kbd> pick a price, <kbd>Enter</kbd> sells one day, <kbd>R</kbd> five days, <kbd>F</kbd> the rest of the month.';
+  }
 
   function choose(i, focus) {
-    if (busy || state.result) return;
-    state.sel = Math.max(0, Math.min(PRICES.length - 1, i));
+    if (busy || state.result || mode !== 'pick') return;
+    state.sel = Math.max(0, Math.min(state.round.prices.length - 1, i));
     renderControls();
     if (focus) el.ladder.children[state.sel].focus();
   }
 
   function step() {
-    const r = state.round, d = state.days.length + 1;
-    if (d > DAYS || state.sel === null) return false;
-    const you = sell(r, d, state.sel);
-    const bi = r.bot.pick();
-    const bot = sell(r, d, bi);
-    r.bot.observe(bi, bot.visitors, bot.cups);
-    state.days.push({ d, visitors: you.visitors, you, bot });
+    if (state.days.length >= DAYS || state.sel === null) return false;
+    state.days.push(playDay(state.round, state.days, state.sel));
     return true;
   }
 
   function run(n) {
-    if (busy || state.sel === null || state.result) return;
+    if (busy || state.sel === null || state.result || mode !== 'pick') return;
     const target = Math.min(DAYS, state.days.length + n);
     if (n === 1 || reduce.matches) {
       while (state.days.length < target) step();
@@ -273,7 +575,7 @@
     const tick = () => {
       step();
       render();
-      if (state.days.length < target) setTimeout(tick, 70);
+      if (state.days.length < target) timer = setTimeout(tick, 70);
       else { busy = false; after(); }
     };
     tick();
@@ -284,14 +586,106 @@
     render();
   }
 
+  /* ---------- Rule editor ---------- */
+
+  const options = (map, sel) => Object.keys(map).map((k) =>
+    '<option value="' + k + '"' + (k === sel ? ' selected' : '') + '>' + esc(map[k]) + '</option>').join('');
+
+  function fillStart() {
+    const ps = state.round.prices;
+    const si = nearest(ps, rule.start);
+    rule.start = ps[si];
+    el.start.innerHTML = ps.map((p, i) => '<option value="' + p + '"' + (i === si ? ' selected' : '') + '>' + fmt(p) + '</option>').join('');
+    el.explore.checked = !!rule.explore;
+    renderLines();
+  }
+
+  function renderLines() {
+    el.lines.innerHTML = rule.lines.map((l, k) => {
+      const n = k + 1;
+      const needsValue = l.op === 'gt' || l.op === 'lt';
+      const needsStep = l.act === 'raise' || l.act === 'lower';
+      const isMoney = l.subj === 'profit';
+      return '<li class="rline" data-k="' + k + '">' +
+        '<span class="rline__word">If</span>' +
+        '<select data-f="subj" aria-label="Line ' + n + ': what to look at">' + options(SUBJECTS, l.subj) + '</select>' +
+        '<select data-f="op" aria-label="Line ' + n + ': how to compare">' + options(OPS, l.op) + '</select>' +
+        '<span class="rline__num"' + (needsValue ? '' : ' hidden') + '>' + (isMoney ? '<span aria-hidden="true">$</span>' : '') +
+          '<input type="number" data-f="value" inputmode="numeric" step="1" value="' + l.value + '" aria-label="Line ' + n + ': number' + (isMoney ? ' in dollars' : '') + '"></span>' +
+        '<span class="rline__word">then</span>' +
+        '<select data-f="act" aria-label="Line ' + n + ': what to do">' + options(ACTS, l.act) + '</select>' +
+        '<select data-f="step" aria-label="Line ' + n + ': by how much"' + (needsStep ? '' : ' hidden') + '>' +
+          STEPS.map((s) => '<option value="' + s + '"' + (s === l.step ? ' selected' : '') + '>by ' + fmt(s) + '</option>').join('') + '</select>' +
+        '<button class="btn btn--small" type="button" data-remove aria-label="Remove line ' + n + '">Remove</button>' +
+        '</li>';
+    }).join('');
+    el.addLine.disabled = busy || rule.lines.length >= MAX_LINES;
+    el.addLine.textContent = rule.lines.length >= MAX_LINES ? 'Three lines is the limit' : 'Add an “If … then …” line';
+    renderLast();
+  }
+
+  function readField(t) {
+    const li = t.closest('.rline');
+    if (!li) return;
+    const l = rule.lines[+li.dataset.k], f = t.dataset.f;
+    if (f === 'value') l.value = Number.isFinite(parseFloat(t.value)) ? parseFloat(t.value) : 0;
+    else if (f === 'step') l.step = +t.value;
+    else l[f] = t.value;
+    if (f === 'op' || f === 'act' || f === 'subj') {
+      renderLines();
+      const again = el.lines.children[+li.dataset.k];
+      if (again) again.querySelector('[data-f="' + f + '"]').focus();
+    }
+  }
+
+  function setEditorDisabled(off) {
+    el.rulePanel.querySelectorAll('select, input, button').forEach((c) => { c.disabled = off; });
+    if (!off) el.addLine.disabled = rule.lines.length >= MAX_LINES;
+    el.runBtn.textContent = off ? 'Running…' : 'Run the rule for 30 days';
+  }
+
+  function renderLast() {
+    const key = state.round.seed + ':' + settingsKey();
+    el.last.textContent = lastRun && lastRun.key === key ? 'Last run on these days: ' + money(lastRun.total) + '.' : '';
+    el.last.hidden = !el.last.textContent;
+  }
+
+  function runRuleUI() {
+    if (busy) return;
+    rule = normRule(rule);
+    const round = createRound(state.round.seed, settings);
+    const res = runRule(round, rule);
+    const key = round.seed + ':' + settingsKey();
+    state = { round, days: [], sel: null, result: null, run: res, prev: lastRun && lastRun.key === key ? lastRun : null };
+    el.end.hidden = true;
+    if (reduce.matches) {
+      state.days = res.days.slice();
+      finish();
+      render();
+      return;
+    }
+    busy = true;
+    setEditorDisabled(true);
+    let k = 0;
+    const tick = () => {
+      state.days.push(res.days[k++]);
+      render();
+      if (k < DAYS) timer = setTimeout(tick, 40);
+      else { busy = false; setEditorDisabled(false); finish(); render(); }
+    };
+    tick();
+  }
+
+  /* ---------- Render ---------- */
+
   function totals() {
     let you = 0, bot = 0;
     state.days.forEach((x) => { you += x.you.profit; bot += x.bot.profit; });
     return { you, bot };
   }
 
-  function lastLine(x) {
-    return 'Day ' + x.d + ': ' + price(x.i) + '. ' + x.cups + ' of ' + x.visitors + ' bought. ' + money(x.profit) + ' profit.';
+  function lastLine(x, d) {
+    return 'Day ' + d + ': ' + fmt(x.price) + '. ' + x.cups + ' of ' + x.visitors + ' bought. ' + money(x.profit) + ' profit.';
   }
 
   function renderControls() {
@@ -304,36 +698,42 @@
       b.disabled = busy || done;
     });
     const none = state.sel === null;
-    el.sellBtn.textContent = none ? 'Pick a price first' : 'Sell at ' + price(state.sel);
+    el.sellBtn.textContent = none ? 'Pick a price first' : 'Sell at ' + fmtI(state.sel);
     el.sellBtn.disabled = none || busy || done;
     el.five.disabled = none || busy || done;
     el.rest.disabled = none || busy || done;
   }
 
   function render() {
-    const n = state.days.length;
-    el.day.textContent = 'Round ' + roundNo + ' · Day ' + Math.min(n + 1, DAYS) + ' of ' + DAYS;
-    el.seed.textContent = 'Seed ' + state.round.seed;
-    el.seed.href = '?seed=' + state.round.seed;
+    const n = state.days.length, rm = mode === 'rule';
+    const label = 'Round ' + roundNo + ' · Day ' + Math.min(n + 1, DAYS) + ' of ' + DAYS;
+    const seedText = 'Seed ' + state.round.seed, href = query(state.round.seed);
+    el.day.textContent = label;
+    el.ruleDay.textContent = state.result ? 'Round ' + roundNo + ' · 30 days run' : n ? label : 'Round ' + roundNo + ' · Not run yet';
+    [el.seed, el.ruleSeed].forEach((a) => { a.textContent = seedText; a.href = href; });
     renderControls();
+    renderMode();
 
     const t = totals();
     el.youTotal.textContent = money(t.you);
     el.botTotal.textContent = money(t.bot);
     if (n) {
       const x = state.days[n - 1];
-      el.youLast.textContent = lastLine({ ...x.you, d: x.d });
-      el.botLast.textContent = lastLine({ ...x.bot, d: x.d });
+      el.youLast.textContent = lastLine(x.you, x.d);
+      el.botLast.textContent = lastLine(x.bot, x.d);
     } else {
-      el.youLast.textContent = 'No sales yet.';
+      el.youLast.textContent = rm ? 'Not run yet.' : 'No sales yet.';
       el.botLast.textContent = 'No sales yet. It starts knowing nothing too.';
     }
 
     el.stripNote.hidden = n > 0;
+    el.stripNote.textContent = rm
+      ? 'Empty for now. Run the rule and each day adds a dot for your rule and a ring for the bot.'
+      : 'Empty for now. Each day adds a dot for you and a ring for the bot, so you can see who is still trying new prices.';
     el.rows.innerHTML = '';
     if (!n) {
       const tr = document.createElement('tr');
-      tr.innerHTML = '<td colspan="6" class="empty">Nothing sold yet. Each day you play shows up here, newest first.</td>';
+      tr.innerHTML = '<td colspan="6" class="empty">' + (rm ? 'Nothing sold yet. Each day the rule plays shows up here, newest first.' : 'Nothing sold yet. Each day you play shows up here, newest first.') + '</td>';
       el.rows.appendChild(tr);
     }
     for (let k = n - 1; k >= 0; k--) {
@@ -342,9 +742,14 @@
       if (k === n - 1 && !state.result) tr.className = 'fresh';
       if (state.round.curve.hot && x.d >= HOT[0] && x.d <= HOT[1] && state.result) tr.className = 'hot';
       tr.innerHTML = '<td>' + x.d + '</td><td>' + x.visitors + '</td>' +
-        '<td>' + price(x.you.i) + '</td><td>' + money(x.you.profit) + '</td>' +
-        '<td>' + price(x.bot.i) + '</td><td>' + money(x.bot.profit) + '</td>';
+        '<td>' + fmt(x.you.price) + '</td><td>' + money(x.you.profit) + '</td>' +
+        '<td>' + fmt(x.bot.price) + '</td><td>' + money(x.bot.profit) + '</td>';
       el.rows.appendChild(tr);
+    }
+
+    if (rm) {
+      el.whyList.innerHTML = state.days.map((x) =>
+        '<li><span class="why__day">Day ' + x.d + ':</span> ' + esc(x.why) + '. <span class="muted">Sold ' + x.you.cups + ', ' + money(x.you.profit) + '.</span></li>').join('');
     }
     drawStrip();
     if (state.result) drawCurve();
@@ -352,38 +757,40 @@
 
   /* ---------- End of round ---------- */
 
-  function describe(picks, isYou) {
-    const st = settle(picks), p = price(st.price), mostly = st.exact ? '' : 'mostly ';
-    const who = isYou ? 'You' : 'The bot';
-    if (st.distinct === 1) return who + ' charged ' + p + ' every day.';
-    if (st.day <= 3) return who + ' landed on ' + p + ' by day ' + st.day + ' and ' + mostly + 'stayed.';
+  function describe(picks, who) {
+    const st = settle(picks, state.round.prices.length), p = fmtI(st.price), mostly = st.exact ? '' : 'mostly ';
+    const name = { you: 'You', bot: 'The bot', rule: 'Your rule' }[who];
+    if (st.distinct === 1) return name + ' charged ' + p + ' every day.';
+    if (st.day <= 3) return name + ' landed on ' + p + ' by day ' + st.day + ' and ' + mostly + 'stayed.';
     if (st.day <= DAYS - 4) {
-      return isYou
-        ? 'You settled on ' + p + ' by day ' + st.day + ' and ' + mostly + 'stayed.'
-        : 'The bot kept testing until day ' + st.day + ', then ' + mostly + 'stayed on ' + p + '.';
+      if (who === 'bot') return 'The bot kept testing until day ' + st.day + ', then ' + mostly + 'stayed on ' + p + '.';
+      return name + ' settled on ' + p + ' by day ' + st.day + ' and ' + mostly + 'stayed.';
     }
-    const pair = st.ranked.slice(0, 2).sort((a, b) => a - b).map(price).join(' and ');
-    return who + (isYou ? ' were' : ' was') + ' still trying prices near the end, mostly ' + pair + '.';
+    const pair = st.ranked.slice(0, 2).sort((a, b) => a - b).map(fmtI).join(' and ');
+    return name + (who === 'you' ? ' were' : ' was') + ' still ' + (who === 'rule' ? 'moving' : 'trying prices') + ' near the end, mostly ' + pair + '.';
   }
 
   function finish() {
-    const r = state.round, h = hindsight(r), t = totals();
+    const r = state.round, h = state.run ? state.run.h : hindsight(r), t = totals(), rm = mode === 'rule';
     const youPicks = state.days.map((x) => x.you.i), botPicks = state.days.map((x) => x.bot.i);
     state.result = { h, t, youPicks, botPicks };
 
-    const gap = t.you - t.bot;
+    const gap = t.you - t.bot, them = rm ? 'your rule' : 'you';
     let cmp;
-    if (Math.abs(gap) < 1) cmp = 'You and the bot finished level.';
-    else cmp = gap > 0 ? 'It finished ' + money(gap) + ' behind you.' : 'It finished ' + money(-gap) + ' ahead of you.';
+    if (Math.abs(gap) < 1) cmp = (rm ? 'Your rule' : 'You') + ' and the bot finished level.';
+    else cmp = gap > 0 ? 'It finished ' + money(gap) + ' behind ' + them + '.' : 'It finished ' + money(-gap) + ' ahead of ' + them + '.';
 
     const lines = [
-      describe(youPicks, true),
-      describe(botPicks, false) + ' ' + cmp,
-      'Looking back, the best single price was ' + price(h.best) + '. Charging it all month would have made ' + money(h.bestTotal) + '.'
+      describe(youPicks, rm ? 'rule' : 'you'),
+      describe(botPicks, 'bot') + ' ' + cmp,
+      'Looking back, the best single price was ' + fmtI(h.best) + '. Charging it all month would have made ' + money(h.bestTotal) + '.'
     ];
     if (r.curve.hot) lines.push('A fixed price can’t follow a hot week, so a player who moved with it could beat that number.');
-    const youDistinct = new Set(youPicks).size;
-    if (youDistinct <= 3 && t.bot > t.you + 1) {
+    if (rm && state.prev) {
+      const dv = t.you - state.prev.total;
+      lines.push(Math.abs(dv) < 1 ? 'That’s the same as your last rule.' : 'That’s ' + money(Math.abs(dv)) + (dv > 0 ? ' more' : ' less') + ' than your last rule.');
+    }
+    if (!rm && new Set(youPicks).size <= 3 && t.bot > t.you + 1) {
       lines.push('People often stop trying new prices after a few days. It feels safe, and sometimes it costs a little.');
     }
     el.summary.innerHTML = lines.map((l) => '<p>' + l + '</p>').join('');
@@ -393,16 +800,25 @@
       return left >= 0.5 ? money(left) : left <= -0.5 ? money(-left) + ' ahead' : '$0';
     };
     el.results.innerHTML =
-      '<tr><th scope="row"><span class="key key--you"></span>You</th><td>' + money(t.you) + '</td><td>' + regret(t.you) + '</td></tr>' +
+      '<tr><th scope="row"><span class="key key--you"></span>' + (rm ? 'Your rule' : 'You') + '</th><td>' + money(t.you) + '</td><td>' + regret(t.you) + '</td></tr>' +
       '<tr><th scope="row"><span class="key key--bot"></span>Bot</th><td>' + money(t.bot) + '</td><td>' + regret(t.bot) + '</td></tr>' +
-      '<tr><th scope="row">' + price(h.best) + ' every day</th><td>' + money(h.bestTotal) + '</td><td>—</td></tr>';
+      (rm && state.prev ? '<tr><th scope="row">Last rule</th><td>' + money(state.prev.total) + '</td><td>' + regret(state.prev.total) + '</td></tr>' : '') +
+      '<tr><th scope="row">' + fmtI(h.best) + ' every day</th><td>' + money(h.bestTotal) + '</td><td>—</td></tr>';
+
+    if (rm) lastRun = { key: r.seed + ':' + settingsKey(), total: t.you };
 
     el.curveName.textContent = 'The hidden curve: ' + r.def.name;
     el.curveBlurb.textContent = r.def.blurb;
+    el.legendNines.hidden = !(r.s.nines && r.s.charm);
     el.play.hidden = true;
     el.end.hidden = false;
+    renderLast();
     // Wait for layout before drawing the newly shown canvas.
-    requestAnimationFrame(() => { drawCurve(); el.next.focus(); });
+    requestAnimationFrame(() => {
+      drawCurve();
+      if (rm) el.endTitle.focus();
+      else el.next.focus();
+    });
   }
 
   /* ---------- Drawing ---------- */
@@ -437,7 +853,7 @@
     const { g, w, h } = c, col = palette();
     const L = 46, R = 10, T = 10, B = 24;
     const X = (d) => L + ((d - 0.5) / DAYS) * (w - L - R);
-    const Y = (i) => T + (1 - i / (PRICES.length - 1)) * (h - T - B);
+    const Y = (p) => T + (1 - (p - 2) / 4) * (h - T - B);
 
     if (state.result && state.round.curve.hot) {
       g.fillStyle = col.sunk;
@@ -447,37 +863,38 @@
     }
     g.font = monoFont(11);
     g.textBaseline = 'middle';
-    PRICES.forEach((p, i) => {
+    BASE.forEach((p, i) => {
       g.strokeStyle = col.line; g.lineWidth = 1;
-      g.beginPath(); g.moveTo(L, Y(i) + 0.5); g.lineTo(w - R, Y(i) + 0.5); g.stroke();
-      if (i % 2 === 0 || h > 260) { g.fillStyle = col.muted; g.textAlign = 'right'; g.fillText('$' + p.toFixed(2), L - 6, Y(i)); }
+      g.beginPath(); g.moveTo(L, Y(p) + 0.5); g.lineTo(w - R, Y(p) + 0.5); g.stroke();
+      if (i % 2 === 0 || h > 260) { g.fillStyle = col.muted; g.textAlign = 'right'; g.fillText(fmt(p), L - 6, Y(p)); }
     });
     g.textAlign = 'center'; g.textBaseline = 'alphabetic'; g.fillStyle = col.muted;
     [1, 10, 20, 30].forEach((d) => g.fillText(d === 1 ? 'Day 1' : String(d), X(d), h - 6));
 
     if (state.result) {
-      const yb = Y(state.result.h.best);
+      const yb = Y(state.round.prices[state.result.h.best]);
       g.strokeStyle = col.ink; g.setLineDash([4, 4]); g.lineWidth = 1.5;
       g.beginPath(); g.moveTo(L, yb); g.lineTo(w - R, yb); g.stroke(); g.setLineDash([]);
     }
     const rad = Math.max(3, Math.min(5, (w - L - R) / DAYS / 3));
     state.days.forEach((x) => {
       g.strokeStyle = col.bot; g.lineWidth = 2;
-      g.beginPath(); g.arc(X(x.d), Y(x.bot.i), rad + 2.5, 0, Math.PI * 2); g.stroke();
+      g.beginPath(); g.arc(X(x.d), Y(x.bot.price), rad + 2.5, 0, Math.PI * 2); g.stroke();
       g.fillStyle = col.you;
-      g.beginPath(); g.arc(X(x.d), Y(x.you.i), rad, 0, Math.PI * 2); g.fill();
+      g.beginPath(); g.arc(X(x.d), Y(x.you.price), rad, 0, Math.PI * 2); g.fill();
     });
   }
 
   function drawCurve() {
     const c = setup(el.curve);
     if (!c) return;
-    const { g, w, h } = c, col = palette(), r = state.round, res = state.result;
+    const { g, w, h } = c, col = palette(), r = state.round, res = state.result, ps = r.prices;
     const L = 46, R = 12, T = 14, B = 26;
     const x0 = 1.8, x1 = 6.2;
     const days = r.curve.hot ? [1, HOT[0]] : [1];
     let max = 0;
-    for (let x = 2; x <= 6.001; x += 0.05) days.forEach((d) => { max = Math.max(max, expectedProfit(r, x, d)); });
+    for (let x = 2; x <= 6.001; x += 0.05) days.forEach((d) => { max = Math.max(max, expectedProfit(r, x, d, true)); });
+    ps.forEach((p) => days.forEach((d) => { max = Math.max(max, expectedProfit(r, p, d)); }));
     const stepRaw = max / 4, mag = Math.pow(10, Math.floor(Math.log10(stepRaw)));
     const unit = [1, 2, 2.5, 5, 10].map((m) => m * mag).find((m) => m >= stepRaw);
     max = unit * 4;
@@ -494,35 +911,42 @@
       g.fillText('$' + Math.round(v), L - 6, Y(v));
     }
     g.textAlign = 'center'; g.textBaseline = 'alphabetic';
-    PRICES.forEach((p, i) => { if (i % 2 === 0 || w > 520) g.fillText('$' + p.toFixed(2), X(p), h - 6); });
+    BASE.forEach((p, i) => { if (i % 2 === 0 || w > 520) g.fillText(fmt(p), X(p), h - 6); });
 
-    // Expected profit per day at each price (dashed for the hot week).
+    // Expected profit per day at each price held steady (dashed for the hot week).
     days.forEach((d, k) => {
       g.strokeStyle = col.ink; g.lineWidth = 2; g.setLineDash(k ? [5, 4] : []);
       g.beginPath();
       for (let x = 2; x <= 6.001; x += 0.02) {
-        const px = X(x), py = Y(expectedProfit(r, x, d));
+        const px = X(x), py = Y(expectedProfit(r, x, d, true));
         x === 2 ? g.moveTo(px, py) : g.lineTo(px, py);
       }
       g.stroke();
     });
     g.setLineDash([]);
 
+    // .99 prices sit a little above the line when charm prices are on.
+    if (r.s.charm) {
+      g.fillStyle = col.ink;
+      ps.forEach((p) => {
+        if (!isCharm(p)) return;
+        g.beginPath(); g.arc(X(p), Y(expectedProfit(r, p, 1)), 2.5, 0, Math.PI * 2); g.fill();
+      });
+    }
+
     // Picks: circle area grows with the number of days at that price.
-    const dayRef = (i) => {
-      // Place marks on the normal-day curve, which is what most days looked like.
-      return Y(expectedProfit(r, PRICES[i], 1));
-    };
-    const counts = (picks) => PRICES.map((_, i) => picks.filter((p) => p === i).length);
+    // Marks sit on the normal-day curve, which is what most days looked like.
+    const dayRef = (i) => Y(expectedProfit(r, ps[i], 1));
+    const counts = (picks) => ps.map((_, i) => picks.filter((p) => p === i).length);
     const yc = counts(res.youPicks), bc = counts(res.botPicks);
     const size = (n) => 3 + Math.sqrt(n) * 2.4;
-    PRICES.forEach((p, i) => {
+    ps.forEach((p, i) => {
       if (bc[i]) { g.strokeStyle = col.bot; g.lineWidth = 2; g.beginPath(); g.arc(X(p), dayRef(i), size(bc[i]) + 3, 0, Math.PI * 2); g.stroke(); }
       if (yc[i]) { g.fillStyle = col.you; g.globalAlpha = 0.85; g.beginPath(); g.arc(X(p), dayRef(i), size(yc[i]), 0, Math.PI * 2); g.fill(); g.globalAlpha = 1; }
     });
 
     // Best fixed price.
-    const bx = X(PRICES[res.h.best]);
+    const bx = X(ps[res.h.best]);
     g.strokeStyle = col.muted; g.setLineDash([3, 4]); g.lineWidth = 1;
     g.beginPath(); g.moveTo(bx, T); g.lineTo(bx, h - B); g.stroke(); g.setLineDash([]);
     g.fillStyle = col.muted; g.textAlign = bx > w - 90 ? 'right' : 'left'; g.textBaseline = 'top';
@@ -534,23 +958,67 @@
   el.sellBtn.addEventListener('click', () => run(1));
   el.five.addEventListener('click', () => run(5));
   el.rest.addEventListener('click', () => run(DAYS));
-  el.again.addEventListener('click', () => start(state.round.seed));
+  el.modePick.addEventListener('click', () => setMode('pick'));
+  el.modeRule.addEventListener('click', () => setMode('rule'));
+  el.again.addEventListener('click', () => {
+    if (mode === 'rule') {
+      el.rulePanel.scrollIntoView({ behavior: reduce.matches ? 'auto' : 'smooth', block: 'start' });
+      el.start.focus({ preventScroll: true });
+    } else start(state.round.seed);
+  });
   el.next.addEventListener('click', () => {
     roundNo++;
     start(newSeed((state.round.kind + 1) % CURVES.length));
-    el.ladder.focus();
+    (mode === 'rule' ? el.runBtn : el.ladder).focus({ preventScroll: true });
     window.scrollTo({ top: 0, behavior: reduce.matches ? 'auto' : 'smooth' });
+  });
+
+  el.presets.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-preset]');
+    if (!b || busy) return;
+    rule = clone(PRESETS[b.dataset.preset].rule);
+    fillStart();
+  });
+  el.start.addEventListener('change', () => { rule.start = +el.start.value; });
+  el.explore.addEventListener('change', () => { rule.explore = el.explore.checked; });
+  el.addLine.addEventListener('click', () => {
+    if (rule.lines.length >= MAX_LINES) return;
+    rule.lines.push({ subj: 'cups', op: 'gt', value: 30, act: 'raise', step: 0.5 });
+    renderLines();
+    const li = el.lines.lastElementChild;
+    if (li) li.querySelector('select').focus();
+  });
+  el.lines.addEventListener('change', (e) => readField(e.target));
+  el.lines.addEventListener('input', (e) => { if (e.target.dataset.f === 'value') readField(e.target); });
+  el.lines.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-remove]');
+    if (!b) return;
+    const k = +b.closest('.rline').dataset.k;
+    rule.lines.splice(k, 1);
+    renderLines();
+    const next = el.lines.children[Math.min(k, rule.lines.length - 1)];
+    (next ? next.querySelector('select') : el.addLine).focus();
+  });
+  el.runBtn.addEventListener('click', runRuleUI);
+
+  el.psy.addEventListener('change', (e) => {
+    const k = e.target.dataset.setting;
+    if (!k) return;
+    settings[k] = e.target.checked;
+    start(state.round.seed);
   });
 
   document.addEventListener('keydown', (e) => {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
     const t = e.target, onButton = t.tagName === 'BUTTON' && !t.classList.contains('price');
-    if (t.tagName === 'A' || t.tagName === 'INPUT') return;
+    if (/^(A|INPUT|SELECT|TEXTAREA)$/.test(t.tagName)) return;
     if (state.result) {
       if (e.key === 'n' || e.key === 'N') { e.preventDefault(); el.next.click(); }
       return;
     }
-    if (/^[1-9]$/.test(e.key)) { e.preventDefault(); choose(+e.key - 1, t.classList.contains('price')); return; }
+    if (mode !== 'pick') return;
+    const ps = state.round.prices;
+    if (/^[1-9]$/.test(e.key)) { e.preventDefault(); choose(ps.indexOf(BASE[+e.key - 1]), t.classList.contains('price')); return; }
     if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') { e.preventDefault(); choose(state.sel === null ? 0 : state.sel - 1, true); return; }
     if (e.key === 'ArrowRight' || e.key === 'ArrowUp') { e.preventDefault(); choose(state.sel === null ? 0 : state.sel + 1, true); return; }
     if (e.key === ' ' && t.classList.contains('price')) { e.preventDefault(); choose(+t.dataset.i); return; }
@@ -564,6 +1032,11 @@
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', redraw);
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(redraw);
 
-  const q = parseInt(new URLSearchParams(location.search).get('seed'), 10);
+  // Read the address: ?seed=, &mode=rule, &off=charm,ref,anchor,nines
+  const params = new URLSearchParams(location.search);
+  const q = parseInt(params.get('seed'), 10);
+  if (params.get('mode') === 'rule') mode = 'rule';
+  (params.get('off') || '').split(',').forEach((k) => { if (k in DEFAULTS) settings[k] = false; });
+  el.psy.querySelectorAll('[data-setting]').forEach((c) => { c.checked = settings[c.dataset.setting]; });
   start(Number.isFinite(q) && q > 0 ? q : newSeed(0));
 })(this);
