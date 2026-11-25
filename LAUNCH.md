@@ -32,7 +32,7 @@ Git push to WP Engine is not an option from this Mac: `git@git.wpengine.com` ref
    post has it). The same goes for the Browser-Games branch `mobile-pass`: every game's "Plays on" now says
    whether it works on a phone, needs turning sideways or needs a computer, and Mabel and Launch Window describe
    their touch controls. Merge it to `main` so the live games match.
-00. **Your X and Instagram addresses**: Settings → General. Each link appears once it has one. LinkedIn is set.
+00. **Instagram address** (optional): Settings → General. LinkedIn and X are set.
 
 1. **Search engines: decided, nothing to do.** Production only. `jb-search-visibility.php`
    turns indexing on when the site's address is joshbaltzell.com and off everywhere else,
@@ -90,8 +90,8 @@ Git push to WP Engine is not an option from this Mac: `git@git.wpengine.com` ref
 
 - Production still has Astra, Elementor, Elementor Pro, Astra Starter Sites, Genesis
   Blocks and WPForms Lite installed. After the push all but WPForms are inactive.
-  WPForms is only used by the old Elementor home page, which no longer shows, so it can
-  be turned off. Deleting the unused ones reduces what needs updating.
+  WPForms Lite (1.8.1.1, out of date) was deactivated in Local on 2026-11-25, so the
+  push turns it off on production too. Nothing on the new site uses it. Deleting the unused ones reduces what needs updating.
 - Akismet is installed but inactive. If spam still gets through the guard, turn it on
   with a free personal key.
 - Update CLAUDE.md's "Production" section to describe the new site.
