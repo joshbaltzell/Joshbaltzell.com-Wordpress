@@ -387,6 +387,12 @@ function jb_list_spine( $kind ) {
 	global $wp_query;
 	$found   = (int) $wp_query->found_posts;
 	$count   = sprintf( $found === 1 ? $kind['count'][0] : $kind['count'][1], number_format_i18n( $found ) );
+	// Filtered to games or toys, the count names what is shown: "18 games", not "18 toys".
+	$jb_tag = get_query_var( 'tag' );
+	if ( 'game' === $jb_tag ) {
+		/* translators: %s: number of games. */
+		$count = sprintf( _n( '%s game', '%s games', $found, 'jb-toybox' ), number_format_i18n( $found ) );
+	}
 
 	// The topics used by posts of this kind, most used first.
 	$topics = array();
