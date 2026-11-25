@@ -15,6 +15,56 @@
   }, true);
 })();
 
+/* "Open full page" on a game in an article opens the game over the page, in a sheet you close to get back to
+   the article where you were. The sheet's own link still opens it in a tab. Escape closes it too, once the
+   game doesn't have the keyboard (games use Escape themselves), so the Close button is always there.
+   A ctrl, cmd, shift or middle click, or a browser without <dialog>, follows the link as before. */
+(function () {
+  'use strict';
+  if (typeof HTMLDialogElement !== 'function') return;
+  var sheet = null, frame, title, tab, opener = null;
+  function build() {
+    sheet = document.createElement('dialog');
+    sheet.className = 'game-sheet';
+    sheet.innerHTML = '<div class="game-sheet__bar"><span class="game__name"></span><span class="l-row">' +
+      '<a class="link game-sheet__tab" target="_blank" rel="noopener">Open in a new tab &nearr;</a>' +
+      '<button type="button" class="btn btn--small game-sheet__close">Close</button></span></div>' +
+      '<iframe class="game-sheet__screen" allow="fullscreen; gamepad; autoplay"></iframe>';
+    frame = sheet.querySelector('iframe');
+    title = sheet.querySelector('.game__name');
+    tab = sheet.querySelector('.game-sheet__tab');
+    sheet.querySelector('.game-sheet__close').addEventListener('click', function () { sheet.close(); });
+    tab.addEventListener('click', function () { sheet.close(); });
+    /* a click on the dimmed page around the sheet closes it */
+    sheet.addEventListener('click', function (e) { if (e.target === sheet) sheet.close(); });
+    sheet.addEventListener('close', function () {
+      frame.setAttribute('src', 'about:blank');   /* stop the game and its sound */
+      document.documentElement.classList.remove('has-sheet');
+      if (opener) opener.focus();
+    });
+    document.body.appendChild(sheet);
+  }
+  document.addEventListener('click', function (e) {
+    var link = e.target.closest && e.target.closest('.game__open');
+    if (!link || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    if (!sheet) build();
+    var game = link.closest('.game');
+    /* only one copy plays at a time: stop the one in the article */
+    var stage = game && game.querySelector('.game__stage');
+    if (stage && stage.open) stage.open = false;
+    var name = game && game.querySelector('.game__name');
+    title.textContent = name ? name.firstChild.textContent.trim() : '';
+    frame.setAttribute('title', title.textContent);
+    tab.href = link.href;
+    opener = link;
+    document.documentElement.classList.add('has-sheet');
+    sheet.showModal();
+    frame.setAttribute('src', link.href);
+    frame.focus();
+  });
+})();
+
 /* Looking into the boxes, and into the well they sit in.
    Each block is drawn as a shallow box with its content on the back wall, and the well is a deeper cabinet
    behind them. Your eye is the pointer when there is one; on a touch screen it is a fixed point a little above
