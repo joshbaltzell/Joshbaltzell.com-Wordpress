@@ -15,6 +15,43 @@
   }, true);
 })();
 
+/* Timelines in a page (the Work page). "Open all" opens or closes every stop and says which it will do next, and a
+   hat on a marker tips when pressed. Without this script every stop still opens on its own. */
+(function () {
+  'use strict';
+  function stops(wrap) { return [].slice.call(wrap.querySelectorAll('.timeline__stop > details')); }
+  function label(wrap) {
+    var btn = wrap.querySelector('[data-timeline-all]');
+    if (!btn) return;
+    var allOpen = stops(wrap).every(function (d) { return d.open; });
+    btn.textContent = allOpen ? 'Close all' : 'Open all';
+    btn.setAttribute('aria-expanded', allOpen ? 'true' : 'false');
+  }
+  [].forEach.call(document.querySelectorAll('.timeline-wrap'), function (wrap) {
+    var btn = wrap.querySelector('[data-timeline-all]');
+    if (btn) {
+      btn.hidden = false;
+      btn.addEventListener('click', function () {
+        var open = !stops(wrap).every(function (d) { return d.open; });
+        stops(wrap).forEach(function (d) { d.open = open; });
+        label(wrap);
+      });
+    }
+    wrap.addEventListener('toggle', function () { label(wrap); }, true);
+    label(wrap);
+  });
+  document.addEventListener('click', function (e) {
+    var hat = e.target.closest && e.target.closest('.timeline__hat');
+    if (!hat) return;
+    hat.classList.remove('is-tipping');
+    void hat.offsetWidth;   /* restart the animation on every press */
+    hat.classList.add('is-tipping');
+  });
+  document.addEventListener('animationend', function (e) {
+    if (e.target.classList && e.target.classList.contains('timeline__hat')) e.target.classList.remove('is-tipping');
+  });
+})();
+
 /* "Open full page" on a game in an article opens the game over the page, in a sheet you close to get back to
    the article where you were. The sheet's own link still opens it in a tab. Escape closes it too, once the
    game doesn't have the keyboard (games use Escape themselves), so the Close button is always there.

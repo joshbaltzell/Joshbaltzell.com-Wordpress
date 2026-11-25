@@ -295,24 +295,63 @@ a.kind{padding-block:var(--space-1);margin-block:calc(-1 * var(--space-1))}
 .toy-hero .art-stage{aspect-ratio:auto}
 .toy-hero .art-stage>img{height:auto}
 
-/* A timeline in a page (the Work page): an <ol class="timeline"> of <li class="timeline__stop">, newest first.
-   A rule runs down the left, each stop hangs a square marker on it, and .is-now marks the current one. A stop can
-   wear a little picture on its marker (.timeline__hat, an inline SVG), which wobbles on hover unless motion is
-   reduced. */
-.prose .timeline{position:relative;list-style:none;margin:var(--space-6) 0;padding:0 0 0 var(--space-8)}
+/* A timeline in a page (the Work page). Markup, newest first:
+   <div class="timeline-wrap"><button data-timeline-all>Open all</button>
+   <ol class="timeline">
+     <li class="timeline__era" data-era="ai">Applied AI <span>2022 to now</span></li>
+     <li class="timeline__stop is-now" data-era="ai"><details open><summary>
+       <span class="timeline__when">…</span><span class="timeline__what">…</span><span class="timeline__gist">…</span></summary>
+       <div class="timeline__body"><p>…</p><details class="timeline__story"><summary>…</summary><p>…</p></details>
+       <ul class="timeline__tools"><li>…</li></ul><p class="timeline__links">…</p></div></details></li>
+     <li class="timeline__stop" data-era="start"><button class="timeline__hat">(svg)</button>…</li>
+   </ol></div>
+   A rule runs down the left; each stop hangs a square marker on it in its era's colour, and the current one pulses.
+   Stops open and close (site.js adds Open all / Close all). The hat on a marker tips when pressed. Motion is off
+   under reduced motion. */
+.timeline-wrap{margin:var(--space-6) 0}
+.timeline-wrap>.btn{margin:0 0 var(--space-4)}
+.prose .timeline{position:relative;list-style:none;margin:0;padding:0 0 0 var(--space-8)}
 .prose .timeline::before{content:"";position:absolute;left:calc(var(--space-2) + .3rem);top:var(--space-2);bottom:var(--space-2);width:var(--outline-part);background:var(--ink)}
-.timeline__stop{position:relative;margin:0 0 var(--space-6);padding:0}
-.timeline__stop::before{content:"";position:absolute;left:calc(-1 * var(--space-8) + var(--space-2) - .05rem);top:.3rem;width:.9rem;height:.9rem;border:var(--outline-part) solid var(--ink);border-radius:var(--radius-sm);background:var(--part-olive);box-sizing:border-box}
-.timeline__stop.is-now::before{background:var(--part-ember)}
+.timeline [data-era=ai]{--era:var(--part-ember)}
+.timeline [data-era=market]{--era:var(--part-moss)}
+.timeline [data-era=custom]{--era:var(--part-straw)}
+.timeline [data-era=start]{--era:var(--part-paper)}
+.timeline__era{position:relative;display:flex;flex-wrap:wrap;align-items:baseline;gap:0 var(--space-2);margin:var(--space-8) 0 var(--space-4) calc(-1 * var(--space-8));padding:0}
+.timeline__era:first-child{margin-top:0}
+.timeline__era b{display:inline-block;padding:var(--space-half) var(--space-2);border:var(--outline-part) solid var(--ink);border-radius:var(--radius-sm);background:var(--era);color:var(--part-night);font-family:var(--font-mono);font-size:var(--text-tag);letter-spacing:var(--track-tag);text-transform:uppercase}
+.timeline__era span{font-family:var(--font-mono);font-size:var(--text-tag);color:var(--ink-muted)}
+.timeline__stop{position:relative;margin:0 0 var(--space-5);padding:0}
+.timeline__stop::before{content:"";position:absolute;left:calc(-1 * var(--space-8) + var(--space-2) - .05rem);top:.3rem;width:.9rem;height:.9rem;border:var(--outline-part) solid var(--ink);border-radius:var(--radius-sm);background:var(--era,var(--part-olive));box-sizing:border-box;z-index:1}
+.timeline__stop.is-now::after{content:"";position:absolute;left:calc(-1 * var(--space-8) + var(--space-2) - .05rem);top:.3rem;width:.9rem;height:.9rem;border-radius:var(--radius-sm);background:var(--era)}
+.timeline__stop>details>summary{display:block;list-style:none;cursor:pointer;border-radius:var(--radius-md);padding:0 var(--space-6) 0 0;position:relative}
+.timeline__stop>details>summary::-webkit-details-marker{display:none}
+.timeline__stop>details>summary::after{content:"+";position:absolute;right:0;top:0;width:1.6rem;height:1.6rem;display:grid;place-items:center;border:var(--outline-part) solid var(--ink);border-radius:var(--radius-full);background:var(--ground-raised);font-family:var(--font-mono);font-weight:var(--weight-semi);color:var(--ink);transition:transform var(--dur-quick) var(--ease-out),background-color var(--dur-quick) var(--ease-out)}
+.timeline__stop>details>summary:hover::after{background:var(--era)}
+.timeline__stop>details[open]>summary::after{transform:rotate(45deg)}
+.timeline__stop>details>summary:hover .timeline__what{text-decoration:underline;text-decoration-color:var(--era);text-decoration-thickness:3px;text-underline-offset:4px}
 .timeline__when{display:block;font-family:var(--font-mono);font-size:var(--text-tag);letter-spacing:var(--track-tag);text-transform:uppercase;color:var(--ink-muted)}
-.timeline__what{display:block;font-family:var(--font-display);font-size:var(--text-subhead);font-weight:var(--weight-semi);line-height:1.25;margin:var(--space-half) 0 var(--space-1)}
+.timeline__what{display:block;font-family:var(--font-display);font-size:var(--text-subhead);font-weight:var(--weight-semi);line-height:1.25;margin:var(--space-half) 0 var(--space-half)}
+.timeline__gist{display:block;color:var(--ink-muted)}
 .timeline__stop p{margin:0}
-.timeline__hat{position:absolute;left:calc(-1 * var(--space-8) + var(--space-2) - 1.25rem);top:-.78rem;width:2.8rem;transform:rotate(-14deg);transform-origin:50% 90%;pointer-events:none}
+.timeline__body{display:grid;gap:var(--space-3);margin:var(--space-3) 0 0;padding:var(--space-4);border:var(--outline-hair) solid var(--line);border-left:4px solid var(--era);border-radius:var(--radius-md);background:var(--ground-raised)}
+.timeline__story{border-radius:var(--radius-sm);background:var(--ground-sunk);padding:var(--space-2) var(--space-3)}
+.timeline__story>summary{cursor:pointer;font-weight:var(--weight-semi)}
+.timeline__story[open]>summary{margin-bottom:var(--space-2)}
+.prose .timeline__tools{display:flex;flex-wrap:wrap;gap:var(--space-1);list-style:none;margin:0;padding:0}
+.prose .timeline__tools li{margin:0;padding:var(--space-half) var(--space-2);border:var(--outline-hair) solid var(--line);border-radius:var(--radius-full);font-family:var(--font-mono);font-size:var(--text-tag)}
+.prose .timeline__tools li::before{content:none}
+.timeline__links{font-size:var(--text-small)}
+.timeline__hat{position:absolute;left:calc(-1 * var(--space-8) + var(--space-2) - 1.25rem);top:-.78rem;width:2.8rem;padding:0;border:0;background:none;cursor:pointer;transform:rotate(-14deg);transform-origin:50% 90%;z-index:2}
 .timeline__hat svg{display:block;width:100%;height:auto}
 .timeline__hat .brim,.timeline__hat .crown{fill:var(--part-straw);stroke:var(--ink);stroke-width:1.4}
 .timeline__hat .band{fill:var(--part-ember)}
 .timeline__hat .stitch{fill:none;stroke:var(--part-ember);stroke-width:1.2;stroke-linecap:round}
+.timeline__hat:focus-visible{outline:var(--outline-part) solid var(--part-ember);outline-offset:2px;border-radius:var(--radius-sm)}
 @media (prefers-reduced-motion:no-preference){
   .timeline__stop:hover .timeline__hat{animation:jb-hat-wobble var(--dur-settle) var(--ease-spring)}
+  .timeline__hat.is-tipping{animation:jb-hat-tip .9s var(--ease-spring)}
+  .timeline__stop.is-now::after{animation:jb-now 2.4s var(--ease-out) infinite}
 }
 @keyframes jb-hat-wobble{0%{transform:rotate(-14deg)}30%{transform:rotate(8deg) translateY(-3px)}60%{transform:rotate(-20deg)}100%{transform:rotate(-14deg)}}
+@keyframes jb-hat-tip{0%{transform:rotate(-14deg)}35%{transform:translateY(-14px) rotate(-40deg)}70%{transform:translateY(-6px) rotate(10deg)}100%{transform:rotate(-14deg)}}
+@keyframes jb-now{0%{transform:scale(1);opacity:.7}100%{transform:scale(2.4);opacity:0}}
