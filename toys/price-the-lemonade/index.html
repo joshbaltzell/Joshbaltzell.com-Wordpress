@@ -6,8 +6,18 @@
 <title>Price the Lemonade</title>
 <meta name="description" content="You don't know the demand curve. Pick a lemonade price each day for 30 days, or write a pricing rule, beside a bot that is learning too.">
 <link rel="stylesheet" href="../kit/toy.css">
+<script>
+  /* Inside a frame (or with ?embed=1) the toy uses a compact layout. */
+  (function () {
+    var e = /[?&]embed=1(&|$)/.test(location.search);
+    try { if (window.self !== window.top) e = true; } catch (x) { e = true; }
+    if (e) document.documentElement.classList.add('is-embedded');
+  })();
+</script>
 <style>
   [hidden] { display: none !important; }
+  /* Opening a fold shouldn't make the page jump to keep something below it in place. */
+  html { overflow-anchor: none; }
   .play-top { justify-content: space-between; }
   .seed { font: .75rem/1 var(--font-mono); color: var(--muted); text-decoration: none; }
   .seed:hover { text-decoration: underline; }
@@ -83,6 +93,71 @@
   .sources { margin: 0; padding-left: 1.2rem; font-size: .8rem; color: var(--muted); display: grid; gap: var(--space-1); }
   .caveat { margin: 0; max-width: var(--measure); }
 
+  /* Folds: secondary panels open and close. Open by default on the toy's own page,
+     closed when it is embedded in an article. */
+  .fold { display: block; padding: 0; }
+  .fold > summary { list-style: none; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-3); min-height: 48px; padding: var(--space-2) var(--space-4); cursor: pointer; border-radius: var(--radius-md); }
+  .fold > summary::-webkit-details-marker { display: none; }
+  .fold > summary::before { content: ""; flex: none; width: .5rem; height: .5rem; margin: 0 .15rem 0 .1rem; border-right: 2px solid var(--ink); border-bottom: 2px solid var(--ink); transform: rotate(-45deg); transition: transform .15s ease-out; }
+  .fold[open] > summary::before { transform: rotate(45deg) translate(-2px, -2px); }
+  .fold > summary h2, .fold > summary h3 { font-size: 1.15rem; }
+  .fold > summary:hover h2, .fold > summary:hover h3 { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+  .fold > summary:focus-visible { outline: 3px solid var(--ember); outline-offset: 2px; }
+  .fold__hint { font-size: .82rem; color: var(--muted); }
+  .fold__body { display: grid; gap: var(--space-3); min-width: 0; padding: 0 var(--space-4) var(--space-4); }
+  .fold--inner { border-top: 1px solid var(--line); margin-top: var(--space-1); }
+  .fold--inner > summary { padding: var(--space-2) 0; }
+  .fold--inner > .fold__body { padding: 0; }
+  .embed-intro { display: none; }
+  /* On the toy's own page the rule explanation is a plain paragraph. */
+  html:not(.is-embedded) .fold--how { border: 0; margin: 0; }
+  html:not(.is-embedded) .fold--how > summary { display: none; }
+
+  /* Embedded in an article: the playing area first, everything else folded. */
+  .is-embedded body { padding: var(--space-3) 12px var(--space-4); }
+  .is-embedded .toy { gap: var(--space-3); }
+  .is-embedded .toy-head > :not(.embed-intro) { display: none; }
+  .is-embedded .toy-head .embed-intro { display: block; font-size: .9rem; }
+  .is-embedded .toy-head { order: -3; }
+  .is-embedded .modes { order: -2; }
+  .is-embedded .end { order: -1; }
+  .is-embedded .panel:not(.fold) { padding: var(--space-3); gap: var(--space-2); }
+  .is-embedded .fold > summary { padding: var(--space-2) var(--space-3); }
+  .is-embedded .fold__body { padding: 0 var(--space-3) var(--space-3); }
+  .is-embedded .fold--inner > summary, .is-embedded .fold--inner > .fold__body { padding-left: 0; padding-right: 0; }
+  .is-embedded .fold > summary h2, .is-embedded .fold > summary h3 { font-size: 1.05rem; }
+  .is-embedded #play h2, .is-embedded #rule h2 { font-size: 1.05rem; }
+  .is-embedded .modes .chip { padding: .5rem .9rem; }
+  .is-embedded .keys { margin: 0; font-size: .78rem; }
+  .is-embedded .end h2 { font-size: 1.25rem; }
+  .is-embedded .curve { height: 220px; }
+  .is-embedded .strip { height: 190px; }
+  .is-embedded .score { grid-template-columns: 1fr 1fr; gap: var(--space-2); }
+  .is-embedded .player { grid-template-columns: auto 1fr; align-items: baseline; gap: 0 var(--space-2); }
+  .is-embedded .player .readout { font-size: 1.2rem; text-align: right; }
+  .is-embedded .player p { grid-column: 1 / -1; font-size: .78rem; line-height: 1.35; }
+  .is-embedded .credit { font-size: .78rem; padding-top: var(--space-2); margin: 0; }
+  @media (pointer: coarse) { .is-embedded .keys { display: none; } }
+  .is-embedded .ladder { grid-template-columns: repeat(auto-fill, minmax(4rem, 1fr)); }
+  .is-embedded .fold--how { margin: 0; border-bottom: 1px solid var(--line); }
+  .is-embedded .fold--how > summary { min-height: 44px; padding-top: var(--space-1); padding-bottom: var(--space-1); }
+  .is-embedded .fold--how > summary h3 { font-size: .9rem; }
+  .is-embedded .fold--how > .fold__body { padding-bottom: var(--space-2); }
+  .is-embedded .presets-label { font-size: .8rem; margin-bottom: var(--space-1) !important; }
+  .is-embedded .presets { gap: var(--space-1) var(--space-2); }
+  .is-embedded .rule .chip { min-height: 36px; padding: .4rem .7rem; }
+  .is-embedded .rline { padding: var(--space-1) var(--space-2); gap: var(--space-1) var(--space-2); }
+  .is-embedded .rule select, .is-embedded .rule input[type="number"] { min-height: 36px; font-size: .88rem; padding: .25rem .4rem; }
+  .is-embedded .rline__num input { width: 4.5rem; }
+  .is-embedded .rline .btn--small { min-height: 36px; padding: .3rem .6rem; font-size: .8rem; }
+  .is-embedded #add-line { min-height: 40px; }
+  .is-embedded .otherwise { font-size: .9rem; }
+  .is-embedded .rule .check { font-size: .82rem; line-height: 1.4; }
+  .is-embedded .board { font-size: .82rem; }
+  .is-embedded .caveat, .is-embedded .effect p { font-size: .9rem; }
+  /* The rule editor is taller than the frame, so its Run button stays in view. */
+  .is-embedded .run-row { position: sticky; bottom: 0; z-index: 1; margin: 0 calc(-1 * var(--space-3)) calc(-1 * var(--space-3)); padding: var(--space-2) var(--space-3); background: var(--raised); border-top: 1px solid var(--line); border-radius: 0 0 var(--radius-md) var(--radius-md); }
+
   @media (max-width: 30rem) {
     .ladder { grid-template-columns: repeat(4, 1fr); }
     .price { font-size: .85rem; }
@@ -101,6 +176,7 @@
     <h1>Price the Lemonade</h1>
     <p>Pick a price each day, or write a rule and let it run. A bot plays the same 30 days. At the end, see who learned faster.</p>
     <p>A cup costs $1.20 to make. Neither of you knows how many people will buy at each price. You both get the same visitors each day. The customers are a little human, too. See “How the customers think” below.</p>
+    <p class="embed-intro">Pick a price each day, or write a rule. A bot plays the same 30 days. A cup costs $1.20 to make.</p>
   </header>
 
   <div class="modes" role="group" aria-label="How to play">
@@ -130,9 +206,14 @@
       <a class="seed" id="rule-seed" href="?seed=" title="Link to replay this round">Seed</a>
     </div>
     <h2 id="rule-title">Your pricing rule</h2>
-    <p class="small muted" style="margin:0">Each morning the rule looks at yesterday and picks a price. Lines are checked in order, and the first one that matches wins. Prices snap to the menu, and can’t go below $2.00 or above $6.00.</p>
+    <details class="fold fold--inner fold--how" open>
+      <summary><h3>How a rule works</h3></summary>
+      <div class="fold__body">
+        <p class="small muted" style="margin:0">Each morning the rule looks at yesterday and picks a price. Lines are checked in order, and the first one that matches wins. Prices snap to the menu, and can’t go below $2.00 or above $6.00.</p>
+      </div>
+    </details>
     <div>
-      <p class="small muted" style="margin:0 0 var(--space-2)">Start from an example, then change it:</p>
+      <p class="small muted presets-label" style="margin:0 0 var(--space-2)">Start from an example, then change it:</p>
       <div class="presets" id="presets">
         <button class="chip" type="button" data-preset="hold">Hold one price</button>
         <button class="chip" type="button" data-preset="crowd">Follow the crowd</button>
@@ -146,7 +227,7 @@
     <p class="otherwise">Otherwise, keep the price.</p>
     <label class="check"><input type="checkbox" id="rule-explore"> <span>Try every price once first. The rule charges each menu price once, lowest first, then goes to the best one so far and takes over from there.</span></label>
     <p class="board" id="rule-board" hidden></p>
-    <div class="row">
+    <div class="row run-row">
       <button class="btn btn--primary" id="run-rule" type="button">Run the rule for 30 days</button>
       <p class="last" id="rule-last" aria-live="polite" hidden></p>
     </div>
@@ -160,10 +241,14 @@
       <thead><tr><th scope="col">&nbsp;</th><th scope="col">Profit</th><th scope="col">Left on the table</th></tr></thead>
       <tbody id="results"></tbody>
     </table>
-    <h3 id="curve-name">The hidden curve</h3>
-    <p class="small muted" id="curve-blurb" style="margin:0"></p>
-    <canvas class="curve" id="curve" role="img" aria-label="Expected profit per day at each price held steady, with the days each player spent at each price marked as circles."></canvas>
-    <p class="legend"><span>Line: expected profit per day at a price held steady</span><span><span class="key key--you"></span><span id="legend-you">You</span></span><span><span class="key key--bot"></span>Bot</span><span>Bigger circle, more days</span><span id="legend-nines" hidden>Small dots: .99 prices</span></p>
+    <details class="fold fold--inner" id="curve-fold" open>
+      <summary><h3 id="curve-name">The hidden curve</h3></summary>
+      <div class="fold__body">
+        <p class="small muted" id="curve-blurb" style="margin:0"></p>
+        <canvas class="curve" id="curve" role="img" aria-label="Expected profit per day at each price held steady, with the days each player spent at each price marked as circles."></canvas>
+        <p class="legend"><span>Line: expected profit per day at a price held steady</span><span><span class="key key--you"></span><span id="legend-you">You</span></span><span><span class="key key--bot"></span>Bot</span><span>Bigger circle, more days</span><span id="legend-nines" hidden>Small dots: .99 prices</span></p>
+      </div>
+    </details>
     <div class="row">
       <button class="btn btn--primary" id="next" type="button">Next round</button>
       <button class="btn" id="again" type="button">Play this round again</button>
@@ -171,7 +256,7 @@
     <p class="small muted" id="end-hint" style="margin:0">Each round uses a different hidden curve. N starts the next one.</p>
   </section>
 
-  <div class="grid-2">
+  <div class="grid-2 score">
     <section class="panel player" aria-label="You">
       <div class="who"><span class="tag"><span class="key key--you"></span><span id="you-tag">You</span></span></div>
       <div class="readout" id="you-total">$0</div>
@@ -184,13 +269,16 @@
     </section>
   </div>
 
-  <section class="panel" id="why" hidden aria-labelledby="why-title">
-    <h2 id="why-title" style="font-size:1.15rem">What the rule did</h2>
+  <details class="panel fold" id="why" hidden open>
+    <summary><h2 id="why-title">What the rule did</h2><span class="fold__hint">One line per day</span></summary>
+    <div class="fold__body">
     <ol class="why-list" id="why-list" tabindex="0" aria-label="One line per day"></ol>
-  </section>
+    </div>
+  </details>
 
-  <section class="panel" aria-labelledby="hist-title">
-    <h2 id="hist-title" style="font-size:1.15rem">Prices by day</h2>
+  <details class="panel fold" id="hist" open>
+    <summary><h2 id="hist-title">Prices by day</h2><span class="fold__hint">Chart and table</span></summary>
+    <div class="fold__body">
     <canvas class="strip" id="strip" role="img" aria-label="Each day's price for you and the bot. The table below has the same numbers."></canvas>
     <p class="small muted" id="strip-note" style="margin:0">Empty for now.</p>
     <div class="history" tabindex="0" aria-label="Daily results">
@@ -199,10 +287,12 @@
         <tbody id="rows"></tbody>
       </table>
     </div>
-  </section>
+    </div>
+  </details>
 
-  <section class="panel" id="psy" aria-labelledby="psy-title">
-    <h2 id="psy-title" style="font-size:1.15rem">How the customers think</h2>
+  <details class="panel fold" id="psy" open>
+    <summary><h2 id="psy-title">How the customers think</h2><span class="fold__hint" id="psy-hint">Three effects, all on</span></summary>
+    <div class="fold__body">
     <p class="caveat">Three findings from pricing research are built into the customers. You and the bot face the same customers. The bot doesn’t know about any of this. It only learns from what sold.</p>
     <p class="caveat small muted">The sizes in this model are illustrative, not measured. The studies found these effects in specific settings, such as a clothing catalog and a magazine subscription offer, and they won’t hold the same way everywhere. Changing a setting starts the round again on the same days.</p>
     <div class="psy-list">
@@ -232,7 +322,8 @@
         </ul>
       </div>
     </div>
-  </section>
+    </div>
+  </details>
 
   <p class="credit">The bot uses Thompson sampling (William R. Thompson, 1933). Each day it guesses how likely a visitor is to buy at each price, picks the price that looks best under that guess, and updates.</p>
 </main>

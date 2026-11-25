@@ -468,8 +468,13 @@
     presets: $('#presets'), start: $('#rule-start'), lines: $('#rule-lines'), addLine: $('#add-line'),
     explore: $('#rule-explore'), runBtn: $('#run-rule'), last: $('#rule-last'),
     why: $('#why'), whyList: $('#why-list'),
-    psy: $('#psy'), keys: $('#keys')
+    psy: $('#psy'), psyHint: $('#psy-hint'), keys: $('#keys')
   };
+
+  // Set by the inline script in the page head: inside a frame, or ?embed=1.
+  const embedded = document.documentElement.classList.contains('is-embedded');
+  const keepEmbed = /[?&]embed=1(&|$)/.test(location.search);
+  const folds = [...document.querySelectorAll('details.fold')];
 
   let settings = normSettings();
   let mode = 'pick';
@@ -483,8 +488,10 @@
   const fmtI = (i) => fmt(state.round.prices[i]);
   const settingsKey = () => Object.keys(DEFAULTS).map((k) => (settings[k] ? 1 : 0)).join('');
 
-  function query(seed) {
+  // embed: keep ?embed=1 (for the frame's own address, not for the share link).
+  function query(seed, embed) {
     const q = new URLSearchParams();
+    if (embed && keepEmbed) q.set('embed', '1');
     q.set('seed', seed);
     if (mode === 'rule') q.set('mode', 'rule');
     const off = Object.keys(DEFAULTS).filter((k) => !settings[k]);
@@ -497,7 +504,7 @@
     if (busy) setEditorDisabled(false);
     busy = false;
     state = { round: createRound(seed, settings), days: [], sel: null, result: null, run: null };
-    try { history.replaceState(null, '', query(seed)); } catch (e) { /* file:// may refuse */ }
+    try { history.replaceState(null, '', query(seed, true)); } catch (e) { /* file:// may refuse */ }
     el.end.hidden = true;
     buildLadder();
     fillStart();
@@ -521,6 +528,8 @@
     el.endHint.textContent = rm
       ? 'Change a line and run it again on the same days, or press N for the next round.'
       : 'Each round uses a different hidden curve. N starts the next one.';
+    const on = Object.keys(DEFAULTS).filter((k) => k !== 'nines' && settings[k]).length;
+    el.psyHint.textContent = on === 3 ? 'Three effects, all on' : on ? on + ' of 3 effects on' : 'All three effects off';
     const board = settings.anchor ? 'On the menu board: Grand cup ' + fmt(DECOY) + ', and a regular cup at your price.' : '';
     [el.board, el.ruleBoard].forEach((b) => { b.textContent = board; b.hidden = !board; });
   }
@@ -710,7 +719,10 @@
     const seedText = 'Seed ' + state.round.seed, href = query(state.round.seed);
     el.day.textContent = label;
     el.ruleDay.textContent = state.result ? 'Round ' + roundNo + ' · 30 days run' : n ? label : 'Round ' + roundNo + ' · Not run yet';
-    [el.seed, el.ruleSeed].forEach((a) => { a.textContent = seedText; a.href = href; });
+    [el.seed, el.ruleSeed].forEach((a) => {
+      a.textContent = seedText; a.href = href;
+      if (embedded) { a.target = '_blank'; a.rel = 'noopener'; }
+    });
     renderControls();
     renderMode();
 
@@ -816,9 +828,19 @@
     // Wait for layout before drawing the newly shown canvas.
     requestAnimationFrame(() => {
       drawCurve();
-      if (rm) el.endTitle.focus();
+      if (embedded) {
+        // Scroll only this frame's page, never the article around it.
+        (rm ? el.endTitle : el.next).focus({ preventScroll: true });
+        reveal(el.end);
+      } else if (rm) el.endTitle.focus();
       else el.next.focus();
     });
+  }
+
+  function reveal(node) {
+    const behavior = reduce.matches ? 'auto' : 'smooth';
+    if (!embedded) return node.scrollIntoView({ behavior, block: 'start' });
+    window.scrollTo({ top: Math.max(0, node.getBoundingClientRect().top + window.scrollY - 8), behavior });
   }
 
   /* ---------- Drawing ---------- */
@@ -962,7 +984,7 @@
   el.modeRule.addEventListener('click', () => setMode('rule'));
   el.again.addEventListener('click', () => {
     if (mode === 'rule') {
-      el.rulePanel.scrollIntoView({ behavior: reduce.matches ? 'auto' : 'smooth', block: 'start' });
+      reveal(el.rulePanel);
       el.start.focus({ preventScroll: true });
     } else start(state.round.seed);
   });
@@ -1010,7 +1032,9 @@
 
   document.addEventListener('keydown', (e) => {
     if (e.metaKey || e.ctrlKey || e.altKey) return;
-    const t = e.target, onButton = t.tagName === 'BUTTON' && !t.classList.contains('price');
+    const t = e.target;
+    // Enter and Space keep their own meaning on buttons and on a fold's summary row.
+    const onButton = (t.tagName === 'BUTTON' && !t.classList.contains('price')) || t.tagName === 'SUMMARY';
     if (/^(A|INPUT|SELECT|TEXTAREA)$/.test(t.tagName)) return;
     if (state.result) {
       if (e.key === 'n' || e.key === 'N') { e.preventDefault(); el.next.click(); }
@@ -1028,7 +1052,14 @@
   });
 
   const redraw = () => { drawStrip(); if (state.result) drawCurve(); };
-  if ('ResizeObserver' in window) new ResizeObserver(redraw).observe(el.strip);
+  if ('ResizeObserver' in window) {
+    const ro = new ResizeObserver(redraw);
+    ro.observe(el.strip);
+    ro.observe(el.curve);
+  }
+  // Canvases in a closed fold have no size; draw them when the fold opens.
+  folds.forEach((d) => d.addEventListener('toggle', () => { if (d.open) redraw(); }));
+  if (embedded) folds.forEach((d) => { d.open = false; });
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', redraw);
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(redraw);
 
