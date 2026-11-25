@@ -180,6 +180,9 @@ function jb_toybox_game_shortcode( $atts ) {
 	if ( '' === $a['url'] ) {
 		return '';
 	}
+	foreach ( array( 'url', 'poster', 'poster_dark' ) as $jb_key ) {
+		$a[ $jb_key ] = jb_site_url( $a[ $jb_key ] );
+	}
 
 	$label = $a['status'];
 	if ( '' !== $a['version'] ) {

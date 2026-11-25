@@ -66,7 +66,7 @@ while ( have_posts() ) :
 
 		<?php
 		if ( 'toy' === $jb_kind['kind'] ) :
-			$jb_play = get_post_meta( $jb_id, 'toy_play_url', true );
+			$jb_play = jb_site_url( get_post_meta( $jb_id, 'toy_play_url', true ) );
 			if ( has_post_thumbnail() || $jb_play ) :
 				?>
 		<div class="toy-hero">

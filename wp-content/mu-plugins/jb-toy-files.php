@@ -335,7 +335,7 @@ function jb_toys_handle_upload() {
 	if ( $play ) {
 		$post = get_page_by_path( $slug, OBJECT, 'post' );
 		if ( $post ) {
-			update_post_meta( $post->ID, 'toy_play_url', esc_url_raw( jb_toy_play_url( $slug ) ) );
+			update_post_meta( $post->ID, 'toy_play_url', '/play/' . sanitize_title( $slug ) . '/' ); // a path, so it survives a push to another domain
 			/* translators: %s: post title. */
 			$text .= ' ' . sprintf( __( 'It is now the Play link of "%s".', 'jb-toybox' ), get_the_title( $post ) );
 		} else {

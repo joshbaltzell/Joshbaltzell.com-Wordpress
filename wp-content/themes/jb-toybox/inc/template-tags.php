@@ -77,7 +77,7 @@ function jb_card( $post, $toy_types = false, $age = null ) {
 	// A rule gives the block one of the built-in animated covers (data-rule).
 	$rule  = get_post_meta( $post->ID, 'rule', true );
 	$cover = get_the_post_thumbnail_url( $post, 'jb-cover' );
-	$play  = 'toy' === $kind['kind'] ? get_post_meta( $post->ID, 'toy_play_url', true ) : '';
+	$play  = 'toy' === $kind['kind'] ? jb_site_url( get_post_meta( $post->ID, 'toy_play_url', true ) ) : '';
 	$pitch = has_excerpt( $post ) ? get_the_excerpt( $post ) : '';
 	$tags  = wp_list_pluck( (array) get_the_tags( $post->ID ), 'slug' );
 
@@ -142,7 +142,7 @@ function jb_block_design( $post ) {
 
 	$css  = '';
 	$font = $m( 'look_font' );
-	$file = esc_url_raw( $m( 'look_font_file' ) );
+	$file = esc_url_raw( jb_site_url( $m( 'look_font_file' ) ) );
 	if ( 'custom' === $font && $file ) {
 		$family = 'jb-font-' . $post->ID;
 		$css   .= '@font-face{font-family:"' . $family . '";src:url("' . esc_url_raw( $file ) . '");font-display:swap}';
@@ -178,7 +178,7 @@ function jb_block_design( $post ) {
 		$layers = '';
 		foreach ( preg_split( '/\R/', $m( 'cover_layers' ) ) as $line ) {
 			$bits = preg_split( '/\s+/', trim( $line ) );
-			$src  = isset( $bits[0] ) ? esc_url( $bits[0] ) : '';
+			$src  = isset( $bits[0] ) ? esc_url( jb_site_url( $bits[0] ) ) : '';
 			if ( '' === $src ) {
 				continue;
 			}
@@ -590,4 +590,30 @@ function jb_nav_pages() {
 		}
 	}
 	return $out;
+}
+
+/**
+ * An address saved in a post (a poster, a picture layer, a font, a Play link) as it should be printed. A path on
+ * this site ("/wp-content/…") becomes a full address on the site's own domain, so feeds get full addresses, and a
+ * full address on this site takes the scheme of the page being served. Saved addresses are kept as paths so a
+ * database pushed between Local, staging and production never carries the wrong domain or an http:// address
+ * that an https:// page would block.
+ *
+ * @param string $url Saved address.
+ * @return string
+ */
+function jb_site_url( $url ) {
+	$url = trim( (string) $url );
+	if ( '' === $url ) {
+		return '';
+	}
+	if ( '/' === $url[0] && ( strlen( $url ) < 2 || '/' !== $url[1] ) ) {
+		return set_url_scheme( home_url( $url ) );
+	}
+	$host = wp_parse_url( $url, PHP_URL_HOST );
+	$home = wp_parse_url( home_url(), PHP_URL_HOST );
+	if ( $host && $home && strtolower( $host ) === strtolower( $home ) ) {
+		return set_url_scheme( $url );
+	}
+	return $url;
 }

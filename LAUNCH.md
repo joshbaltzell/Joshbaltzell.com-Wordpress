@@ -61,6 +61,8 @@ Git push to WP Engine is not an option from this Mac: `git@git.wpengine.com` ref
      files of ours: content, comment guard, search visibility, toy files) and
      `wp-content/uploads`. Plugins don't need pushing: their files are already on
      production, and the database decides which ones are on.
+   - **Tick `mu-plugins` explicitly.** On the first staging push our four must-use plugins did not arrive, so the embeds were empty and `/play/` fell through. After the push, Plugins → Must-Use must list JB Comment Guard, JB Search Visibility, JB Toy Files and JB Toybox Content beside WP Engine's own (10 in all). The admin page can be cached right after a cache flush, so reload before worrying.
+   - **Check Settings → General afterwards:** both the WordPress Address and the Site Address should start with `https://`. Staging came over with an `http://` WordPress Address. The theme copes, but fix it anyway.
 5. **Put the links back:** `bin/local-links.sh link`. If it stops because a copy differs
    from the repo, something was edited in Local during the push. Compare before
    relinking.
