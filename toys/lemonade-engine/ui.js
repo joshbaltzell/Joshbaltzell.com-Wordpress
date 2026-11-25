@@ -108,6 +108,7 @@
         '<button class="btn btn--small" id="run-reset" type="button">Start over</button>' +
       '</div>' +
       '<p class="last" id="rule-last" aria-live="polite" hidden></p>' +
+      '<p class="rule-hint" id="rule-hint" aria-live="polite" hidden></p>' +
     '</section>' : '';
 
   const chartHTML =
@@ -146,7 +147,7 @@
     endTitle: $('#end-title'), endHint: $('#end-hint'),
     presets: $('#presets'), start: $('#rule-start'), lines: $('#rule-lines'), addLine: $('#add-line'),
     explore: $('#rule-explore'), run1: $('#run-1'), runWeek: $('#run-week'), runAll: $('#run-all'), runReset: $('#run-reset'),
-    last: $('#rule-last'), why: $('#why'), whyList: $('#why-list'),
+    last: $('#rule-last'), hint: $('#rule-hint'), why: $('#why'), whyList: $('#why-list'),
     psy: $('#psy'), psyHint: $('#psy-hint'), keys: $('#keys')
   };
 
@@ -381,6 +382,40 @@
     if (!el.last) return;
     el.last.textContent = lastRun && lastRun.key === setupKey() ? 'Last finished run on these days: ' + money(lastRun.total) + '.' : '';
     el.last.hidden = !el.last.textContent;
+    renderHint();
+  }
+
+  // When a rule has kept the same price for several days, say why in plain words, next to the Run buttons,
+  // so a rule that is stuck at the top or bottom of the menu, or that never matches, doesn't look broken.
+  function renderHint() {
+    if (!el.hint) return;
+    let text = '';
+    const days = mode === 'rule' ? state.days : [];
+    const n = days.length;
+    if (n >= 4) {
+      const price = days[n - 1].you.price;
+      let k = 0;
+      while (k < n - 1 && days[n - 1 - k].you.price === price && days[n - 1 - k].line !== 'start') k++;
+      const isClamp = (x) => / so kept it$/.test(x.why);
+      // the first day at this price may be the day the rule moved to it; the streak starts after that
+      if (k && !isClamp(days[n - k]) && days[n - k].line !== 'otherwise') k--;
+      const tail = days.slice(n - k);
+      const stuck = tail.length && tail.every((x) => isClamp(x) || x.line === 'otherwise');
+      const clamps = tail.filter(isClamp);
+      const top = price >= state.round.prices[state.round.prices.length - 1] - 1e-9;
+      if (k >= 3 && stuck && clamps.length) {
+        const lines = [...new Set(clamps.map((x) => x.line + 1))].sort();
+        const which = lines.length === 1 ? 'Line ' + lines[0] + ' keeps' : 'Lines ' + lines.join(' and ') + ' keep';
+        text = 'Your price has been ' + fmt(price) + ' for ' + k + ' days. ' + which + ' asking to ' +
+          (top ? 'raise it, but ' + fmt(price) + ' is the top' : 'lower it, but ' + fmt(price) + ' is the bottom') + ' of the menu, so nothing changes.' +
+          (tail.every((x) => !x.you.cups) ? ' You have sold nothing at this price.' : '');
+      } else if (k >= 3 && stuck) {
+        text = 'No line has matched for ' + k + ' days, so your price has stayed at ' + fmt(price) + '.' +
+          (tail.every((x) => x.you.cups === tail[0].you.cups) ? ' Sales haven’t changed (' + tail[0].you.cups + ' a day), so “went up” and “went down” lines can’t match.' : '');
+      }
+    }
+    el.hint.textContent = text;
+    el.hint.hidden = !text;
   }
 
   /* ---------- Render ---------- */
@@ -497,6 +532,7 @@
       el.whyList.innerHTML = state.days.map((x) =>
         '<li><span class="why__day">Day ' + x.d + ':</span> ' + esc(x.why) + '. <span class="muted">Sold ' + x.you.cups + ', ' + money(x.you.profit) + '.</span></li>').join('');
     }
+    renderHint();
     drawChart();
     if (state.result) drawCurve();
   }
