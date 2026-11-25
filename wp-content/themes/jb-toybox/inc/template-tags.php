@@ -513,6 +513,23 @@ function jb_kind_link( $kind ) {
 }
 
 /**
+ * The kind line for a toy post: "Game" or "Toy", linking to that filter on the Toys list. Falls back to the plain
+ * kind link when no type is set.
+ *
+ * @param array  $kind Entry from jb_kind_by_slug().
+ * @param string $type The post's toy_type (Game or Toy).
+ * @return string
+ */
+function jb_toy_type_link( $kind, $type ) {
+	$type = trim( (string) $type );
+	if ( '' === $type ) {
+		return jb_kind_link( $kind );
+	}
+	$url = add_query_arg( 'tag', sanitize_title( $type ), $kind['url'] );
+	return sprintf( '<a class="kind" data-kind="%1$s" href="%2$s">%3$s</a>', esc_attr( $kind['kind'] ), esc_url( $url ), esc_html( $type ) );
+}
+
+/**
  * A date in the spine: "18 Nov 2026".
  *
  * @param string $format Date format for the words.

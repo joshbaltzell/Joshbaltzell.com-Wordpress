@@ -270,3 +270,7 @@ a.kind{padding-block:var(--space-1);margin-block:calc(-1 * var(--space-1))}
 }
 /* the lever stays out of sight until the pile has risen into place */
 .rack--rising .lever-dock{visibility:hidden}
+
+/* A toy's cover and Play button sit at the same width as the text under them, so the page reads as one column
+   instead of a wide picture over a narrower block of text. (The design system lets the cover run wide.) */
+.toy-hero{max-width:var(--measure)}
