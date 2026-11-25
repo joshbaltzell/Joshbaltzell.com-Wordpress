@@ -22,6 +22,8 @@ The site is a personal workshop: toys, code posts, design posts, writing, and ph
 Still to do:
 - Launch: push Local (theme, content, database) to WP Engine production. The steps are in `LAUNCH.md`.
 - Games repo side: the `play` subdomain, frozen versions, and a game list file.
+- Make the 404 page more fun. Today it is a tilted "Not found" block on a ledge, then a row of real blocks under "Things that did land" (`404.php`).
+- Bring the workshop-ideas toys onto the site: Price the Lemonade, The Repricer Spiral and Twelve Reviews (in `toys/` on `claude/workshop-ideas`, each with a `POST.md` draft) move to the games repo and get toy posts; `[text_toys]` goes on the About page once that branch is merged.
 
 Comment spam is handled by `wp-content/mu-plugins/jb-comment-guard.php` (a signed stamp and a decoy field on the comment form, no outside service). It reaches production with the launch.
 
