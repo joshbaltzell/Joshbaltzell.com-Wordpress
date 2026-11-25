@@ -268,7 +268,8 @@
     var cards = document.querySelectorAll('.product');
     round.products.forEach(function (p, i) {
       var c = cards[i];
-      c.classList.remove('is-picked', 'is-other', 'is-focus');
+      c.classList.remove('is-picked', 'is-other', 'is-focus', 'is-better');
+      var oldBadge = c.querySelector('.product__badge'); if (oldBadge) oldBadge.remove();
       c.querySelector('.product__name').textContent = p.name;
       c.querySelector('.product__avg').textContent = fmt1(round1(p.avg));
       c.querySelector('.product__count').textContent = fmtN(p.n) + (p.n === 1 ? ' review' : ' reviews');
@@ -312,6 +313,12 @@
     document.querySelectorAll('.product').forEach(function (c, j) {
       c.classList.remove('is-focus');
       c.classList.add(j === i ? 'is-picked' : 'is-other');
+      // The one that really was better gets a badge, whichever was picked.
+      if (round.products[j].trueMean > round.products[1 - j].trueMean) {
+        c.classList.add('is-better');
+        var badge = document.createElement('span'); badge.className = 'product__badge'; badge.textContent = 'Really better';
+        c.querySelector('.product__body').insertBefore(badge, c.querySelector('.product__body').firstChild);
+      }
       var btn = c.querySelector('.pick');
       btn.disabled = true;
       btn.textContent = j === i ? 'Your pick' : 'Not picked';
@@ -323,6 +330,17 @@
     var first = [i, 1 - i];
     var copy = first.map(function (j) { return describe(round.products[j], sums[j], labels[j]); });
     $('#reveal-copy').textContent = copy.join(' ') + ' Chance your pick is the better one: ' + pct(pPick) + '.';
+
+    // The verdict, first and plain: right or wrong against the hidden truth, and whether the odds agreed.
+    var right = round.products[i].trueMean > round.products[1 - i].trueMean, favored = pPick > 0.5;
+    var head = right ? (favored ? 'Right.' : 'Right, but lucky.') : (favored ? 'Wrong, but a fair bet.' : 'Wrong.');
+    var why = right
+      ? (favored ? 'Your pick really was the better product, and the numbers favored it too.' : 'Your pick really was better, though the numbers favored the other one.')
+      : (favored ? 'The other one really was better, even though the numbers favored yours.' : 'The other one really was better, and the numbers said so.');
+    var v = $('#verdict-line');
+    v.innerHTML = '<span class="verdict__mark" aria-hidden="true">' + (right ? '✓' : '✗') + '</span><span><strong>' + head + '</strong> ' + why + '</span>';
+    $('#reveal').classList.toggle('is-right', right);
+    $('#reveal').classList.toggle('is-wrong', !right);
 
     // Shared scale for the two intervals.
     var lo = Math.min(sums[0].lo, sums[1].lo), hi = Math.max(sums[0].hi, sums[1].hi);

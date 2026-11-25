@@ -38,6 +38,16 @@
   .product.is-other .pick { display: none; }
 
   #reveal { border-left: 4px solid var(--ember); }
+  #reveal.is-right { border-left-color: var(--ok); }
+  #reveal.is-wrong { border-left-color: var(--error); }
+  .verdict { margin: 0; display: flex; align-items: baseline; gap: var(--space-3); font-size: 1.25rem; line-height: 1.35; max-width: var(--measure); }
+  .verdict__mark { flex: none; display: inline-grid; place-items: center; width: 1.8rem; height: 1.8rem; border-radius: 50%; font-weight: 800; color: var(--raised); }
+  #reveal.is-right .verdict__mark { background: var(--ok); }
+  #reveal.is-wrong .verdict__mark { background: var(--error); }
+  #reveal.is-right .verdict strong { color: var(--ok); }
+  #reveal.is-wrong .verdict strong { color: var(--error); }
+  .product.is-better { outline: 3px solid var(--ok); outline-offset: -3px; }
+  .product__badge { justify-self: start; font: 700 .75rem/1 var(--font-mono); letter-spacing: .04em; text-transform: uppercase; color: var(--raised); background: var(--ok); border-radius: var(--radius-sm); padding: .3rem .5rem; }
   #reveal-copy { margin: 0; font-size: 1.05rem; max-width: var(--measure); }
   .iv { display: grid; grid-template-columns: 7.5rem 1fr 9.5rem; align-items: center; gap: var(--space-3); font-size: .9rem; }
   .iv__name { color: var(--muted); }
@@ -101,8 +111,9 @@
     <p class="keys" style="margin:0">Keys: 1 or 2 to pick. Arrows then Enter also work.</p>
 
     <section id="reveal" class="panel" hidden>
+      <p id="verdict-line" class="verdict" aria-live="polite"></p>
       <span class="tag">What the numbers think</span>
-      <p id="reveal-copy" aria-live="polite"></p>
+      <p id="reveal-copy"></p>
       <div id="intervals" aria-label="Estimated true average with 95% range"></div>
       <div class="notes small">
         <p class="muted">Dot: estimated true average. Bar: the range it falls in 95% of the time.</p>

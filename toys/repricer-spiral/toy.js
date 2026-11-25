@@ -319,7 +319,7 @@
     var font = getComputedStyle(document.body).getPropertyValue("--font-mono") || "monospace";
     g.font = "11px " + font;
 
-    var L = 58, Rp = 10, T = 10, band = 8, B = 22 + band + 6;
+    var L = 58, Rp = 10, T = 10, band = 10, gapB = 9, B = 22 + band + gapB + 2;
     var pw = W - L - Rp, ph = H - T - B;
 
     // Y range from everything drawn so far.
@@ -381,14 +381,17 @@
       if (dd < days) {
         var lab = days <= 7 ? R.DAYS[dd].slice(0, 3) : "Wk " + (dd / 7 + 1);
         var lx = X((dd + every / 2) * 1440);
-        if (pw / (days / every) > 28) g.fillText(lab, lx, T + ph + band + 10);
+        if (pw / (days / every) > 28) g.fillText(lab, lx, T + ph + gapB + band + 6);
       }
     }
 
     // Buy Box band: who held it most in each bucket.
     var bw = pw / Math.ceil(sim.total / sim.bucketSize);
-    var bandY = T + ph + 4;
+    var bandY = T + ph + gapB; /* low enough that its label clears the $0 tick */
     g.fillStyle = palette.sunk; g.fillRect(L, bandY, pw, band);
+    // Name the strip, so its colour reads as "this seller held the Buy Box", not as a status bar.
+    g.fillStyle = palette.muted; g.textAlign = "right"; g.textBaseline = "middle";
+    g.fillText("Buy Box", L - 6, bandY + band / 2);
     for (bi = 0; bi < n; bi++) {
       b = sim.buckets[bi];
       if (!b) continue;
