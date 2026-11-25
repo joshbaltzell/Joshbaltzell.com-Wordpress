@@ -1,0 +1,193 @@
+/* The Lemonade lessons: shared layout, on top of ../kit/toy.css.
+   Most of this comes from Price the Lemonade. Series colours: you are ember,
+   the bot is note, the first stand across the street is olive, the second is ink. */
+.toy { --c-you: var(--ember); --c-bot: var(--note); --c-a: var(--olive); --c-b: var(--ink); }
+[hidden] { display: none !important; }
+/* Opening a fold shouldn't make the page jump to keep something below it in place. */
+html { overflow-anchor: none; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.play-top { justify-content: space-between; }
+.seed { font: .75rem/1 var(--font-mono); color: var(--muted); text-decoration: none; }
+.seed:hover { text-decoration: underline; }
+
+/* Mode chips and the stands across the street share one row. */
+.setup { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); align-items: center; }
+.modes { display: flex; flex-wrap: wrap; gap: var(--space-2); align-items: center; }
+.modes .chip { min-height: 44px; padding: .55rem 1rem; font-weight: 600; }
+.rivals { flex: 1 1 22rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 16.5rem), 1fr)); gap: var(--space-2) var(--space-3); align-items: center; min-width: 0; }
+.rival { display: flex; align-items: center; gap: var(--space-2); min-width: 0; margin: 0; }
+.rival label { font-weight: 700; white-space: nowrap; }
+.rival select { flex: 1 1 auto; min-height: 40px; max-width: 100%; min-width: 0; text-overflow: ellipsis; }
+.rival .key { margin-right: 0; }
+.split { margin: 0; font-size: .85rem; color: var(--muted); max-width: var(--measure); flex: 1 1 100%; }
+
+.ladder { display: grid; grid-template-columns: repeat(auto-fill, minmax(5.2rem, 1fr)); gap: var(--space-2); }
+.ladder--quarter { grid-template-columns: repeat(auto-fill, minmax(3.7rem, 1fr)); gap: var(--space-1); }
+.price { font: 600 .95rem/1 var(--font-mono); font-variant-numeric: tabular-nums; border-radius: var(--radius-sm); min-height: 44px; position: relative; padding: .45rem .3rem; }
+.ladder--quarter .price { font-size: .88rem; padding: .45rem .15rem; }
+.price__key { position: absolute; top: 3px; left: 5px; font-size: .62rem; font-weight: 400; color: var(--muted); }
+.ladder--quarter .price__key { top: 2px; left: 3px; font-size: .56rem; }
+.price--nine { border-style: dashed; border-color: var(--edge); }
+.price[aria-pressed="true"] .price__key { color: inherit; opacity: .7; }
+.price:disabled { opacity: .45; cursor: default; }
+.board { margin: 0; font-size: .9rem; color: var(--muted); }
+
+.actions .btn--primary { min-width: 11rem; }
+kbd { font: .75rem var(--font-mono); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: var(--radius-sm); padding: 0 .3rem; background: var(--ground); }
+.keys { margin: 0; }
+
+/* Rule editor */
+.presets { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.field { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin: 0; }
+.rule > * { min-width: 0; }
+.rule select, .rule input[type="number"] { min-height: 40px; max-width: 100%; min-width: 0; }
+.rule select { text-overflow: ellipsis; }
+.rlines { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); counter-reset: rline; }
+.rline { min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); border: 1px solid var(--line); border-radius: var(--radius-sm); background: var(--ground); counter-increment: rline; }
+.rline::before { content: counter(rline); font: 600 .72rem/1 var(--font-mono); color: var(--muted); min-width: 1ch; }
+.rline__word { font-weight: 700; }
+.rline__num { display: inline-flex; align-items: center; gap: .2rem; }
+.rline__num input { width: 5.5rem; }
+.btn--small { min-height: 40px; padding: .4rem .7rem; font-size: .85rem; border-width: 1px; margin-left: auto; }
+.otherwise { margin: 0; font-weight: 700; }
+.check { display: flex; gap: var(--space-2); align-items: flex-start; margin: 0; }
+.check input { width: 1.15rem; height: 1.15rem; margin: .2rem 0 0; accent-color: var(--ember); flex: none; }
+.last { margin: 0; font: 600 .9rem/1.3 var(--font-mono); }
+.run-row .btn--primary { min-width: 9rem; }
+
+/* The chart: prices by day, profit by day under it. */
+.chart-panel { gap: var(--space-2); }
+.chart-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-1) var(--space-3); }
+.legend { list-style: none; display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); margin: 0; padding: 0; font-size: .85rem; color: var(--muted); }
+.legend li { display: inline-flex; align-items: baseline; gap: .35rem; white-space: nowrap; }
+.legend b { font: 600 .9rem/1 var(--font-mono); font-variant-numeric: tabular-nums; color: var(--ink); }
+.swatch { display: inline-block; width: 18px; height: 0; border-top: 3px solid var(--c); vertical-align: middle; align-self: center; }
+.swatch--bot { --c: var(--c-bot); }
+.swatch--you { --c: var(--c-you); }
+.swatch--a { --c: var(--c-a); border-top-style: dashed; }
+.swatch--b { --c: var(--c-b); border-top-style: dotted; }
+.key { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: .4rem; vertical-align: -1px; }
+.key--you { background: var(--c-you); }
+.key--bot { border: 2px solid var(--c-bot); }
+.street { min-height: 36px; font-size: .8rem; }
+.chart { height: 340px; touch-action: pan-y; }
+.note { margin: 0; font-size: .88rem; line-height: 1.4; min-height: 1.4em; }
+.note__street { font-weight: 700; }
+.lastday { margin: 0; font-size: .82rem; color: var(--muted); line-height: 1.4; }
+
+.history { max-height: 16rem; overflow: auto; border-top: 1px solid var(--line); }
+table { width: 100%; border-collapse: collapse; font: .82rem/1.3 var(--font-mono); font-variant-numeric: tabular-nums; }
+th, td { text-align: right; padding: .35rem .4rem; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; }
+thead th { background: var(--raised); color: var(--muted); font-weight: 600; font-size: .7rem; letter-spacing: .04em; text-transform: uppercase; }
+.history thead th { position: sticky; top: 0; }
+td.empty { text-align: left; white-space: normal; color: var(--muted); font-family: var(--font-text); padding: var(--space-3) .4rem; }
+tr.fresh td { animation: fresh .6s ease-out; }
+tr.hot td { background: var(--sunk); }
+@keyframes fresh { from { background: var(--sunk); } to { background: transparent; } }
+.results-wrap { overflow-x: auto; }
+
+.end h2 { font-size: 1.5rem; }
+.end h2:focus { outline: none; }
+.summary p { margin: 0 0 var(--space-2); max-width: var(--measure); }
+.summary p:last-child { margin-bottom: 0; }
+.summary .lesson { font-weight: 700; }
+.results th[scope="row"] { font-family: var(--font-text); font-weight: 600; }
+.curve { height: 260px; }
+.curve-legend { display: flex; flex-wrap: wrap; gap: var(--space-1) var(--space-4); font-size: .85rem; color: var(--muted); margin: 0; }
+
+.why-list { margin: 0; padding: 0; list-style: none; max-height: 18rem; overflow: auto; border-top: 1px solid var(--line); font-size: .9rem; }
+.why-list li { padding: .35rem 0; border-bottom: 1px solid var(--line); }
+.why__day { font: 600 .82rem var(--font-mono); font-variant-numeric: tabular-nums; }
+
+/* How the customers think */
+.psy-list { display: grid; gap: var(--space-4); }
+.effect { display: grid; gap: var(--space-2); border-top: 1px solid var(--line); padding-top: var(--space-3); }
+.effect .check { font-weight: 700; font-size: 1rem; }
+.effect p { margin: 0; max-width: var(--measure); }
+.effect .sub { font-weight: 400; font-size: .9rem; margin-left: 1.65rem; }
+.sources { margin: 0; padding-left: 1.2rem; font-size: .8rem; color: var(--muted); display: grid; gap: var(--space-1); }
+.caveat { margin: 0; max-width: var(--measure); }
+
+/* Folds: secondary panels open and close. Open by default on the toy's own page,
+   closed when it is embedded in an article. */
+.fold { display: block; padding: 0; }
+.fold > summary { list-style: none; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-3); min-height: 48px; padding: var(--space-2) var(--space-4); cursor: pointer; border-radius: var(--radius-md); }
+.fold > summary::-webkit-details-marker { display: none; }
+.fold > summary::before { content: ""; flex: none; width: .5rem; height: .5rem; margin: 0 .15rem 0 .1rem; border-right: 2px solid var(--ink); border-bottom: 2px solid var(--ink); transform: rotate(-45deg); transition: transform .15s ease-out; }
+.fold[open] > summary::before { transform: rotate(45deg) translate(-2px, -2px); }
+.fold > summary h2, .fold > summary h3 { font-size: 1.15rem; }
+.fold > summary:hover h2, .fold > summary:hover h3 { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; }
+.fold > summary:focus-visible { outline: 3px solid var(--ember); outline-offset: 2px; }
+.fold__hint { font-size: .82rem; color: var(--muted); }
+.fold__body { display: grid; gap: var(--space-3); min-width: 0; padding: 0 var(--space-4) var(--space-4); }
+.fold--inner { border-top: 1px solid var(--line); margin-top: var(--space-1); }
+.fold--inner > summary { padding: var(--space-2) 0; }
+.fold--inner > .fold__body { padding: 0; }
+.fold--edit { border-top: 0; margin-top: 0; }
+.embed-intro { display: none; }
+
+/* Embedded in an article: the playing area first, everything else folded. */
+.is-embedded body { padding: var(--space-2) 12px var(--space-4); }
+.is-embedded .toy { gap: var(--space-2); }
+.is-embedded .toy-head > :not(.embed-intro) { display: none; }
+.is-embedded .toy-head .embed-intro { display: block; font-size: .88rem; line-height: 1.4; }
+.is-embedded .panel:not(.fold) { padding: var(--space-2) var(--space-3); gap: var(--space-2); }
+.is-embedded .fold > summary { padding: var(--space-1) var(--space-3); min-height: 44px; }
+.is-embedded .fold__body { padding: 0 var(--space-3) var(--space-3); }
+.is-embedded .fold--inner > summary, .is-embedded .fold--inner > .fold__body { padding-left: 0; padding-right: 0; }
+.is-embedded .fold > summary h2, .is-embedded .fold > summary h3 { font-size: 1.02rem; }
+.is-embedded .modes .chip { min-height: 40px; padding: .4rem .8rem; }
+.is-embedded .setup { gap: var(--space-2) var(--space-3); }
+.is-embedded .rival select { min-height: 36px; font-size: .88rem; padding: .2rem .4rem; }
+.is-embedded .rival label { font-size: .85rem; }
+/* Embedded, the split sentence moves into the chart's note line until day 1. */
+.is-embedded .setup .split { display: none; }
+.is-embedded .price { min-height: 38px; padding: .35rem .2rem; }
+.is-embedded .ladder { grid-template-columns: repeat(auto-fill, minmax(4rem, 1fr)); gap: var(--space-1); }
+.is-embedded .ladder--quarter { grid-template-columns: repeat(auto-fill, minmax(3.3rem, 1fr)); }
+.is-embedded .actions { gap: var(--space-2); }
+.is-embedded .actions .btn, .is-embedded .run-row .btn { min-height: 40px; padding: .45rem .8rem; }
+.is-embedded .actions .btn--primary { min-width: 9.5rem; }
+.is-embedded .keys { font-size: .75rem; }
+.is-embedded .end h2 { font-size: 1.15rem; }
+.is-embedded .end .summary p { font-size: .9rem; margin-bottom: var(--space-1); line-height: 1.45; }
+.is-embedded .chart { height: 280px; }
+.is-embedded .curve { height: 220px; }
+.is-embedded .legend { font-size: .8rem; gap: 0 var(--space-3); }
+.is-embedded .note { font-size: .82rem; }
+.is-embedded .lastday { font-size: .76rem; }
+.is-embedded .credit { font-size: .78rem; padding-top: var(--space-2); margin: 0; }
+@media (pointer: coarse) { .is-embedded .keys { display: none; } }
+.is-embedded .fold--edit > summary { min-height: 40px; }
+.is-embedded .fold--edit > summary h2 { font-size: 1rem; }
+.is-embedded .presets-label { font-size: .8rem; }
+.is-embedded .presets { gap: var(--space-1) var(--space-2); }
+.is-embedded .rule .chip { min-height: 36px; padding: .4rem .7rem; }
+.is-embedded .rline { padding: var(--space-1) var(--space-2); gap: var(--space-1) var(--space-2); }
+.is-embedded .rule select, .is-embedded .rule input[type="number"] { min-height: 36px; font-size: .88rem; padding: .25rem .4rem; }
+.is-embedded .rline__num input { width: 4.5rem; }
+.is-embedded .rline .btn--small { min-height: 36px; padding: .3rem .6rem; font-size: .8rem; }
+.is-embedded #add-line { min-height: 38px; }
+.is-embedded .otherwise { font-size: .9rem; }
+.is-embedded .rule .check { font-size: .82rem; line-height: 1.4; }
+.is-embedded .board { font-size: .8rem; }
+.is-embedded .caveat, .is-embedded .effect p { font-size: .9rem; }
+/* The rule editor can be taller than the frame, so its Run buttons stay in view. */
+.is-embedded .run-row { position: sticky; bottom: 0; z-index: 1; margin: 0 calc(-1 * var(--space-3)) calc(-1 * var(--space-2)); padding: var(--space-2) var(--space-3); background: var(--raised); border-top: 1px solid var(--line); border-radius: 0 0 var(--radius-md) var(--radius-md); }
+
+@media (max-width: 40rem) {
+  .chart { height: 300px; }
+  .is-embedded .chart { height: 256px; }
+}
+@media (max-width: 30rem) {
+  .ladder { grid-template-columns: repeat(4, 1fr); }
+  .ladder--quarter, .is-embedded .ladder--quarter { grid-template-columns: repeat(5, 1fr); }
+  .price { font-size: .85rem; }
+  .actions .btn { flex: 1 1 auto; }
+  .run-row .btn { flex: 1 1 auto; }
+  .chart { height: 280px; }
+  th, td { padding: .3rem .25rem; }
+  .rline select { flex: 1 1 100%; }
+  .btn--small { margin-left: 0; }
+}

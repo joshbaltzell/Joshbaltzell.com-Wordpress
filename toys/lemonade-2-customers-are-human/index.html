@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lemonade 2: Customers are human</title>
+<meta name="description" content="The same lemonade stand, but the customers notice .99 prices, remember what they paid and see a $9 cup on the menu board.">
+<link rel="stylesheet" href="../kit/toy.css">
+<link rel="stylesheet" href="../lemonade-engine/lemonade.css">
+<script>
+  /* Inside a frame (or with ?embed=1) the toy uses a compact layout. */
+  (function () {
+    var e = /[?&]embed=1(&|$)/.test(location.search);
+    try { if (window.self !== window.top) e = true; } catch (x) { e = true; }
+    if (e) document.documentElement.classList.add('is-embedded');
+  })();
+  /* This lesson's setup. See ../lemonade-engine/engine.js (LESSONS) for every option. */
+  window.LEMONADE = { lesson: 2, days: 30 };
+</script>
+</head>
+<body>
+<main class="toy">
+  <header class="toy-head">
+    <span class="tag">Game</span>
+    <h1>Lemonade 2: Customers are human</h1>
+    <p>The same 30 days and the same bot, but now how a price is shown and what customers paid before both change what they buy. Each effect can be turned off under “How the customers think”.</p>
+    <p class="embed-intro">Pick a price each day. These customers are a little human. “How the customers think” is below.</p>
+  </header>
+
+  <div id="lemonade"></div>
+
+  <details class="panel fold" id="psy" open>
+    <summary><h2 id="psy-title">How the customers think</h2><span class="fold__hint" id="psy-hint">Three effects, all on</span></summary>
+    <div class="fold__body">
+    <p class="caveat">Three findings from pricing research are built into the customers. You and the bot face the same customers. The bot doesn’t know about any of this. It only learns from what sold.</p>
+    <p class="caveat small muted">The sizes in this model are illustrative, not measured. The studies found these effects in specific settings, such as a clothing catalog and a magazine subscription offer, and they won’t hold the same way everywhere. Changing a setting starts the round again on the same days.</p>
+    <div class="psy-list">
+      <div class="effect">
+        <label class="check"><input type="checkbox" data-setting="charm" checked> <span>Charm prices (the left-digit effect)</span></label>
+        <p>People read prices from the left. $2.99 starts with a 2, so it feels nearer $2 than $3, even though it’s a penny short of $3. Here a price ending in .99 feels about 8 cents cheaper than it is.</p>
+        <label class="check sub"><input type="checkbox" data-setting="nines" checked> <span>Put $2.99, $3.99, $4.99 and $5.99 on the menu</span></label>
+        <ul class="sources">
+          <li>Manoj Thomas and Vicki Morwitz, “Penny Wise and Pound Foolish: The Left-Digit Effect in Price Cognition,” <cite>Journal of Consumer Research</cite> 32, no. 1 (2005): 54–64.</li>
+          <li>Eric T. Anderson and Duncan I. Simester, “Effects of $9 Price Endings on Retail Sales: Evidence from Field Experiments,” <cite>Quantitative Marketing and Economics</cite> 1, no. 1 (2003): 93–110. In a clothing catalog test, a $39 price outsold both $34 and $44.</li>
+        </ul>
+      </div>
+      <div class="effect">
+        <label class="check"><input type="checkbox" data-setting="ref" checked> <span>Reference prices and loss aversion</span></label>
+        <p>Customers remember what they paid on recent days. A price above that feels like a loss, and losses weigh more than gains, so a raise costs more buyers than an equal cut wins back. Here customers remember the last three days, and a raise counts two and a half times as much as a cut.</p>
+        <ul class="sources">
+          <li>Daniel Kahneman and Amos Tversky, “Prospect Theory: An Analysis of Decision under Risk,” <cite>Econometrica</cite> 47, no. 2 (1979): 263–291.</li>
+          <li>Gurumurthy Kalyanaram and Russell S. Winer, “Empirical Generalizations from Reference Price Research,” <cite>Marketing Science</cite> 14, no. 3 (1995): G161–G169.</li>
+        </ul>
+      </div>
+      <div class="effect">
+        <label class="check"><input type="checkbox" data-setting="anchor" checked> <span>Anchoring and the decoy</span></label>
+        <p>The menu board shows a Grand cup at $9.00. Almost nobody buys it, and here nobody does. Seen next to it, a regular cup looks modest, so people will pay about 5 cents more for one.</p>
+        <ul class="sources">
+          <li>Joel Huber, John W. Payne and Christopher Puto, “Adding Asymmetrically Dominated Alternatives: Violations of Regularity and the Similarity Hypothesis,” <cite>Journal of Consumer Research</cite> 9, no. 1 (1982): 90–98.</li>
+          <li>Dan Ariely, <cite>Predictably Irrational</cite> (HarperCollins, 2008), chapter 1, the Economist subscription example.</li>
+        </ul>
+      </div>
+    </div>
+    </div>
+  </details>
+
+  <p class="credit">The bot uses Thompson sampling (William R. Thompson, 1933). Each day it guesses how likely a visitor is to buy at each price, picks the price that looks best under that guess, and updates.</p>
+</main>
+<script src="../lemonade-engine/engine.js"></script>
+<script src="../lemonade-engine/ui.js"></script>
+</body>
+</html>

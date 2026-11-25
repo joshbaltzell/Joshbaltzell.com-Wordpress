@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lemonade 1: Find your price</title>
+<meta name="description" content="Pick a lemonade price each day for 30 days, beside a bot that is learning too. Trying prices costs money now and pays later.">
+<link rel="stylesheet" href="../kit/toy.css">
+<link rel="stylesheet" href="../lemonade-engine/lemonade.css">
+<script>
+  /* Inside a frame (or with ?embed=1) the toy uses a compact layout. */
+  (function () {
+    var e = /[?&]embed=1(&|$)/.test(location.search);
+    try { if (window.self !== window.top) e = true; } catch (x) { e = true; }
+    if (e) document.documentElement.classList.add('is-embedded');
+  })();
+  /* This lesson's setup. See ../lemonade-engine/engine.js (LESSONS) for every option. */
+  window.LEMONADE = { lesson: 1, days: 30 };
+</script>
+</head>
+<body>
+<main class="toy">
+  <header class="toy-head">
+    <span class="tag">Game</span>
+    <h1>Lemonade 1: Find your price</h1>
+    <p>Pick a lemonade price each day for 30 days. A cup costs $1.20 to make, and a bot plays the same days beside you with the same visitors.</p>
+    <p class="embed-intro">Pick a price, then sell one day or several. A cup costs $1.20. A bot plays the same 30 days.</p>
+  </header>
+
+  <div id="lemonade"></div>
+
+  <p class="credit">The bot uses Thompson sampling (William R. Thompson, 1933). Each day it guesses how likely a visitor is to buy at each price, picks the price that looks best under that guess, and updates.</p>
+</main>
+<script src="../lemonade-engine/engine.js"></script>
+<script src="../lemonade-engine/ui.js"></script>
+</body>
+</html>

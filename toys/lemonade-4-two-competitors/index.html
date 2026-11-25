@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lemonade 4: Two competitors</title>
+<meta name="description" content="Two lemonade stands across the street, each with a rule that reacts to you and to each other. Some pairs settle. Others spiral.">
+<link rel="stylesheet" href="../kit/toy.css">
+<link rel="stylesheet" href="../lemonade-engine/lemonade.css">
+<script>
+  /* Inside a frame (or with ?embed=1) the toy uses a compact layout. */
+  (function () {
+    var e = /[?&]embed=1(&|$)/.test(location.search);
+    try { if (window.self !== window.top) e = true; } catch (x) { e = true; }
+    if (e) document.documentElement.classList.add('is-embedded');
+  })();
+  /* This lesson's setup. See ../lemonade-engine/engine.js (LESSONS) for every option. */
+  window.LEMONADE = { lesson: 4, days: 90, rivals: ['under', 'match'] };
+</script>
+</head>
+<body>
+<main class="toy">
+  <header class="toy-head">
+    <span class="tag">Game</span>
+    <h1>Lemonade 4: Two competitors</h1>
+    <p>Two stands across the street, each with a rule that watches you and the other stand. Some pairs of rules settle down. Others spiral.</p>
+    <p class="embed-intro">Pick a price each day, or write a rule. Both stands react to you and to each other.</p>
+  </header>
+
+  <div id="lemonade"></div>
+
+  <p class="credit">The bot uses Thompson sampling (William R. Thompson, 1933). Each day it guesses how likely a visitor is to buy at each price, picks the price that looks best under that guess, and updates. The stands across the street don’t learn. They follow their rules.</p>
+</main>
+<script src="../lemonade-engine/engine.js"></script>
+<script src="../lemonade-engine/ui.js"></script>
+</body>
+</html>
