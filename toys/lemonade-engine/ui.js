@@ -20,10 +20,10 @@
   const sum = (a) => a.reduce((x, y) => x + y, 0);
 
   // Words that change with the number of stands across the street.
-  const NAMES = C.names || (R === 1 ? ['The other stand'] : ['Stand A', 'Stand B']);
+  const NAMES = C.names || (R === 1 ? ['The competitor'] : ['Competitor A', 'Competitor B']);
   // In the middle of a sentence (the street notes).
   const MID = R === 1 ? NAMES.map((n) => n.replace(/^The /, 'the ')) : NAMES;
-  const SHORT = C.short || (R === 1 ? ['Other stand'] : NAMES);
+  const SHORT = C.short || (R === 1 ? ['Competitor'] : NAMES);
   const ruleName = (key) => (R > 1 ? RIVALS[key].many : RIVALS[key].you);
   const subjects = Object.assign({}, SUBJECTS, { comp: R > 1 ? 'cheapest competitor’s price yesterday' : 'competitor’s price yesterday' });
   const acts = Object.assign({}, ACTS, R > 1 ? { match: 'match the cheapest competitor', under: 'go under the cheapest competitor' } : {});
@@ -31,8 +31,8 @@
   const PRESETS = R ? E.STREET_PRESETS : E.PRESETS;
   const bigLabel = C.bigStep === 7 ? 'a week' : C.bigStep + ' days';
   const SPLIT = C.split || (R === 1
-    ? 'Each visitor picks a stand, then buys or walks on. One in five always come to you and one in five always go to them. The rest lean toward the cheaper stand: a 50-cent gap sends 3 in 4 of them there.'
-    : 'Each visitor picks one of the three stands, then buys or walks on. About one in seven are regulars at each stand. The rest lean toward the cheapest: a 50-cent gap sends 3 in 4 of them there.');
+    ? 'Each visitor picks a seller, then buys or walks on. One in five always come to you and one in five always go to the competitor. The rest lean toward the cheaper one: a 50-cent gap sends 3 in 4 of them there.'
+    : 'Each visitor picks one of the three sellers (you and two competitors), then buys or walks on. About one in seven always go to the same seller. The rest lean toward the cheapest: a 50-cent gap sends 3 in 4 of them there.');
 
   /* ---------- Markup ---------- */
 
@@ -46,7 +46,7 @@
       '<button class="chip" id="mode-rule" type="button" aria-pressed="false">Write a rule</button></div>' : '') +
     (R ? '<div class="rivals">' + C.rivals.map((k, j) =>
       '<p class="rival"><span class="' + swatchClass(j) + '" aria-hidden="true"></span><label for="rival-' + j + '">' +
-      (R === 1 ? 'Across the street' : esc(NAMES[j])) + '</label><select id="rival-' + j + '" data-j="' + j + '">' + rivalOptions(k) + '</select></p>').join('') +
+      (R === 1 ? 'Competitor' : esc(NAMES[j])) + '</label><select id="rival-' + j + '" data-j="' + j + '">' + rivalOptions(k) + '</select></p>').join('') +
       '</div><p class="split">' + esc(SPLIT) + '</p>' : '') +
     '</div>' : '';
 
@@ -114,7 +114,7 @@
     '<section class="panel chart-panel" id="chart-panel" aria-labelledby="chart-title">' +
       '<h2 id="chart-title" class="sr-only">Prices and profit by day</h2>' +
       '<div class="chart-head"><ul class="legend" id="legend" aria-label="Totals so far"></ul>' +
-      (R ? '<button class="chip street" id="street" type="button" aria-pressed="false">Show the bot’s street</button>' : '') + '</div>' +
+      (R ? '<button class="chip street" id="street" type="button" aria-pressed="false" title="The bot plays its own copy of this round, with its own copy of the competitors, which react to the bot instead of you.">Show the bot’s game</button>' : '') + '</div>' +
       '<canvas class="chart" id="chart" role="img" aria-label="Price by day on top, profit by day underneath. The Day by day table has the same numbers."></canvas>' +
       (R ? '<p class="note" id="note" aria-live="polite"></p>' : '') +
       '<p class="lastday" id="lastday" aria-live="polite"></p>' +
@@ -128,7 +128,7 @@
       '<div class="fold__body"><div class="history" tabindex="0" aria-label="Daily results"><table>' +
         '<thead><tr><th scope="col">Day</th><th scope="col">Visitors</th><th scope="col" id="you-col">You</th><th scope="col">Sold</th><th scope="col">Profit</th>' + rivalCols +
         '<th scope="col">Bot</th><th scope="col">Sold</th><th scope="col">Profit</th></tr></thead><tbody id="rows"></tbody></table></div>' +
-      (R ? '<p class="small muted" style="margin:0">The stand columns are the stands across your street. The bot’s street has its own copies, which react to the bot.</p>' : '') +
+      (R ? '<p class="small muted" style="margin:0">The competitor columns are your competitors. The bot plays its own copy of the round, with its own copy of the competitors, which react to the bot instead of you.</p>' : '') +
       '</div></details>';
 
   const mount = document.getElementById('lemonade');
@@ -423,7 +423,7 @@
   function renderLegend(t) {
     const items = [['you', youName(true), t.you], ['bot', 'Bot', t.bot]];
     const rt = botStreet ? t.botRivals : t.rivals;
-    C.rivals.forEach((_, j) => items.push([j ? 'b' : 'a', SHORT[j] + (botStreet ? ' (bot’s street)' : ''), rt[j]]));
+    C.rivals.forEach((_, j) => items.push([j ? 'b' : 'a', SHORT[j] + (botStreet ? ' (bot’s game)' : ''), rt[j]]));
     el.legend.innerHTML = items.map((it) =>
       '<li><span class="swatch swatch--' + it[0] + '" aria-hidden="true"></span>' + esc(it[1]) + ' <b>' + money(it[2]) + '</b></li>').join('');
   }
@@ -437,10 +437,10 @@
     if (!n) {
       // Embedded, the note line carries the sentence on how visitors pick a stand.
       el.lastday.textContent = R && embedded ? ''
-        : R ? 'Nothing sold yet. Each day adds a point for ' + youName() + ', the bot and the stands across the street.'
+        : R ? 'Nothing sold yet. Each day adds a point for ' + youName() + ', the bot and the competitors.'
           : 'Nothing sold yet. Each day adds a point for ' + youName() + ' and the bot, so you can see who is still trying new prices.';
       el.lastday.hidden = !el.lastday.textContent;
-      if (el.note) el.note.textContent = R && embedded ? SPLIT : R ? 'Across the street: ' + rivals.map((k, j) => (R > 1 ? NAMES[j] + ', ' : '') + '“' + ruleName(k) + '”').join('. ') + '.' : '';
+      if (el.note) el.note.textContent = R && embedded ? SPLIT : R ? 'Competitors’ rules: ' + rivals.map((k, j) => (R > 1 ? NAMES[j] + ', ' : '') + '“' + ruleName(k) + '”').join('. ') + '.' : '';
       return;
     }
     const x = state.days[n - 1];
@@ -453,7 +453,7 @@
     el.lastday.hidden = false;
     if (el.note) {
       const note = streetNote(state.round, state.days, n, botStreet ? 'bot' : 'you', MID);
-      el.note.innerHTML = (botStreet ? '<span class="note__street">Bot’s street.</span> ' : '') + esc(note ? note.text : '');
+      el.note.innerHTML = (botStreet ? '<span class="note__street">Bot’s game.</span> ' : '') + esc(note ? note.text : '');
     }
   }
 
@@ -595,7 +595,7 @@
     let lesson;
     if (Math.abs(o.h.bestPrice - h.bestPrice) > 1e-9) {
       lesson = 'Against “' + name + '”, the best price to hold all ' + D + ' days was ' + fmt(h.bestPrice) + '. Against “' + ruleName(o.k) +
-        '” it would have been ' + fmt(o.h.bestPrice) + '. The customers were the same. Only the other stand’s rule changed.';
+        '” it would have been ' + fmt(o.h.bestPrice) + '. The customers were the same. Only the competitor’s rule changed.';
     } else {
       lesson = 'Against “' + name + '”, the best price to hold all ' + D + ' days was ' + fmt(h.bestPrice) + ', and this round it was the same against every rule on the list. Try another round: the curve matters too.';
     }
@@ -603,7 +603,7 @@
     const extra = [];
     extra.push(youName(true) + ' made ' + money(t.you) + '. ' + NAMES[0] + ' made ' + money(t.rivals[0]) + '. Holding ' + fmt(h.bestPrice) + ' every day would have made ' + money(h.bestTotal) + '.');
     if ((key === 'under' || key === 'undercut' || key === 'match') && seq[0] - seq[seq.length - 1] >= 0.75) {
-      extra.push(youName(true) + ' started at ' + fmt(seq[0]) + ' and ended at ' + fmt(seq[seq.length - 1]) + '. The other stand followed every cut.');
+      extra.push(youName(true) + ' started at ' + fmt(seq[0]) + ' and ended at ' + fmt(seq[seq.length - 1]) + '. The competitor followed every cut.');
     }
     return { lesson, extra };
   }
@@ -617,24 +617,24 @@
     const lastN = notes[notes.length - 1];
     let lesson;
     if (floor && spiral && spiral.kind === 'spiral-down') {
-      lesson = 'The two stands were undercutting each other from day ' + (spiral.start + 1) + ' and both sat at their floors from day ' + floor.first +
-        '. Neither rule looks at customers. Each one reacts to the other stand as well as to ' + youName() + ', so one cut led to the next.';
+      lesson = 'The two competitors were undercutting each other from day ' + (spiral.start + 1) + ' and both sat at their lowest allowed price from day ' + floor.first +
+        '. Neither rule looks at customers. Each one reacts to the other competitor as well as to ' + youName() + ', so one cut led to the next.';
     } else if (floor) {
-      lesson = 'Both stands followed ' + (mode === 'rule' ? 'your rule' : 'you') + ' down and sat at their floors from day ' + floor.first + '. Each cut ' + youName() + ' made was answered the next day.';
+      lesson = 'Both competitors followed ' + (mode === 'rule' ? 'your rule' : 'you') + ' down and sat at their lowest allowed price from day ' + floor.first + '. Each cut ' + youName() + ' made was answered the next day.';
     } else if (spiral && spiral.kind === 'spiral-up') {
-      lesson = 'The two stands pushed each other up from day ' + (spiral.start + 1) + '. A rule that stays above the cheapest only climbs when the others climb too, and here they did.';
+      lesson = 'The two competitors pushed each other up from day ' + (spiral.start + 1) + '. A rule that stays above the cheapest only climbs when the others climb too, and here they did.';
     } else if (spiral) {
-      lesson = 'The two stands undercut each other from day ' + (spiral.start + 1) + ', but never both reached their floors. ' + (lastN ? lastN.text.replace(/^Day \d+: /, 'By the end, ') : '');
+      lesson = 'The two competitors undercut each other from day ' + (spiral.start + 1) + ', but never both reached their lowest allowed price. ' + (lastN ? lastN.text.replace(/^Day \d+: /, 'By the end, ') : '');
     } else if (follow) {
-      lesson = 'The two stands followed ' + youName() + ' rather than each other this time. Their prices moved when ' + youName() + ' moved.';
+      lesson = 'The two competitors followed ' + youName() + ' rather than each other this time. Their prices moved when ' + youName() + ' moved.';
     } else {
       const holds = rivals.filter((k) => k === 'hold').length;
-      lesson = 'These two rules didn’t spiral this time.' + (holds ? ' “Hold $3.50” doesn’t react, so it kept the street steady.' : ' Try two stands that both undercut.');
+      lesson = 'These two rules didn’t spiral this time.' + (holds ? ' “Hold $3.50” doesn’t react, so it kept prices steady.' : ' Try two competitors that both undercut.');
     }
     const lowEnd = Math.min.apply(null, state.days[D - 1].rivals.map((r) => r.price));
     const extra = [
       youName(true) + ' made ' + money(t.you) + '. ' + NAMES[0] + ' made ' + money(t.rivals[0]) + ' and ' + NAMES[1] + ' ' + money(t.rivals[1]) +
-        '. On day ' + D + ' the cheapest stand across the street charged ' + fmt(lowEnd) + '.',
+        '. On day ' + D + ' the cheaper competitor charged ' + fmt(lowEnd) + '.',
       'Against these two rules, the best price to hold all ' + D + ' days was ' + fmt(h.bestPrice) + ', for ' + money(h.bestTotal) + '.'
     ];
     return { lesson, extra };
@@ -660,9 +660,9 @@
 
     const lines = extra.slice();
     if (R) {
-      lines.push('The bot made ' + money(t.bot) + ' against its own copy of the ' + (R > 1 ? 'stands' : 'stand') + '. ' + cmp + ' It learns from what sells and doesn’t know about their rules.');
-      if (!lines.some((l) => /With nobody across the street/.test(l))) {
-        lines.push('With nobody across the street, the best price on these days was ' + fmt(state.result.alone.bestPrice) + '.');
+      lines.push('The bot made ' + money(t.bot) + ' against its own copy of the ' + (R > 1 ? 'competitors' : 'competitor') + '. ' + cmp + ' It learns from what sells and doesn’t know about their rules.');
+      if (!lines.some((l) => /With no competition/.test(l))) {
+        lines.push('With no competition, the best price on these days was ' + fmt(state.result.alone.bestPrice) + '.');
       }
     } else {
       // Lesson 2 leads with which effect mattered; lesson 1 with how each player settled.
@@ -697,10 +697,10 @@
     if (rm && sameRule) lastRun = { key: setupKey(), total: t.you };
 
     if (R) {
-      el.curveName.textContent = 'Holding one price, against ' + (R > 1 ? 'these stands' : 'this stand');
-      el.curveBlurb.textContent = 'What each price would have made if held all ' + D + ' days, with the stands reacting to it. The hidden curve this round: ' + r.def.name.toLowerCase() + '. ' + r.def.blurb;
-      el.curveLegend.innerHTML = '<span>Solid line: against ' + (R > 1 ? 'these two rules' : '“' + esc(ruleName(rivals[0])) + '”') + '</span><span>Dashed line: nobody across the street</span><span>Dot: the price ' + esc(youName()) + ' used most</span>';
-      el.curve.setAttribute('aria-label', 'Total profit for each price held all round, against these stands and with nobody across the street.');
+      el.curveName.textContent = 'Holding one price, against ' + (R > 1 ? 'these competitors' : 'this competitor');
+      el.curveBlurb.textContent = 'What each price would have made if held all ' + D + ' days, with the competitors reacting to it. The hidden curve this round: ' + r.def.name.toLowerCase() + '. ' + r.def.blurb;
+      el.curveLegend.innerHTML = '<span>Solid line: against ' + (R > 1 ? 'these two rules' : '“' + esc(ruleName(rivals[0])) + '”') + '</span><span>Dashed line: no competition</span><span>Dot: the price ' + esc(youName()) + ' used most</span>';
+      el.curve.setAttribute('aria-label', 'Total profit for each price held all round, against these competitors and with no competition.');
     } else {
       el.curveName.textContent = 'The hidden curve: ' + r.def.name;
       el.curveBlurb.textContent = r.def.blurb;
@@ -1031,7 +1031,7 @@
   if (el.street) el.street.addEventListener('click', () => {
     botStreet = !botStreet;
     el.street.setAttribute('aria-pressed', botStreet ? 'true' : 'false');
-    el.street.textContent = botStreet ? 'Show your street' : 'Show the bot’s street';
+    el.street.textContent = botStreet ? 'Show your game' : 'Show the bot’s game';
     renderLegend(totals(state.days));
     renderLastDay();
     drawChart();

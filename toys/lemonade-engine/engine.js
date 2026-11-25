@@ -157,11 +157,11 @@
   // used when the stand faces one player; "many" when there are two stands.
   const RIVALS = {
     under: {
-      you: 'Stay 25 cents under you', many: 'Stay 25 cents under the cheapest',
+      you: 'Stay 25 cents under you', many: 'Stay 25 cents under the lowest price',
       floor: FLOOR, next: (t) => t - 0.25
     },
     match: {
-      you: 'Match you', many: 'Match the cheapest',
+      you: 'Match you', many: 'Match the lowest price',
       floor: FLOOR, next: (t) => t
     },
     hold: {
@@ -169,11 +169,11 @@
       floor: FLOOR, next: () => 3.5
     },
     undercut: {
-      you: 'Undercut, but never below $2.50', many: 'Undercut the cheapest, but never below $2.50',
+      you: 'Undercut, but never below $2.50', many: 'Undercut the lowest price, but never below $2.50',
       floor: 2.5, next: (t) => t - 0.25
     },
     above: {
-      you: 'Stay 10% above you', many: 'Stay 10% above the cheapest',
+      you: 'Stay 10% above you', many: 'Stay 10% above the lowest price',
       floor: FLOOR, next: (t) => Math.round(t * 1.1 * 20) / 20
     }
   };
@@ -683,7 +683,7 @@
       const atFloor = Math.abs(x - fl) < 1e-9 && key !== 'hold' && key !== 'match' && RIVALS[key].next(y) < fl - 1e-9;
       let what;
       if (key === 'hold') what = 'held ' + fmt(x) + ', whatever ' + you + ' charged';
-      else if (atFloor) what = 'charged ' + fmt(x) + ', its floor. It can’t go under ' + your + ' ' + fmt(y);
+      else if (atFloor) what = 'charged ' + fmt(x) + ', the lowest its rule allows. It can’t go under ' + your + ' ' + fmt(y);
       else if (key === 'match') what = 'matched ' + your + ' ' + fmt(y) + ' from yesterday';
       else if (key === 'above') what = 'charged ' + fmt(x) + ', 10% over ' + your + ' ' + fmt(y) + ' yesterday';
       else what = 'charged ' + fmt(x) + ', 25 cents under ' + your + ' ' + fmt(y) + ' yesterday';
@@ -722,16 +722,16 @@
     if (atFloors && d >= 3 && low(d) < low(1) - 1e-9) {
       let first = d;
       while (first > 1 && Math.abs(a(first - 1) - floors[0]) < 1e-9 && Math.abs(b(first - 1) - floors[1]) < 1e-9) first--;
-      const fl = floors[0] === floors[1] ? 'their floor, ' + fmt(floors[0]) : 'their floors, ' + fmt(floors[0]) + ' and ' + fmt(floors[1]);
-      return { d, kind: 'floor', first, text: 'Day ' + d + ': both stands have been at ' + fl + ', since day ' + first + '. They can’t go lower.' };
+      const fl = floors[0] === floors[1] ? 'the lowest price their rules allow, ' + fmt(floors[0]) : 'the lowest prices their rules allow, ' + fmt(floors[0]) + ' and ' + fmt(floors[1]);
+      return { d, kind: 'floor', first, text: 'Day ' + d + ': both competitors have been at ' + fl + ', since day ' + first + '. They can’t go lower.' };
     }
     if (sign && d - s >= 3 && Math.abs(low(d) - low(s)) >= 0.5 - 1e-9) {
       if (led * 2 > span) {
-        return { d, kind: sign < 0 ? 'follow-down' : 'follow-up', start: s, text: 'Day ' + d + ': both stands are following ' + your + ' price ' + (sign < 0 ? 'down' : 'up') + '. The lowest across the street went from ' + fmt(low(s)) + ' on day ' + s + ' to ' + fmt(low(d)) + '.' };
+        return { d, kind: sign < 0 ? 'follow-down' : 'follow-up', start: s, text: 'Day ' + d + ': both competitors are following ' + your + ' price ' + (sign < 0 ? 'down' : 'up') + '. The cheaper competitor went from ' + fmt(low(s)) + ' on day ' + s + ' to ' + fmt(low(d)) + '.' };
       }
       const verb = sign < 0 ? (everyDay ? 'are now undercutting each other every day' : 'are taking turns undercutting each other')
         : (everyDay ? 'are now raising after each other every day' : 'are taking turns raising after each other');
-      return { d, kind: sign < 0 ? 'spiral-down' : 'spiral-up', start: s, text: 'Day ' + d + ': both stands ' + verb + '. The lowest across the street went from ' + fmt(low(s)) + ' on day ' + s + ' to ' + fmt(low(d)) + '.' };
+      return { d, kind: sign < 0 ? 'spiral-down' : 'spiral-up', start: s, text: 'Day ' + d + ': both competitors ' + verb + '. The cheaper competitor went from ' + fmt(low(s)) + ' on day ' + s + ' to ' + fmt(low(d)) + '.' };
     }
     return { d, kind: 'calm', text: 'Day ' + d + ': ' + both(d) + '.' };
   }
