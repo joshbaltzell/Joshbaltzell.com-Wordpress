@@ -78,7 +78,7 @@ Git push to WP Engine is not an option from this Mac: `git@git.wpengine.com` ref
    - [ ] Hal's Minigolf: pixelated walls and the pixel title typeface (Chrome; other browsers may skip the filter).
    - [ ] `/toys/` with the Games/Toys chips, and `/writing/`.
    - [ ] One game post: Play goes to `/play/<game>/` and opens the game from `/wp-content/uploads/toys/`. Gyms of War's live cover runs.
-   - [ ] `/three-small-toys-about-prices/`: Play on a Lemonade lesson, then Open full page opens it in a sheet and Close returns to the article.
+   - [ ] `/pricing-and-repricing/`: Play on a Lemonade lesson, then Open full page opens it in a sheet and Close returns to the article.
    - [ ] `/about/` shows in the nav and loads.
    - [ ] `/?p=1` redirects to the Amazon marketplace post.
    - [ ] A missing page shows the 404 page.
