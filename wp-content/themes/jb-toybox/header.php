@@ -4,7 +4,6 @@
  * Below 900px the links go behind a Menu button, using the HTML popover attribute.
  */
 
-$jb_about = get_page_by_path( 'about' );
 ?>
 <!doctype html>
 <html <?php language_attributes(); ?>>
@@ -33,9 +32,9 @@ $jb_about = get_page_by_path( 'about' );
 				?>
 			<li><a href="<?php echo esc_url( $jb_kind['url'] ); ?>" data-kind="<?php echo esc_attr( $jb_kind['kind'] ); ?>"<?php echo is_category( $jb_slug ) ? ' aria-current="page"' : ''; ?>><?php echo esc_html( $jb_kind['plural'] ); ?></a></li>
 			<?php endforeach; ?>
-			<?php if ( $jb_about && 'publish' === $jb_about->post_status ) : ?>
-			<li><a href="<?php echo esc_url( get_permalink( $jb_about ) ); ?>"<?php echo is_page( $jb_about->ID ) ? ' aria-current="page"' : ''; ?>><?php echo esc_html( get_the_title( $jb_about ) ); ?></a></li>
-			<?php endif; ?>
+			<?php foreach ( jb_nav_pages() as $jb_page ) : ?>
+			<li><a href="<?php echo esc_url( get_permalink( $jb_page ) ); ?>"<?php echo is_page( $jb_page->ID ) ? ' aria-current="page"' : ''; ?>><?php echo esc_html( get_the_title( $jb_page ) ); ?></a></li>
+			<?php endforeach; ?>
 		</ul>
 	</nav>
 </header>

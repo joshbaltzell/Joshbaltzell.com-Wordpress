@@ -32,7 +32,7 @@ Git push to WP Engine is not an option from this Mac: `git@git.wpengine.com` ref
    post has it). The same goes for the Browser-Games branch `mobile-pass`: every game's "Plays on" now says
    whether it works on a phone, needs turning sideways or needs a computer, and Mabel and Launch Window describe
    their touch controls. Merge it to `main` so the live games match.
-00. **Your X, Instagram and LinkedIn addresses**: Settings → General. Each link appears once it has one.
+00. **Your X and Instagram addresses**: Settings → General. Each link appears once it has one. LinkedIn is set.
 
 1. **Search engines: decided, nothing to do.** Production only. `jb-search-visibility.php`
    turns indexing on when the site's address is joshbaltzell.com and off everywhere else,

@@ -16,6 +16,7 @@ $jb_newest = get_posts(
 $jb_all    = get_post_type_archive_link( 'post' );
 $jb_toys   = jb_kind_by_slug( 'toys' );
 $jb_about  = get_page_by_path( 'about' );
+$jb_work   = get_page_by_path( 'work' );
 
 // The introduction is the front page's Excerpt when one is written, so it can be changed in the editor.
 $jb_front = (int) get_option( 'page_on_front' );
@@ -29,6 +30,9 @@ $jb_intro = $jb_front && has_excerpt( $jb_front ) ? get_the_excerpt( $jb_front )
 			<a class="link link--more" href="<?php echo esc_url( $jb_toys['url'] ); ?>"><?php esc_html_e( 'Start with a toy', 'jb-toybox' ); ?></a>
 			<?php if ( $jb_about && 'publish' === $jb_about->post_status ) : ?>
 			<a class="link link--more" href="<?php echo esc_url( get_permalink( $jb_about ) ); ?>"><?php esc_html_e( 'More about me', 'jb-toybox' ); ?></a>
+			<?php endif; ?>
+			<?php if ( $jb_work && 'publish' === $jb_work->post_status ) : ?>
+			<a class="link link--more" href="<?php echo esc_url( get_permalink( $jb_work ) ); ?>"><?php esc_html_e( 'What I do for work', 'jb-toybox' ); ?></a>
 			<?php endif; ?>
 		</p>
 		<?php

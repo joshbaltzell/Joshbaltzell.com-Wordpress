@@ -574,3 +574,20 @@ function jb_comment( $comment, $args, $depth ) {
 		)
 	);
 }
+
+/**
+ * The standing pages that sit after the kinds in the navigation and footer: Work, then About. Each shows once a
+ * published page with that slug exists.
+ *
+ * @return WP_Post[]
+ */
+function jb_nav_pages() {
+	$out = array();
+	foreach ( array( 'work', 'about' ) as $slug ) {
+		$page = get_page_by_path( $slug );
+		if ( $page && 'publish' === $page->post_status ) {
+			$out[] = $page;
+		}
+	}
+	return $out;
+}
