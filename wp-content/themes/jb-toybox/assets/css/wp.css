@@ -301,7 +301,7 @@ a.kind{padding-block:var(--space-1);margin-block:calc(-1 * var(--space-1))}
      <li class="timeline__era" data-era="ai">Applied AI <span>2022 to now</span></li>
      <li class="timeline__stop is-now" data-era="ai"><details open><summary>
        <span class="timeline__when">…</span><span class="timeline__what">…</span><span class="timeline__gist">…</span></summary>
-       <div class="timeline__body"><p>…</p><details class="timeline__story"><summary>…</summary><p>…</p></details>
+       <div class="timeline__body"><p>…</p><div class="timeline__story"><p class="timeline__story-title">…</p><p>…</p></div>
        <ul class="timeline__tools"><li>…</li></ul><p class="timeline__links">…</p></div></details></li>
      <li class="timeline__stop" data-era="start"><button class="timeline__hat">(svg)</button>…</li>
    </ol></div>
@@ -334,9 +334,10 @@ a.kind{padding-block:var(--space-1);margin-block:calc(-1 * var(--space-1))}
 .timeline__gist{display:block;color:var(--ink-muted)}
 .timeline__stop p{margin:0}
 .timeline__body{display:grid;gap:var(--space-3);margin:var(--space-3) 0 0;padding:var(--space-4);border:var(--outline-hair) solid var(--line);border-left:4px solid var(--era);border-radius:var(--radius-md);background:var(--ground-raised)}
-.timeline__story{border-radius:var(--radius-sm);background:var(--ground-sunk);padding:var(--space-2) var(--space-3)}
-.timeline__story>summary{cursor:pointer;font-weight:var(--weight-semi)}
-.timeline__story[open]>summary{margin-bottom:var(--space-2)}
+.timeline__story{display:grid;gap:var(--space-1);border-radius:var(--radius-sm);background:var(--ground-sunk);padding:var(--space-3)}
+.timeline__story-title{font-weight:var(--weight-semi)}
+.prose .timeline__list{margin:0;padding-left:var(--space-5)}
+.prose .timeline__list li{margin:0 0 var(--space-1)}
 .prose .timeline__tools{display:flex;flex-wrap:wrap;gap:var(--space-1);list-style:none;margin:0;padding:0}
 .prose .timeline__tools li{margin:0;padding:var(--space-half) var(--space-2);border:var(--outline-hair) solid var(--line);border-radius:var(--radius-full);font-family:var(--font-mono);font-size:var(--text-tag)}
 .prose .timeline__tools li::before{content:none}
