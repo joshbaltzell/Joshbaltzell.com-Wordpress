@@ -157,11 +157,11 @@
   // used when the stand faces one player; "many" when there are two stands.
   const RIVALS = {
     under: {
-      you: 'Stay 25 cents under you', many: 'Stay 25 cents under the lowest price',
+      you: 'Stay 25 cents under you', many: '25¢ under the lowest',
       floor: FLOOR, next: (t) => t - 0.25
     },
     match: {
-      you: 'Match you', many: 'Match the lowest price',
+      you: 'Match you', many: 'Match the lowest',
       floor: FLOOR, next: (t) => t
     },
     hold: {
@@ -169,11 +169,11 @@
       floor: FLOOR, next: () => 3.5
     },
     undercut: {
-      you: 'Undercut, but never below $2.50', many: 'Undercut the lowest price, but never below $2.50',
+      you: 'Undercut, but never below $2.50', many: 'Undercut the lowest, not below $2.50',
       floor: 2.5, next: (t) => t - 0.25
     },
     above: {
-      you: 'Stay 10% above you', many: 'Stay 10% above the lowest price',
+      you: 'Stay 10% above you', many: '10% above the lowest',
       floor: FLOOR, next: (t) => Math.round(t * 1.1 * 20) / 20
     }
   };
