@@ -20,8 +20,8 @@ while ( have_posts() ) :
 		case 'toy':
 			$jb_label = __( 'About this toy', 'jb-toybox' );
 			$jb_facts = array(
-				__( 'Kind', 'jb-toybox' )     => array( 'value' => jb_kind_link( $jb_kind ) ),
-				__( 'Type', 'jb-toybox' )     => array( 'value' => esc_html( get_post_meta( $jb_id, 'toy_type', true ) ) ),
+				// A toy post is a game or a toy; say which, and link to that filter on the Toys list.
+				__( 'Kind', 'jb-toybox' )     => array( 'value' => jb_toy_type_link( $jb_kind, get_post_meta( $jb_id, 'toy_type', true ) ) ),
 				__( 'Version', 'jb-toybox' )  => array( 'value' => esc_html( get_post_meta( $jb_id, 'toy_version', true ) ), 'mono' => true ),
 				__( 'Released', 'jb-toybox' ) => array( 'value' => jb_time(), 'mono' => true ),
 				__( 'Plays on', 'jb-toybox' ) => array( 'value' => esc_html( get_post_meta( $jb_id, 'toy_plays_on', true ) ) ),
